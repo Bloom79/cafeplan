@@ -1,0 +1,10 @@
+name = "cafeplan-verify"
+main = "worker.js"
+compatibility_date = "2026-01-01"
+
+# Deploy (from this directory):
+#   npx wrangler secret put GITHUB_TOKEN   # fine-grained PAT, Issues r/w on Bloom79/cafeplan
+#   npx wrangler deploy
+#
+# Live at: https://cafeplan-verify.<your-subdomain>.workers.dev
+# The app calls it via WORKER_URL in src/config.js — update that if the name differs.

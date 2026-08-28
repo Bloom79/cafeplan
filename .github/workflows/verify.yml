@@ -1,0 +1,53 @@
+name: Verifica — controllo live di un annuncio
+
+# The app's Verify / Analyse buttons file a "Verifica:" / "Analizza:" issue
+# via the Cloudflare worker; this runs within a minute, does the live web
+# check with the agent, posts the report as the issue comment the app polls
+# for, and closes the issue.
+
+on:
+  issues:
+    types: [opened]
+
+permissions:
+  issues: write
+
+jobs:
+  verify:
+    # Author gate: on a public repo ANYONE can open issues — only the
+    # owner's may trigger runs (the worker files them with the owner's PAT).
+    if: >
+      (startsWith(github.event.issue.title, 'Verifica:') ||
+        startsWith(github.event.issue.title, 'Analizza:')) &&
+      github.event.issue.user.login == 'Bloom79'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run verify agent
+        env:
+          ISSUE_TITLE: ${{ github.event.issue.title }}
+          ISSUE_BODY: ${{ github.event.issue.body }}
+          ISSUE_NUMBER: ${{ github.event.issue.number }}
+          GITHUB_TOKEN: ${{ github.token }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        run: node scripts/verifica.mjs
+
+      - name: Publish updated listings
+        if: ${{ hashFiles('public/listings.json') != '' }}
+        run: |
+          git config user.name "cafeplan-agent"
+          git config user.email "actions@github.com"
+          git add public/listings.json
+          git diff --cached --quiet && echo "no data change" || (git commit -m "verify: update listings data [skip ci]" && git push)

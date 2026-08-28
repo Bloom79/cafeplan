@@ -1,0 +1,43 @@
+name: Daily verify — listings watch & discovery
+
+# Every morning: re-check every watchlist listing against the live web,
+# discover new Edinburgh going-concerns, and commit the updated
+# public/listings.json (which the app fetches at runtime — no rebuild
+# needed, but a push also refreshes the deployed bundle when code changed).
+
+on:
+  schedule:
+    - cron: '17 6 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run verify agent (all listings + discovery)
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        run: node scripts/verifica.mjs --all
+
+      - name: Commit updated listings
+        run: |
+          git config user.name "cafeplan-agent"
+          git config user.email "actions@github.com"
+          git add public/listings.json
+          git diff --cached --quiet && echo "no changes" || (git commit -m "daily verify: refresh listings [skip ci]" && git push)
