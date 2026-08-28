@@ -1,21 +1,27 @@
 // CafePlan verify agent — keeps public/listings.json honest.
 //
-// Modes (first match wins):
-//   env ISSUE_BODY set   → single request from the app (issue-triggered):
-//                          "Verifica:" re-checks one listing, "Analizza:" runs
-//                          a due-diligence report. Posts the report as an
-//                          issue comment, closes the issue, commits nothing.
-//   --all                → daily run: verify every listing, then discover new
-//                          Edinburgh going-concerns. Rewrites listings.json;
-//                          the workflow commits if anything changed.
-//   --dry                → no API key needed: prints what would run (testing).
+// The whole agent is the GitHub Copilot CLI (`copilot -p ...`) on the
+// owner's Copilot subscription: it searches the live web itself (built-in
+// web search), which also gets past Rightbiz's anti-bot wall via search
+// snippets and indexed pages. Zero marginal API cost on the default model;
+// set VERIFY_MODEL (e.g. claude-opus-5) to spend premium credits for
+// sharper judgements — note ~20 credits per opus request with search.
+// Optional ANTHROPIC_API_KEY falls back to the Anthropic API with its
+// server-side web_search tool if Copilot is unavailable.
 //
-// The searching is done by the model via Anthropic's server-side web_search
-// tool — Rightbiz blocks plain scraping, but search + snippets + fetched
-// portals work (that is how the seed comparables were found). Never exits
-// non-zero: the workflow branches on the `status` GITHUB_OUTPUT.
+// Modes (first match wins):
+//   env ISSUE_BODY set   → single request from the app: "Verifica:" re-checks
+//                          one listing, "Analizza:" runs due diligence. Posts
+//                          the report as the issue comment the app polls,
+//                          closes the issue.
+//   --all                → daily run: verify every listing + discover new
+//                          Edinburgh going-concerns; rewrite listings.json.
+//   --dry                → no model, no network: prints the plan (testing).
+//
+// Never exits non-zero: workflows branch on the `status` GITHUB_OUTPUT.
 
 import { appendFileSync, readFileSync, writeFileSync } from 'fs'
+import { spawnSync as run } from 'child_process'
 import { fileURLToPath } from 'url'
 import { dirname, join } from 'path'
 
@@ -23,7 +29,8 @@ const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..')
 const DATA = join(ROOT, 'public', 'listings.json')
 const TODAY = new Date().toISOString().slice(0, 10)
 
-const MODEL = process.env.VERIFY_MODEL || 'claude-opus-5'
+// Empty = the subscription's default model (no premium credits).
+const MODEL = process.env.VERIFY_MODEL || ''
 
 const out = (k, v) => {
   console.log(`${k}=${v}`)
@@ -33,119 +40,174 @@ const out = (k, v) => {
 const readDb = () => JSON.parse(readFileSync(DATA, 'utf8'))
 const writeDb = (db) => writeFileSync(DATA, JSON.stringify(db, null, 2) + '\n')
 
-// ————— the agent —————
+// ————— the model ——————————————————————————————————
 
-const SEARCH_TOOL = { type: 'web_search_20260209', name: 'web_search', max_uses: 8 }
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms))
 
-const SYSTEM = `You verify UK businesses-for-sale listings for a café-acquisition watchlist covering Edinburgh (Scotland). Today is ${TODAY}.
-You search the live web (Rightbiz, Daltons, BusinessesForSale, Dynamic Businesses, agent sites, news) to answer precisely.
-Business portals often sit behind anti-bot walls: rely on search-result snippets, cached/indexed pages and any portal that does respond — and say so in your evidence.
-Never invent URLs or prices. If you cannot confirm something, return the "unclear" outcome rather than guessing.`
-
-async function askAnthropic({ client, user, maxTokens = 4000 }) {
-  const resp = await client.messages.create({
-    model: MODEL,
-    max_tokens: maxTokens,
-    system: SYSTEM,
-    tools: [SEARCH_TOOL],
-    messages: [{ role: 'user', content: user }],
-  })
-  if (resp.stop_reason === 'refusal') throw new Error('model refused')
-  const text = (resp.content || []).filter((b) => b.type === 'text').map((b) => b.text).join('\n')
-  return text
+async function copilot(prompt) {
+  const args = ['-p', prompt]
+  if (MODEL) args.push('--model', MODEL)
+  // The token check hits api.github.com and can fail transiently; retry a
+  // couple of times before giving up.
+  for (let attempt = 1; attempt <= 3; attempt++) {
+    const res = run('copilot', args, {
+      encoding: 'utf8',
+      timeout: 300000,
+      maxBuffer: 20e6,
+      env: process.env,
+    })
+    // The answer goes to stdout; banner/status/credits go to stderr. A
+    // non-zero exit can coexist with a fine answer (e.g. a web fetch was
+    // permission-denied mid-run) — trust stdout when it carries JSON.
+    const stdout = (res.stdout || '').replace(/\x1b\[[0-9;]*[A-Za-z]/g, '').trim()
+    const stderr = (res.stderr || '').replace(/\x1b\[[0-9;]*[A-Za-z]/g, '').trim()
+    if (stdout && /[[{]/.test(stdout)) {
+      if (process.env.VERIFY_DEBUG) console.log('—— copilot raw ——\n' + stdout.slice(0, 1500) + '\n——————')
+      return stdout
+    }
+    if (process.env.VERIFY_DEBUG)
+      console.log(`—— copilot attempt ${attempt} failed: status=${res.status} error=${res.error ? res.error.code : 'none'} stderr=${stderr.slice(0, 200)}`)
+    if (/not authorized|unauthorized|invalid token/i.test(stderr) && attempt >= 2) return null
+    if (attempt < 3) await sleep(15000)
+  }
+  return null
 }
 
-// Defensively pull the first JSON value out of a model reply.
-const extractJson = (text) => {
-  const fenced = /```(?:json)?\s*([\s\S]*?)```/.exec(text)
-  const raw = fenced ? fenced[1] : text
-  const start = Math.min(...['[', '{'].map((c) => { const i = raw.indexOf(c); return i === -1 ? Infinity : i }))
-  const openChar = raw[start]
-  const closeChar = openChar === '[' ? ']' : '}'
-  const end = raw.lastIndexOf(closeChar)
-  if (!openChar || end <= start) throw new Error('no JSON in reply')
-  return JSON.parse(raw.slice(start, end + 1))
+async function anthropic(prompt) {
+  if (!process.env.ANTHROPIC_API_KEY) return null
+  try {
+    const { default: Anthropic } = await import('@anthropic-ai/sdk')
+    const client = new Anthropic()
+    const resp = await client.messages.create({
+      model: MODEL || 'claude-opus-5',
+      max_tokens: 4000,
+      system: 'You verify UK businesses-for-sale listings. Search the web for current evidence. Reply with ONLY the requested JSON or Markdown.',
+      tools: [{ type: 'web_search_20260209', name: 'web_search', max_uses: 8 }],
+      messages: [{ role: 'user', content: prompt }],
+    })
+    if (resp.stop_reason === 'refusal') return null
+    return resp.content.filter((b) => b.type === 'text').map((b) => b.text).join('\n').trim()
+  } catch (e) {
+    console.log('  anthropic fallback failed: ' + e.message)
+    return null
+  }
 }
 
-// ————— verify one listing —————
+async function judge(prompt) {
+  return (await copilot(prompt)) || (await anthropic(prompt))
+}
+
+// The CLI's output carries banner/progress noise — including TRUNCATED json
+// fragments from tool results whose braces never close (which would poison
+// a brace-matcher). The model's actual answer always sits on its own
+// line(s), so: try to parse every line that starts with { or [, joining up
+// to 6 following lines for pretty-printed output.
+const extractJson = (text, expectedKey) => {
+  if (!text) throw new Error('no model output')
+  const parsed = []
+  const fenced = [...text.matchAll(/```(?:json)?\s*([\s\S]*?)```/g)].map((m) => m[1])
+  const lines = text.split('\n')
+  const candidates = [...fenced]
+  for (let i = 0; i < lines.length; i++) {
+    const t = lines[i].trim()
+    if (!t.startsWith('{') && !t.startsWith('[')) continue
+    for (let j = i; j < Math.min(i + 6, lines.length); j++) {
+      const chunk = lines.slice(i, j + 1).join('\n').trim()
+      if (!/^[[{]/.test(chunk)) break
+      try { parsed.push(JSON.parse(chunk)); break } catch { /* keep joining */ }
+    }
+  }
+  for (const raw of fenced) {
+    try { parsed.push(JSON.parse(raw.trim())) } catch { /* skip */ }
+  }
+  if (!parsed.length) throw new Error('no JSON in model output')
+  if (expectedKey) {
+    const hit = parsed.reverse().find((p) => p && typeof p === 'object' && !Array.isArray(p) && expectedKey in p)
+    if (hit) return hit
+  }
+  const obj = parsed.find((p) => p && typeof p === 'object' && !Array.isArray(p))
+  return obj || parsed[0]
+}
+
+// ————— verify one listing ————————————————————————
 
 const OUTCOME_IT = { live: 'ancora in vendita', changed: 'cambiato', gone: 'non più in vendita', unclear: 'incerto' }
 
-async function verifyListing(client, l) {
-  const user = `Verify this businesses-for-sale listing RIGHT NOW (today is ${TODAY}).
+async function verifyListing(l) {
+  const snap = {
+    name: l.name, area: l.area + ', Edinburgh', price: l.price,
+    rent: l.rent, url: l.url, recordedStatus: l.status,
+  }
+  const prompt = `Today is ${TODAY}. Search the LIVE web and decide whether this businesses-for-sale listing is still on the market.
 
-Listing snapshot from ${l.source || 'our records'}:
-- name: ${l.name}
-- area: ${l.area}, Edinburgh
-- asking price: ${l.price != null ? '£' + l.price.toLocaleString('en-GB') : 'not disclosed'}
-- rent: ${l.rent != null ? '£' + l.rent.toLocaleString('en-GB') + '/yr' : 'unknown'}
-- known url: ${l.url || 'none'}
-- recorded status: ${l.status}
+Our snapshot: ${JSON.stringify(snap)}
 
-Search for it (e.g. the business name + area + "for sale", site-limited searches on rightbiz.co.uk and daltonsbusiness.com, the agent's own site, cached copies). Determine:
-1. Is it still openly for sale? (live) / still listed but price or terms changed? (changed) / no longer listed, sold, or withdrawn? (gone) / cannot confirm? (unclear)
-2. Current asking price if stated.
-3. The best canonical listing URL (only one you have actually seen in results — null if none).
-4. One line of evidence (where you saw it, what it said).
+Search angles that work: the business name + area + "for sale"; site:rightbiz.co.uk <name>; site:daltonsbusiness.com <name>; the selling agent's site; local news (Edinburgh Evening News etc. often covers café sales); the business's own social pages (a "permanently closed" page means gone). Rightbiz blocks direct fetches — rely on search snippets and indexed copies. Never invent prices or URLs; if you cannot confirm, say unclear.
+
+Judgement rules: still listed / clearly for sale = live; listed but price or terms differ from our snapshot = changed; sold / under offer / withdrawn / business closed = gone; evidence insufficient = unclear. Prefer the freshest asking price you actually saw.
 
 Reply with ONLY this JSON object:
-{"outcome":"live|changed|gone|unclear","price":<number or null>,"url":<string or null>,"note":"<=180 chars, English","evidence":"<=200 chars, English"}`
-  const text = await askAnthropic({ client, user })
-  const res = extractJson(text)
-  if (!['live', 'changed', 'gone', 'unclear'].includes(res.outcome)) res.outcome = 'unclear'
-  return res
+{"outcome":"live|changed|gone|unclear","price":<current asking price as number, or null>,"url":<best canonical listing url you saw, or null>,"note":"<=160 chars English","sources":[<=3 urls you actually used]}`
+  try {
+    const res = extractJson(await judge(prompt), 'outcome')
+    if (!['live', 'changed', 'gone', 'unclear'].includes(res.outcome)) res.outcome = 'unclear'
+    return res
+  } catch (e) {
+    return { outcome: 'unclear', price: null, url: null, note: 'verdict unavailable: ' + e.message, sources: [] }
+  }
 }
 
-// ————— discover new listings —————
+// ————— discover new listings ——————————————————————
 
-const TARGET_AREAS = 'Shandon, Polwarth, Merchiston, Bruntsfield, Morningside, Marchmont, Fountainbridge, Slateford, Haymarket, Leith, Stockbridge, Corstorphine, Edinburgh city centre'
+const TARGET_AREAS = 'Shandon, Polwarth, Merchiston, Bruntsfield, Morningside, Marchmont, Fountainbridge, Slateford, Haymarket, Stockbridge, Corstorphine, Edinburgh'
 
-async function discoverListings(client, known) {
-  const user = `Find Edinburgh café / coffee-shop / restaurant businesses-for-sale that are OPENLY listed today (${TODAY}).
+async function discoverListings(known) {
+  const prompt = `Today is ${TODAY}. Search the LIVE web for café / coffee-shop / dessert / small-restaurant businesses-for-sale that are CURRENTLY listed in Edinburgh (going concerns, not franchises, not outside Edinburgh), especially in or near: ${TARGET_AREAS}.
 
-Already on our watchlist (do NOT repeat these): ${known.map((l) => l.name).join('; ')}
+Useful angles: site:rightbiz.co.uk cafe Edinburgh; site:daltonsbusiness.com; "business for sale" Bruntsfield OR Morningside OR Marchmont; business-transfer agents (Christie & Co, The Restaurant Agency, Central Business Sales, DJK Group) Edinburgh café listings; Businesses for Sale Scotland. Rightbiz blocks direct fetches — snippets and indexed pages are fine.
 
-Look for going concerns (not franchises, not outside Edinburgh) in or near: ${TARGET_AREAS}.
-Sources: Rightbiz, Daltons, BusinessesForSale.com, Dynamic Businesses, TikTok/Facebook market posts by business-transfer agents, agent sites. Anti-bot walls are common — search snippets and indexed pages are fine evidence.
+Already on our watchlist (do NOT repeat): ${known.map((l) => l.name).join('; ')}
 
-For each find (max 6, only ones you are confident are current and real):
-{"id":"kebab-case-id","name":"","area":"","price":<number or null>,"tenure":"","rent":<number or null>,"turnover":<number or null>,"profit":<number or null>,"url":<string or null>,"notes":"<=160 chars, English — why it matters for a canal-side café plan"}
-
-Reply with ONLY a JSON array (empty array if nothing new found).`
-  const text = await askAnthropic({ client, user, maxTokens: 6000 })
-  const arr = extractJson(text)
-  return Array.isArray(arr) ? arr.slice(0, 6) : []
+Reply with ONLY a JSON array (empty if nothing new), max 6 items:
+[{"id":"kebab-case-id","name":"","area":"","price":<number|null>,"tenure":"","rent":<number|null>,"turnover":<number|null>,"profit":<number|null>,"url":<string|null>,"notes":"<=140 chars English — why it matters for a canal-side café plan"}]`
+  try {
+    const arr = extractJson(await judge(prompt))
+    return Array.isArray(arr) ? arr.slice(0, 6) : []
+  } catch (e) {
+    console.log('  discovery verdict failed: ' + e.message)
+    return []
+  }
 }
 
-// ————— due diligence —————
+// ————— due diligence ————————————————————————————
 
-const CASE_CONTEXT = `Our acquisition case (for context in the report, do not restate it):
+const CASE_CONTEXT = `Our acquisition case (context for the report; do not restate it):
 - Target: small leasehold café going-concern, canal-side residential catchment (Shandon/Polwarth/Merchiston), Edinburgh.
-- Valuation anchors: small UK cafés sell at 1.5×–2.5× adjusted annual profit (SDE); comparable purchase prices cluster £35k–£55k leasehold; Bennitos (Edinburgh) = £40k asking, £150k turnover, £25k profit (17%), £18k rent.
+- Valuation anchors: small UK cafés sell at 1.5×–2.5× adjusted annual profit (SDE); comparable asks cluster £35k–£55k leasehold; Bennitos (Edinburgh) = £40k ask, £150k turnover, £25k profit (17%), £18k rent.
 - Site economics anchor: Ashley Terrace comparable — £14k/yr rent, £5.6k rateable value (SBBS relief ⇒ rates ≈ £0 under £12k RV).
-- Concept: daytime café + pasta of the day; Italian aperitivo Thu–Sun 17:00–20:00 (needs Premises Licence + Personal Licence Holder).`
+- Concept: daytime café + pasta of the day; aperitivo Thu–Sun 17:00–20:00 (needs Premises Licence + Personal Licence Holder).`
 
-async function analyseListing(client, l) {
-  const user = `Produce a due-diligence report for this businesses-for-sale listing. Today is ${TODAY}.
+async function analyseListing(l) {
+  const prompt = `Today is ${TODAY}. Search the LIVE web, then write a due-diligence report on this businesses-for-sale listing. Use only what you find; where evidence is silent, say what to ask the selling agent. Never invent figures.
 
 Listing: ${JSON.stringify({ ...l, verification: undefined, lastVerified: undefined })}
-
 ${CASE_CONTEXT}
 
-First SEARCH the web for everything useful: the listing itself (price, what's included — goodwill, fixtures, lease terms, stock at valuation), the business's reviews/reputation, the street/parade and its footfall, the rent and rateable value of the actual premises if identifiable (Scottish Assessors portal), competition within 500m, and anything that smells off (relisting history, negative reviews trend, planning/licensing issues).
+Search for: the listing itself (price, what's included — goodwill, fixtures, lease terms, stock at valuation); the business's reviews and reputation trend; the street/parade and its footfall; the actual premises' rent and rateable value if identifiable; competition within ~500m; anything that smells off (relisting history, closure rumours, licensing issues).
 
-Then write the report in GitHub-flavoured Markdown, English, starting with a "## Due diligence — ${l.name}" heading, with these sections:
+Write GitHub-flavoured Markdown, English, starting with "## Due diligence — ${l.name}", sections:
 - **Verdict** — one paragraph: interesting / marginal / avoid for our concept, and why.
-- **Price vs earnings** — check the ask against 1.5×–2.5× SDE and the £35k–£55k comparable band. If turnover/profit are undisclosed, say what figures to demand and what they'd need to be for the price to make sense.
-- **Premises & running costs** — rent vs the £14k anchor, rateable value / SBBS relief, lease shape, fit-out state.
-- **Fit with our concept** — canal-corridor catchment, daytime trade potential, whether evening aperitivo could work on that street.
-- **Risks & questions for the agent** — bullet list, the questions a buyer should ask on the first call.
-Cite the URLs you relied on inline. Be direct; do not pad. Max ~450 words.`
-  const text = await askAnthropic({ client, user, maxTokens: 8000 })
-  return text.trim()
+- **Price vs earnings** — the ask against 1.5×–2.5× SDE and the £35k–£55k band; if figures are undisclosed, what they'd need to be for the price to make sense.
+- **Premises & running costs** — rent vs the £14k anchor, rateable value / SBBS relief, lease shape.
+- **Fit with our concept** — catchment, daytime trade, evening aperitivo potential on that street.
+- **Risks & questions for the agent** — bullets for the first call.
+Cite the URLs you relied on inline. Direct, no padding, max ~400 words.`
+  const report = await judge(prompt)
+  if (!report) throw new Error('no model available (install Copilot CLI or set COPILOT_GITHUB_TOKEN / ANTHROPIC_API_KEY)')
+  return report
 }
 
-// ————— data merge —————
+// ————— data merge ——————————————————————————————
 
 const slug = (s) => String(s).toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 50)
 
@@ -176,15 +238,16 @@ function mergeDiscovery(db, found) {
     while (ids.has(id)) id = id + '-2'
     if (!/^[a-z0-9-]{2,60}$/.test(id)) continue
     ids.add(id)
+    const num = (v) => (f[v] != null && Number.isFinite(+f[v]) ? +f[v] : null)
     db.listings.push({
       id,
       name: String(f.name).slice(0, 90),
       area: String(f.area).slice(0, 40),
-      price: Number.isFinite(+f.price) && f.price != null ? +f.price : null,
+      price: num('price'),
       tenure: String(f.tenure || 'Leasehold').slice(0, 40),
-      rent: Number.isFinite(+f.rent) && f.rent != null ? +f.rent : null,
-      turnover: Number.isFinite(+f.turnover) && f.turnover != null ? +f.turnover : null,
-      profit: Number.isFinite(+f.profit) && f.profit != null ? +f.profit : null,
+      rent: num('rent'),
+      turnover: num('turnover'),
+      profit: num('profit'),
       status: 'active',
       tags: ['agent find'],
       notes: String(f.notes || '').slice(0, 240),
@@ -195,7 +258,6 @@ function mergeDiscovery(db, found) {
     })
     added++
   }
-  // Cap: drop the oldest 'gone' entries beyond 20 total.
   while (db.listings.length > 20) {
     const i = db.listings.findIndex((l) => l.status === 'gone')
     db.listings.splice(i === -1 ? 0 : i, 1)
@@ -225,29 +287,41 @@ async function commentAndClose(issue, body, token) {
   }, token)
 }
 
-// ————— main —————
-
 const parsePayload = () => {
   const m = /```json\s*([\s\S]*?)```/.exec(process.env.ISSUE_BODY || '')
   if (!m) return null
   try { return JSON.parse(m[1]) } catch { return null }
 }
 
+// ————— main ————————————————————————————————————
+
 async function main() {
   const dry = process.argv.includes('--dry')
   const all = process.argv.includes('--all')
-  const hasKey = !!process.env.ANTHROPIC_API_KEY
+  const testIdx = process.argv.indexOf('--test')
+
+  if (testIdx !== -1 && process.argv[testIdx + 1]) {
+    // Local single verification, no GitHub plumbing: --test <listing-id>
+    const db = readDb()
+    const l = db.listings.find((x) => x.id === process.argv[testIdx + 1])
+    if (!l) { console.log(`no listing with id "${process.argv[testIdx + 1]}"`); return }
+    console.log(`verifying: ${l.name} …`)
+    const res = await verifyListing(l)
+    console.log(JSON.stringify(res, null, 2))
+    mergeVerification(db, l.id, res)
+    writeDb(db)
+    console.log('data updated.')
+    return
+  }
 
   if (process.env.ISSUE_BODY && !all) {
     const payload = parsePayload()
     if (!payload) { out('status', 'error'); out('summary', 'no json payload in issue body'); return }
     const mode = (process.env.ISSUE_TITLE || '').startsWith('Analizza') ? 'analizza' : 'verifica'
-    if (dry || !hasKey) {
+    if (dry) {
       console.log(`[dry] would ${mode} listing ${payload.id} (${payload.name})`)
       out('status', 'ok'); return
     }
-    const { default: Anthropic } = await import('@anthropic-ai/sdk')
-    const client = new Anthropic()
     const db = readDb()
     const l = db.listings.find((x) => x.id === payload.id)
     if (!l) {
@@ -255,12 +329,12 @@ async function main() {
       out('status', 'ok'); return
     }
     if (mode === 'analizza') {
-      const report = await analyseListing(client, l)
+      const report = await analyseListing(l)
       await commentAndClose(process.env.ISSUE_NUMBER, report, process.env.GITHUB_TOKEN)
       out('status', 'ok'); out('summary', `due diligence posted for ${l.name}`)
       return
     }
-    const res = await verifyListing(client, l)
+    const res = await verifyListing(l)
     mergeVerification(db, payload.id, res)
     writeDb(db)
     const lines = [
@@ -269,11 +343,11 @@ async function main() {
       `**Esito:** ${OUTCOME_IT[res.outcome]}`,
       '',
       `- Prezzo attuale: ${res.price != null ? '£' + res.price.toLocaleString('en-GB') : 'non indicato'}`,
-      `- URL: ${res.url || (l.url || 'nessuno trovato')}`,
+      `- URL: ${res.url || l.url || 'nessuno trovato'}`,
       `- Nota: ${res.note || '—'}`,
-      `- Evidence: ${res.evidence || '—'}`,
+      res.sources?.length ? `- Fonti: ${res.sources.join(' · ')}` : '- Fonti: —',
       '',
-      '_Dati aggiornati in `public/listings.json` — visibili nell\'app al prossimo deploy._',
+      '_Dati aggiornati in \`public/listings.json\` — visibili nell\'app al prossimo deploy._',
     ].join('\n')
     await commentAndClose(process.env.ISSUE_NUMBER, lines, process.env.GITHUB_TOKEN)
     out('status', 'ok'); out('summary', `${l.name}: ${res.outcome}`)
@@ -281,35 +355,36 @@ async function main() {
   }
 
   if (all) {
-    if (dry || !hasKey) {
-      console.log('[dry] would verify all listings + run discovery; no API key used')
+    const discover = process.argv.includes('--discover')
+    if (dry) {
+      console.log(`[dry] would verify all listings${discover ? ' + run discovery' : ''} (no model, no network)`)
       out('status', 'ok'); return
     }
-    const { default: Anthropic } = await import('@anthropic-ai/sdk')
-    const client = new Anthropic()
     const db = readDb()
     db.updated = TODAY
-    let ok = 0, problems = 0
+    let ok = 0, unclear = 0
     for (const l of [...db.listings]) {
       try {
-        const res = await verifyListing(client, l)
+        const res = await verifyListing(l)
         mergeVerification(db, l.id, res)
-        res.outcome === 'unclear' ? problems++ : ok++
+        res.outcome === 'unclear' ? unclear++ : ok++
         console.log(`${l.name}: ${res.outcome}${res.note ? ' — ' + res.note : ''}`)
       } catch (e) {
-        problems++
+        unclear++
         console.log(`${l.name}: verify failed — ${e.message}`)
       }
     }
     let added = 0
-    try {
-      added = mergeDiscovery(db, await discoverListings(client, db.listings))
-    } catch (e) {
-      console.log('discovery failed — ' + e.message)
+    if (discover) {
+      try {
+        added = mergeDiscovery(db, await discoverListings(db.listings))
+      } catch (e) {
+        console.log('discovery failed — ' + e.message)
+      }
     }
     writeDb(db)
     out('status', 'ok')
-    out('summary', `${ok} verificate · ${problems} incerte · ${added} nuove`)
+    out('summary', `${ok} verificate · ${unclear} incerte · ${added} nuove`)
     return
   }
 
@@ -317,7 +392,6 @@ async function main() {
 }
 
 main().catch((e) => {
-  // Never fail the workflow — report and exit 0 (summerhome convention).
   console.error('agent error:', e.message)
   out('status', 'error')
   out('summary', String(e.message).slice(0, 200))

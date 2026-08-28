@@ -1,6 +1,6 @@
 {
   "updated": "2026-08-29",
-  "source": "seed — Aug 2026 research comparables; the daily verify agent keeps this file current",
+  "source": "seed refreshed by live research 2026-08-29; the daily verify agent keeps this file current",
   "listings": [
     {
       "id": "morningside-icecream",
@@ -12,16 +12,24 @@
       "turnover": null,
       "profit": null,
       "status": "active",
-      "tags": ["adjacent to catchment", "long lease", "low rent"],
-      "notes": "Confidential sale. Long lease, low rent, growth potential cited by the agent. Closest active listing to the Polwarth/Merchiston corridor.",
+      "tags": [
+        "adjacent to catchment",
+        "long lease",
+        "low rent"
+      ],
+      "notes": "Confidential sale, cross-listed as \"Fully Fitted Morningside Cafe, Long Lease, Low Rent\" on BusinessesForSale. Closest active listing to the Polwarth/Merchiston corridor.",
       "source": "Rightbiz (Aug 2026)",
-      "url": null,
-      "lastVerified": null,
-      "verification": null
+      "url": "https://www.rightbiz.co.uk/buy_business/for_sale/655298_edinburgh.html",
+      "lastVerified": "2026-08-29",
+      "verification": {
+        "outcome": "live",
+        "note": "still listed at £35,000 on Rightbiz category pages",
+        "date": "2026-08-29"
+      }
     },
     {
       "id": "bruntsfield-coffee",
-      "name": "Immaculate Coffee Shop",
+      "name": "Immaculate Coffee Shop (The Bonnie Barista)",
       "area": "Bruntsfield",
       "price": 40000,
       "tenure": "Leasehold",
@@ -29,12 +37,20 @@
       "turnover": null,
       "profit": null,
       "status": "active",
-      "tags": ["commercial kitchen", "basement", "high rent"],
-      "notes": "Commercial kitchen plus large basement. Rent runs well above the £14k Ashley Terrace comparable — a reminder that Bruntsfield commands a premium.",
-      "source": "Rightbiz (Aug 2026)",
-      "url": null,
-      "lastVerified": null,
-      "verification": null
+      "tags": [
+        "commercial kitchen",
+        "basement",
+        "price reduced"
+      ],
+      "notes": "The Bonnie Barista, east end of Bruntsfield Place. Commercial kitchen plus large basement. Rent runs well above the £14k Ashley Terrace anchor — Bruntsfield commands a premium. Listing now carries a \"PRICE REDUCED – NOW FIXED PRICE\" banner.",
+      "source": "Rightbiz / Daltons (Aug 2026)",
+      "url": "https://www.rightbiz.co.uk/buy_business/for_sale/630935_edinburgh.html",
+      "lastVerified": "2026-08-29",
+      "verification": {
+        "outcome": "live",
+        "note": "live on Daltons; price-reduced banner on the listing",
+        "date": "2026-08-29"
+      }
     },
     {
       "id": "marchmont-20seat",
@@ -46,12 +62,20 @@
       "turnover": null,
       "profit": null,
       "status": "under offer",
-      "tags": ["size benchmark", "low overheads"],
-      "notes": "Under offer — useful only as a size/rent benchmark (20 covers, £12k rent, low overheads).",
+      "tags": [
+        "size benchmark",
+        "low overheads",
+        "under offer"
+      ],
+      "notes": "Vegetarian restaurant, retirement sale, new 10-yr lease offered. Offer accepted — \"will re-advertise if that changes\". Useful size/rent benchmark (20 covers, £12k rent).",
       "source": "Rightbiz (Aug 2026)",
-      "url": null,
-      "lastVerified": null,
-      "verification": null
+      "url": "https://www.rightbiz.co.uk/buy_business/for_sale/622797_edinburgh.html",
+      "lastVerified": "2026-08-29",
+      "verification": {
+        "outcome": "live",
+        "note": "still listed, still under offer (POA)",
+        "date": "2026-08-29"
+      }
     },
     {
       "id": "bennitos",
@@ -63,12 +87,20 @@
       "turnover": 150000,
       "profit": 25000,
       "status": "active",
-      "tags": ["real trading figures", "17% margin", "valuation anchor"],
-      "notes": "One of the few listings disclosing real figures: £150k turnover, £25k profit (17%), £18k rent. The closest real-world validation of the model — and a valuation anchor for what a £40k asking price buys.",
-      "source": "Daltons (Aug 2026)",
-      "url": null,
-      "lastVerified": null,
-      "verification": null
+      "tags": [
+        "real trading figures",
+        "17% margin",
+        "valuation anchor"
+      ],
+      "notes": "199 St John's Rd, Corstorphine High Street — decked front seating + rear conservatory. £150k turnover, £25k profit (17%), ~12 years left on lease with option to extend. Agent: DJK Group. The closest real-world validation of the model.",
+      "source": "Rightbiz / Daltons (Aug 2026)",
+      "url": "https://www.rightbiz.co.uk/buy_business/for_sale/615407_edinburgh.html",
+      "lastVerified": "2026-08-29",
+      "verification": {
+        "outcome": "live",
+        "note": "live on Rightbiz at £40,000; Daltons leg delisted",
+        "date": "2026-08-29"
+      }
     },
     {
       "id": "dower-house",
@@ -79,13 +111,117 @@
       "rent": null,
       "turnover": null,
       "profit": null,
-      "status": "active",
-      "tags": ["~100 m²", "11 + 30 covers", "4.7 TripAdvisor"],
-      "notes": "Established 3.5 years, 4.7 TripAdvisor rating, 11 indoor + 30 outdoor covers, shared building with a community trust. Further out but a useful going-concern template.",
+      "status": "gone",
+      "tags": [
+        "~100 m²",
+        "closed",
+        "cautionary tale"
+      ],
+      "notes": "The business closed permanently (final day 19 April 2026; socials marked permanently closed; customers directed to sister cafe The Rosebean). Listing withdrawn — the building belongs to the Corstorphine Trust. Kept as a cautionary comparable.",
       "source": "Daltons (Aug 2026)",
       "url": null,
-      "lastVerified": null,
-      "verification": null
+      "lastVerified": "2026-08-29",
+      "verification": {
+        "outcome": "gone",
+        "note": "cafe permanently closed April 2026; listing withdrawn",
+        "date": "2026-08-29"
+      }
+    },
+    {
+      "id": "mirth-zest",
+      "name": "Mirth + Zest Cafe/Gelateria",
+      "area": "Marchmont",
+      "price": 10000,
+      "tenure": "Leasehold (offers over)",
+      "rent": null,
+      "turnover": null,
+      "profit": null,
+      "status": "active",
+      "tags": [
+        "agent find",
+        "unlicensed",
+        "vacant & equipped"
+      ],
+      "notes": "Formerly Todd's Cafe. Re-offered at reduced price 11/8/2026, vacant and equipped, unlicensed. Offers over £10,000 — the cheapest entry point on the watchlist; cheap for reasons worth investigating.",
+      "source": "agent discovery (2026-08-29)",
+      "url": "https://therestaurantagency.com/properties/property/121/mirth-zest-cafe-gelateria-marchmont-edinburgh",
+      "lastVerified": "2026-08-29",
+      "verification": {
+        "outcome": "live",
+        "note": "verified live on the Restaurant Agency site 2026-08-29",
+        "date": "2026-08-29"
+      }
+    },
+    {
+      "id": "dessert-parlour-morningside",
+      "name": "Dessert & Ice Cream Parlour",
+      "area": "Morningside",
+      "price": 35000,
+      "tenure": "Leasehold",
+      "rent": null,
+      "turnover": null,
+      "profit": null,
+      "status": "active",
+      "tags": [
+        "agent find",
+        "ref 2012"
+      ],
+      "notes": "\"Very busy and profitable\" per agent Central Business Sales. Same price band as the Morningside cafe — two Morningside options to compare directly.",
+      "source": "agent discovery (2026-08-29)",
+      "url": "https://www.daltonsbusiness.com/listing/very-busy-and-profitable-dessert-and-ice-for-sale-DB2541715/",
+      "lastVerified": "2026-08-29",
+      "verification": {
+        "outcome": "live",
+        "note": "live on Daltons 2026-08-29; also on Rightbiz as advert 650399",
+        "date": "2026-08-29"
+      }
+    },
+    {
+      "id": "charming-dessert-bruntsfield",
+      "name": "Charming Dessert Shop",
+      "area": "Bruntsfield",
+      "price": 30000,
+      "tenure": "Leasehold",
+      "rent": null,
+      "turnover": null,
+      "profit": null,
+      "status": "active",
+      "tags": [
+        "agent find"
+      ],
+      "notes": "£30,000 leasehold on Rightbiz's live Edinburgh café pages — under the £35k–£40k cluster.",
+      "source": "agent discovery (2026-08-29)",
+      "url": "https://www.rightbiz.co.uk/buy_business/for_sale/640162_edinburgh.html",
+      "lastVerified": "2026-08-29",
+      "verification": {
+        "outcome": "live",
+        "note": "live on Rightbiz café category pages 2026-08-29",
+        "date": "2026-08-29"
+      }
+    },
+    {
+      "id": "tearoom-brasserie-marchmont",
+      "name": "Tearoom, Brasserie & Creperie",
+      "area": "Marchmont",
+      "price": 29500,
+      "tenure": "Leasehold",
+      "rent": null,
+      "turnover": null,
+      "profit": null,
+      "status": "active",
+      "tags": [
+        "agent find",
+        "christie & co"
+      ],
+      "notes": "Christie & Co ref 1834, surfaced via Businesses for Sale Scotland. Cross-listed on Rightbiz and PrimeLocation; £15,000/yr rent per the listing.",
+      "source": "agent discovery (2026-08-29)",
+      "url": "https://www.rightbiz.co.uk/buy_business/for_sale/655143_edinburgh.html",
+      "lastVerified": "2026-08-28",
+      "verification": {
+        "outcome": "live",
+        "note": "Still listed on Rightbiz at £29,500 guide price, £15,000/yr rent, matches snapshot details.",
+        "date": "2026-08-28"
+      }
     }
   ]
 }

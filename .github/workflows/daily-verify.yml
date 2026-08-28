@@ -1,9 +1,8 @@
 name: Daily verify — listings watch & discovery
 
-# Every morning: re-check every watchlist listing against the live web,
-# discover new Edinburgh going-concerns, and commit the updated
-# public/listings.json (which the app fetches at runtime — no rebuild
-# needed, but a push also refreshes the deployed bundle when code changed).
+# Every morning: re-check every watchlist listing against the live web and
+# discover new Edinburgh going-concerns via the Copilot CLI, then commit the
+# updated public/listings.json (which the app fetches at runtime).
 
 on:
   schedule:
@@ -16,7 +15,7 @@ permissions:
 jobs:
   verify:
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 25
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -27,13 +26,17 @@ jobs:
           node-version: 20
           cache: npm
 
-      - name: Install dependencies
-        run: npm ci
+      - name: Install dependencies + Copilot CLI
+        run: npm ci && npm install -g @github/copilot
 
-      - name: Run verify agent (all listings + discovery)
+      - name: Run verify agent (all listings; discovery on Mondays)
         env:
+          COPILOT_GITHUB_TOKEN: ${{ secrets.G_COPILOT }}
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
-        run: node scripts/verifica.mjs --all
+        run: |
+          FLAGS=""
+          [ "$(date +%u)" = "1" ] && FLAGS="--discover"
+          node scripts/verifica.mjs --all $FLAGS
 
       - name: Commit updated listings
         run: |

@@ -4,11 +4,11 @@ import ModelPanel from './components/ModelPanel.jsx'
 import ListingsPanel from './components/ListingsPanel.jsx'
 import CasePanel from './components/CasePanel.jsx'
 import StepsPanel from './components/StepsPanel.jsx'
-import { LISTINGS } from './data/listings.js'
+import { SEED_DATA } from './data/listings.js'
 
 const TABS = [
   ['model', 'Model'],
-  ['listings', 'Listings', LISTINGS.length],
+  ['listings', 'Listings', SEED_DATA.listings.length],
   ['case', 'Business case'],
   ['steps', 'Next steps'],
 ]
