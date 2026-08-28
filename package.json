@@ -1,0 +1,20 @@
+{
+  "name": "cafeplan",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "description": "CafePlan — interactive business case for an Edinburgh canal-side cafe (financial model, listings monitor, business case, next steps)",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-react": "^4.3.4",
+    "vite": "^5.4.11"
+  }
+}
