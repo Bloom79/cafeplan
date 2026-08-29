@@ -901,6 +901,74 @@ details.startup summary:hover { color: var(--chalk); }
   font-size: 13.5px;
 }
 
+/* ————— global map (Leaflet) ————— */
+
+.map-wrap { padding: 8px; }
+.the-map { height: clamp(420px, 62vh, 680px); border-radius: 8px; background: #101d1c; }
+
+.filter-chip .dot {
+  display: inline-block;
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  margin-right: 6px;
+  vertical-align: 1px;
+}
+
+.cp-pin { background: none; border: none; }
+.cp-dot {
+  display: block;
+  width: 16px; height: 16px;
+  border-radius: 50% 50% 50% 4px;
+  transform: rotate(-45deg);
+  background: var(--pin, #4ca97e);
+  border: 2px solid rgba(237, 231, 218, 0.9);
+  box-shadow: 0 1px 6px rgba(0, 0, 0, 0.55);
+  transition: transform 0.15s;
+}
+.cp-pin:hover .cp-dot { transform: rotate(-45deg) scale(1.2); }
+
+.leaflet-popup-content-wrapper,
+.leaflet-popup-tip {
+  background: var(--panel-2);
+  color: var(--chalk);
+  border: 1px solid var(--line);
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.5);
+}
+.leaflet-popup-content { margin: 12px 14px; font-family: var(--font-ui); }
+.leaflet-container a.leaflet-popup-close-button { color: var(--muted); }
+.leaflet-container a.leaflet-popup-close-button:hover { color: var(--chalk); }
+
+.leaflet-bar a {
+  background: var(--panel-2) !important;
+  color: var(--chalk) !important;
+  border-color: var(--line) !important;
+}
+
+.leaflet-control-attribution {
+  background: rgba(12, 35, 33, 0.75) !important;
+  color: var(--faint) !important;
+  font-size: 9.5px !important;
+}
+.leaflet-control-attribution a { color: var(--muted) !important; }
+
+.cp-pop { display: flex; flex-direction: column; gap: 4px; min-width: 170px; font-size: 13px; }
+.cp-pop strong { font-size: 13.5px; line-height: 1.3; }
+.cp-pop-meta { color: var(--muted); font-family: var(--font-mono); font-size: 11px; }
+.cp-pop-status {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  align-self: flex-start;
+  border-radius: 999px;
+  padding: 1px 8px;
+  border: 1px solid var(--line);
+}
+.cp-pop-status.live { color: var(--green); border-color: rgba(76, 169, 126, 0.5); }
+.cp-pop-status.under { color: var(--brass-bright); border-color: rgba(217, 164, 65, 0.5); }
+.cp-pop-status.gone { color: var(--clay); border-color: rgba(201, 111, 74, 0.5); }
+.cp-pop a { color: var(--brass-bright); font-size: 12.5px; }
+
 /* ————— listings verification ————— */
 
 .updated-line {

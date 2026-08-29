@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react'
 import Header from './components/Header.jsx'
 import ModelPanel from './components/ModelPanel.jsx'
 import ListingsPanel from './components/ListingsPanel.jsx'
+import MapPanel from './components/MapPanel.jsx'
 import CasePanel from './components/CasePanel.jsx'
 import StepsPanel from './components/StepsPanel.jsx'
 import { SEED_DATA } from './data/listings.js'
@@ -9,6 +10,7 @@ import { SEED_DATA } from './data/listings.js'
 const TABS = [
   ['model', 'Model'],
   ['listings', 'Listings', SEED_DATA.listings.length],
+  ['map', 'Map'],
   ['case', 'Business case'],
   ['steps', 'Next steps'],
 ]
@@ -42,6 +44,7 @@ export default function App() {
       <main className="page">
         {tab === 'model' && <ModelPanel />}
         {tab === 'listings' && <ListingsPanel />}
+        {tab === 'map' && <MapPanel />}
         {tab === 'case' && <CasePanel />}
         {tab === 'steps' && <StepsPanel />}
       </main>
