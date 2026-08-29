@@ -33,6 +33,7 @@ jobs:
         env:
           COPILOT_GITHUB_TOKEN: ${{ secrets.G_COPILOT }}
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          VERIFY_DEBUG: '1'
         run: |
           FLAGS=""
           [ "$(date +%u)" = "1" ] && FLAGS="--discover"
