@@ -147,7 +147,7 @@ Search angles that work: the business name + area + "for sale"; site:rightbiz.co
 Judgement rules: still listed / clearly for sale = live; listed but price or terms differ from our snapshot = changed; sold / under offer / withdrawn / business closed = gone; evidence insufficient = unclear. Prefer the freshest asking price you actually saw.
 
 Reply with ONLY this JSON object:
-{"outcome":"live|changed|gone|unclear","price":<current asking price as number, or null>,"url":<best canonical listing url you saw, or null>,"note":"<=160 chars English","sources":[<=3 urls you actually used]}`
+{"outcome":"live|changed|gone|unclear","price":<current asking price as number, or null>,"url":<best canonical listing url you saw, or null>,"image":<direct image url of a photo from the listing (og:image or similar), or null>,"lat":<latitude number if the listing reveals coordinates, else null>,"lng":<longitude number, else null>,"note":"<=160 chars English","sources":[<=3 urls you actually used]}`
   try {
     const res = extractJson(await judge(prompt), 'outcome')
     if (!['live', 'changed', 'gone', 'unclear'].includes(res.outcome)) res.outcome = 'unclear'
@@ -169,7 +169,7 @@ Useful angles: site:rightbiz.co.uk cafe Edinburgh; site:daltonsbusiness.com; "bu
 Already on our watchlist (do NOT repeat): ${known.map((l) => l.name).join('; ')}
 
 Reply with ONLY a JSON array (empty if nothing new), max 6 items:
-[{"id":"kebab-case-id","name":"","area":"","price":<number|null>,"tenure":"","rent":<number|null>,"turnover":<number|null>,"profit":<number|null>,"url":<string|null>,"notes":"<=140 chars English — why it matters for a canal-side café plan"}]`
+[{"id":"kebab-case-id","name":"","area":"","price":<number|null>,"tenure":"","rent":<number|null>,"turnover":<number|null>,"profit":<number|null>,"url":<string|null>,"image":<direct photo url from the listing, or null>,"notes":"<=140 chars English — why it matters for a canal-side café plan"}]`
   try {
     const arr = extractJson(await judge(prompt))
     return Array.isArray(arr) ? arr.slice(0, 6) : []
@@ -218,6 +218,11 @@ function mergeVerification(db, id, res) {
   // overwrite a previous good verification — keep the old badge instead.
   if (res.outcome === 'unclear' && /verdict unavailable|no model/i.test(res.note || '')) return l
   if (res.url && !l.url) l.url = res.url
+  if (res.image && /^https:\/\//.test(res.image) && !l.image) l.image = res.image
+  if (Number.isFinite(res.lat) && Number.isFinite(res.lng) && Math.abs(res.lat) < 58 && Math.abs(res.lng) < 5) {
+    l.lat = +res.lat
+    l.lng = +res.lng
+  }
   if (res.price != null && l.price != null && res.price !== l.price) {
     l.history = [...(l.history || []), { date: TODAY, price: l.price }]
     l.price = res.price
@@ -256,6 +261,7 @@ function mergeDiscovery(db, found) {
       notes: String(f.notes || '').slice(0, 240),
       source: `agent discovery (${TODAY})`,
       url: f.url || null,
+      image: /^https:\/\//.test(f.image || '') ? f.image : null,
       lastVerified: TODAY,
       verification: { outcome: 'live', note: 'found by discovery scan', date: TODAY },
     })

@@ -108,6 +108,11 @@ export default function ListingsPanel() {
     (l) => (area === 'All' || l.area === area) && (!favsOnly || favs.includes(l.id)),
   )
 
+  // Images from the portals sometimes rot or hotlink-block; drop broken
+  // ones silently instead of showing a torn-image icon.
+  const [brokenImgs, setBrokenImgs] = useState({})
+  const imgFailed = (id) => setBrokenImgs((b) => ({ ...b, [id]: true }))
+
   return (
     <>
       <div className="filters-row">
@@ -137,6 +142,16 @@ export default function ListingsPanel() {
             const act = actions[l.id]
             return (
               <article key={l.id} className={`listing ${favs.includes(l.id) ? 'fav' : ''}`}>
+                {l.image && !brokenImgs[l.id] ? (
+                  <a className="photo" href={l.url || l.image} target="_blank" rel="noreferrer" tabIndex={-1} aria-hidden="true">
+                    <img src={l.image} alt="" loading="lazy" onError={() => imgFailed(l.id)} />
+                  </a>
+                ) : (
+                  <div className="photo tile" aria-hidden="true">
+                    <span className="tile-name">{l.name}</span>
+                    <span className="tile-area">{l.area} · Edinburgh</span>
+                  </div>
+                )}
                 <div className="top">
                   <h3>{l.name}</h3>
                   <button
@@ -170,6 +185,23 @@ export default function ListingsPanel() {
                 <div className="tag-row">{l.tags.map((t) => <span className="tag" key={t}>{t}</span>)}</div>
                 <p className="notes">{l.notes}</p>
 
+                {l.lat != null && l.lng != null && (
+                  <a
+                    className="map-preview"
+                    href={`https://www.google.com/maps/search/?api=1&query=${l.lat},${l.lng}`}
+                    target="_blank"
+                    rel="noreferrer"
+                    title="Open in Google Maps"
+                  >
+                    <iframe
+                      src={`https://www.openstreetmap.org/export/embed.html?bbox=${l.lng - 0.005},${l.lat - 0.0025},${l.lng + 0.005},${l.lat + 0.0025}&layer=mapnik&marker=${l.lat},${l.lng}`}
+                      loading="lazy"
+                      tabIndex={-1}
+                      aria-hidden="true"
+                    />
+                  </a>
+                )}
+
                 <div className="card-actions">
                   <button className="action-btn" disabled={act?.busy} onClick={() => request('verifica', l)}>
                     {act?.busy && act?.kind === 'verifica' ? 'verifying…' : 'Verify now'}
@@ -177,6 +209,14 @@ export default function ListingsPanel() {
                   <button className="action-btn ghost" disabled={act?.busy} onClick={() => request('analizza', l)}>
                     {act?.busy && act?.kind === 'analizza' ? 'analysing…' : 'Analyse'}
                   </button>
+                  <a
+                    className="action-btn ghost gmaps"
+                    href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${l.name} ${l.area} Edinburgh`)}`}
+                    target="_blank"
+                    rel="noreferrer"
+                  >
+                    Google Maps ↗
+                  </a>
                 </div>
 
                 {act?.error && <p className="act-error">{act.error}</p>}

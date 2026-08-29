@@ -573,6 +573,67 @@ details.startup summary:hover { color: var(--chalk); }
 
 .listing-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 14px; }
 
+.listing .photo {
+  display: block;
+  margin: -16px -16px 12px;
+  border-radius: var(--radius) var(--radius) 0 0;
+  overflow: hidden;
+  height: 150px;
+  background: linear-gradient(120deg, rgba(76, 169, 126, 0.18), rgba(191, 138, 44, 0.14));
+}
+.listing .photo img { width: 100%; height: 100%; object-fit: cover; display: block; }
+
+.listing .photo.tile {
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  gap: 2px;
+  padding: 12px 14px;
+  background:
+    radial-gradient(120px 60px at 85% 15%, rgba(217, 164, 65, 0.35), transparent 70%),
+    linear-gradient(135deg, rgba(76, 169, 126, 0.2), rgba(12, 35, 33, 0.1) 60%),
+    var(--panel-2);
+}
+.listing .photo.tile .tile-name {
+  font-family: var(--font-display);
+  font-style: italic;
+  font-size: 15px;
+  line-height: 1.25;
+  color: var(--chalk);
+}
+.listing .photo.tile .tile-area {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.map-preview {
+  display: block;
+  height: 140px;
+  border-radius: 8px;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  position: relative;
+}
+.map-preview iframe { width: 100%; height: 100%; border: 0; pointer-events: none; }
+.map-preview::after {
+  content: 'open in Google Maps ↗';
+  position: absolute;
+  right: 8px;
+  bottom: 8px;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--chalk);
+  background: rgba(12, 35, 33, 0.85);
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 3px 9px;
+}
+
+.card-actions { flex-wrap: wrap; }
+
 .listing {
   background: var(--panel);
   border: 1px solid var(--line);
