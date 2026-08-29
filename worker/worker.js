@@ -8,8 +8,15 @@
 //  4. GET  /report     the finished report (last comment on the closed issue)
 //
 // Secret: GITHUB_TOKEN — fine-grained PAT, Issues read/write on Bloom79/cafeplan.
-// The Action (verify.yml) is owner-gated, so strangers filing issues can only
-// burn their own time, not Actions minutes.
+//
+// Abuse control. The Action's author gate does NOT protect this endpoint:
+// the worker files issues with the owner's PAT, so anything that reaches
+// here passes the gate and spends Actions minutes and Copilot credits. A
+// static site cannot hold a real secret, so instead:
+//   1. POSTs must come from a known Origin (stops the browser-side case),
+//   2. a hard ceiling on requests per hour, counted from the repo itself
+//      (stops the curl case — it bounds the spend no matter who calls).
+// Anything above the ceiling gets 429 until the hour rolls off.
 
 const REPO = 'Bloom79/cafeplan'
 
@@ -18,6 +25,10 @@ const ALLOWED_ORIGINS = [
   'http://localhost:5173', // vite dev
   'http://localhost:4173', // vite preview
 ]
+
+// Ceiling on agent runs per hour. A real session clicks Verify a handful of
+// times; a run costs Actions minutes and (on a premium model) credits.
+const MAX_PER_HOUR = 12
 
 const json = (data, status, cors) =>
   new Response(JSON.stringify(data), {
@@ -110,10 +121,27 @@ export default {
 
     // ————— POST routes —————
 
+    if (!ALLOWED_ORIGINS.includes(origin))
+      return json({ error: 'origin not allowed' }, 403, cors)
+
+    // Requests filed in the last hour, whoever asked for them. `since`
+    // filters on last-updated, so this over-counts rather than under —
+    // the safe direction for a spend ceiling.
+    const underCeiling = async () => {
+      const since = new Date(Date.now() - 3600e3).toISOString()
+      const r = await gh(`/repos/${REPO}/issues?state=all&since=${since}&per_page=100`)
+      if (!r.ok) return true // GitHub unreachable: don't punish the user
+      const recent = (await r.json()).filter((it) =>
+        /^(Verifica|Analizza):/.test(it.title || ''))
+      return recent.length < MAX_PER_HOUR
+    }
+
     const fileIssue = async (kind, body) => {
       const { id, name, url } = body
       if (!/^[a-z0-9-]{2,60}$/.test(String(id || '')))
         return json({ error: 'invalid id' }, 400, cors)
+      if (!(await underCeiling()))
+        return json({ error: `hourly limit reached (${MAX_PER_HOUR}) — try again later` }, 429, cors)
       const label = kind === 'verifica' ? 'verifica' : 'analizza'
       const title = `${kind === 'verifica' ? 'Verifica' : 'Analizza'}: ${clean(name) || id}`
 

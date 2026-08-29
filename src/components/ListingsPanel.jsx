@@ -1,8 +1,9 @@
 import React, { useEffect, useRef, useState } from 'react'
-import { SEED_DATA } from '../data/listings.js'
 import { gbp } from '../data/model.js'
-import { WORKER_URL, DATA_URL } from '../config.js'
+import { gmapsHref, isWalled, listingHref, listingLabel, searchHref } from '../lib/links.js'
+import { WORKER_URL } from '../config.js'
 import { useLocalStorage } from '../hooks/useLocalStorage.js'
+import { useListings } from '../hooks/useListings.js'
 import Markdown from './Markdown.jsx'
 
 const OUTCOME_LABEL = {
@@ -10,6 +11,28 @@ const OUTCOME_LABEL = {
   changed: { text: '⚠ changed', cls: 'changed' },
   gone: { text: '✕ no longer available', cls: 'gone' },
   unclear: { text: '? unverified', cls: 'unclear' },
+}
+
+// Card thumbnails are a static 2×2 OpenStreetMap tile mosaic, not an
+// <iframe> of the OSM embed app: four ~20 kB PNGs instead of a whole second
+// web app per card, and no third-party attribution bar sprawling across a
+// 140px thumbnail. The block is chosen so the listing is never near an edge,
+// which lets the CSS centre it without exposing empty space.
+const TILE_Z = 15
+
+const mosaic = (lat, lng) => {
+  const n = 2 ** TILE_Z
+  const X = ((lng + 180) / 360) * n
+  const rad = (lat * Math.PI) / 180
+  const Y = ((1 - Math.log(Math.tan(rad) + 1 / Math.cos(rad)) / Math.PI) / 2) * n
+  const x0 = Math.floor(X) - (X - Math.floor(X) < 0.5 ? 1 : 0)
+  const y0 = Math.floor(Y) - (Y - Math.floor(Y) < 0.5 ? 1 : 0)
+  const wrap = (v) => ((v % n) + n) % n
+  const urls = []
+  for (let dy = 0; dy < 2; dy++)
+    for (let dx = 0; dx < 2; dx++)
+      urls.push(`https://tile.openstreetmap.org/${TILE_Z}/${wrap(x0 + dx)}/${wrap(y0 + dy)}.png`)
+  return { urls, px: (X - x0) / 2, py: (Y - y0) / 2 }
 }
 
 const ago = (date) => {
@@ -22,7 +45,7 @@ const ago = (date) => {
 }
 
 export default function ListingsPanel() {
-  const [data, setData] = useState(SEED_DATA)
+  const [data, refetch] = useListings()
   const [area, setArea] = useLocalStorage('cafeplan:area', 'All')
   const [favsOnly, setFavsOnly] = useLocalStorage('cafeplan:favsOnly', false)
   const [favs, setFavs] = useLocalStorage('cafeplan:favs', [])
@@ -31,21 +54,14 @@ export default function ListingsPanel() {
   const pollTimers = useRef({})
   const mounted = useRef(true)
 
-  const refetch = React.useCallback(async () => {
-    try {
-      const res = await fetch(`${DATA_URL}?t=${Date.now()}`, { cache: 'no-store' })
-      if (res.ok) setData(await res.json())
-    } catch { /* keep current data */ }
-  }, [])
-
   useEffect(() => {
     mounted.current = true
-    refetch()
+    const timers = pollTimers.current
     return () => {
       mounted.current = false
-      Object.values(pollTimers.current).forEach(clearTimeout)
+      Object.values(timers).forEach(clearTimeout)
     }
-  }, [refetch])
+  }, [])
 
   const setAction = (id, patch) =>
     setActions((a) => ({ ...a, [id]: { ...a[id], ...patch } }))
@@ -184,34 +200,41 @@ export default function ListingsPanel() {
                 <div className="tag-row">{l.tags.map((t) => <span className="tag" key={t}>{t}</span>)}</div>
                 <p className="notes">{l.notes}</p>
 
-                {l.lat != null && l.lng != null && (
-                  <a
-                    className="map-preview"
-                    href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${l.name} ${l.area} Edinburgh`)}`}
-                    target="_blank"
-                    rel="noreferrer"
-                    title="Open in Google Maps"
-                  >
-                    <iframe
-                      src={`https://www.openstreetmap.org/export/embed.html?bbox=${l.lng - 0.005},${l.lat - 0.0025},${l.lng + 0.005},${l.lat + 0.0025}&layer=mapnik&marker=${l.lat},${l.lng}`}
-                      loading="lazy"
-                      tabIndex={-1}
-                      aria-hidden="true"
-                    />
-                  </a>
-                )}
-
-                <div className="card-actions">
-                  {l.url && (
+                {l.lat != null && l.lng != null && (() => {
+                  const m = mosaic(l.lat, l.lng)
+                  return (
                     <a
-                      className="action-btn view"
-                      href={/rightbiz\.co\.uk/.test(l.url)
-                        ? `https://www.google.com/search?q=${encodeURIComponent(`site:rightbiz.co.uk ${l.name}`)}`
-                        : l.url}
+                      className="map-preview"
+                      href={gmapsHref(l)}
                       target="_blank"
                       rel="noreferrer"
+                      title="Open in Google Maps"
+                      aria-label={`${l.name} on the map — opens Google Maps`}
                     >
-                      {/rightbiz\.co\.uk/.test(l.url) ? 'Find on Rightbiz ↗' : 'Open the listing ↗'}
+                      <span className="mosaic" style={{ '--px': m.px, '--py': m.py }}>
+                        {m.urls.map((u) => (
+                          <img key={u} src={u} alt="" width="256" height="256" loading="lazy" />
+                        ))}
+                        <span className="mpin" />
+                      </span>
+                      <span className="osm-credit">© OpenStreetMap</span>
+                    </a>
+                  )
+                })()}
+
+                <div className="card-actions">
+                  <a className="action-btn view" href={listingHref(l)} target="_blank" rel="noreferrer">
+                    {listingLabel(l)}
+                  </a>
+                  {l.url && isWalled(l) && (
+                    <a
+                      className="action-btn ghost"
+                      href={searchHref(l)}
+                      target="_blank"
+                      rel="noreferrer"
+                      title="Rightbiz may ask you to prove you are human — this route goes via search instead"
+                    >
+                      via search ↗
                     </a>
                   )}
                   <button className="action-btn" disabled={act?.busy} onClick={() => request('verifica', l)}>

@@ -61,8 +61,17 @@ for sharper judgements at ~21 credits a request. Optional
    npx wrangler deploy                     # → https://cafeplan-verify.<subdomain>.workers.dev
    ```
    If the deployed name differs, update `WORKER_URL` in `src/config.js`.
+   Redeploy after any change to `worker/worker.js` — it is not built by the
+   Pages workflow.
 3. **PAT** — create at github.com/settings/tokens (fine-grained, only this
    repo, Issues: read/write). That same token goes to the wrangler secret.
+
+The worker files issues **with the owner's PAT**, so anything that reaches it
+passes `verify.yml`'s author gate and spends Actions minutes and Copilot
+credits. A static site can hold no real secret, so the endpoint is protected
+by an `Origin` allow-list (browser case) plus a hard ceiling of
+`MAX_PER_HOUR` agent runs an hour, counted from the repo's own recent issues
+(everything else). Over the ceiling the app shows "hourly limit reached".
 
 Without the worker the app still works fully — the buttons explain setup is
 pending, and the daily Action keeps the data fresh regardless.
@@ -83,7 +92,9 @@ assumption and the case re-answers itself.
 
 ## Tech
 
-- [React 18](https://react.dev) + [Vite 5](https://vite.dev)
+- [React 18](https://react.dev) + [Vite 5](https://vite.dev); the Map tab
+  (Leaflet) is lazy-loaded, so it stays out of the first paint
+- ESLint flat config — `npm run lint`, also gating the deploy
 - Worker: plain Cloudflare Worker (`worker/`), no KV
 - Fonts: Fraunces (display) · Instrument Sans (UI) · Spline Sans Mono (figures)
 - Stream colours validated for CVD separation and dark-surface contrast

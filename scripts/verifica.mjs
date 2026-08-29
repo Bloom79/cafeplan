@@ -107,7 +107,6 @@ const extractJson = (text, expectedKey) => {
   const parsed = []
   const fenced = [...text.matchAll(/```(?:json)?\s*([\s\S]*?)```/g)].map((m) => m[1])
   const lines = text.split('\n')
-  const candidates = [...fenced]
   for (let i = 0; i < lines.length; i++) {
     const t = lines[i].trim()
     if (!t.startsWith('{') && !t.startsWith('[')) continue
@@ -217,13 +216,35 @@ Cite the URLs you relied on inline. Direct, no padding, max ~400 words.`
 
 const slug = (s) => String(s).toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 50)
 
+// Tags that duplicate (and outlive) the status badge.
+const STATUS_TAG = /^(under offer|for sale|sold|withdrawn|gone|on the market)$/i
+
+// A link is only worth storing if it points at a specific listing page:
+// https, a real path, and not a search engine's results page — the model
+// sometimes hands back the query it ran instead of the page it found, and
+// the app then sends you somewhere plausible but wrong.
+const okUrl = (u) => {
+  try {
+    const { protocol, hostname, pathname } = new URL(String(u))
+    return protocol === 'https:'
+      && !/(^|\.)(google|bing|duckduckgo|yandex|search)\./.test(hostname)
+      && pathname.length > 1
+  } catch {
+    return false
+  }
+}
+
 function mergeVerification(db, id, res) {
   const l = db.listings.find((x) => x.id === id)
   if (!l) return null
   // A failed verdict (no model available, transient auth) must never
   // overwrite a previous good verification — keep the old badge instead.
   if (res.outcome === 'unclear' && /verdict unavailable|no model/i.test(res.note || '')) return l
-  if (res.url && !l.url) l.url = res.url
+  // Take the canonical URL the verifier actually landed on, even over one we
+  // already had: a stored link that points at the wrong page is exactly what
+  // a re-verify should repair. Only a confirmed sighting may overwrite.
+  if (okUrl(res.url) && (!l.url || res.outcome === 'live' || res.outcome === 'changed'))
+    l.url = res.url
   if (res.image && /^https:\/\//.test(res.image) && !l.image) l.image = res.image
   if (Number.isFinite(res.lat) && Number.isFinite(res.lng) && Math.abs(res.lat) < 58 && Math.abs(res.lng) < 5) {
     l.lat = +res.lat
@@ -238,6 +259,10 @@ function mergeVerification(db, id, res) {
   }
   if (res.outcome === 'gone') l.status = 'gone'
   if (res.outcome === 'live' && l.status === 'gone') l.status = 'active'
+  // Tags are editorial, but a few of them assert a market state the badge
+  // already shows — and go stale the moment the verdict moves ("under offer"
+  // sitting on a listing we have just marked gone). Drop those.
+  if (Array.isArray(l.tags)) l.tags = l.tags.filter((t) => !STATUS_TAG.test(String(t).trim()))
   l.lastVerified = TODAY
   l.verification = { outcome: res.outcome, note: res.note || '', date: TODAY }
   return l
@@ -266,7 +291,7 @@ function mergeDiscovery(db, found) {
       tags: ['agent find'],
       notes: String(f.notes || '').slice(0, 240),
       source: `agent discovery (${TODAY})`,
-      url: f.url || null,
+      url: okUrl(f.url) ? f.url : null,
       image: /^https:\/\//.test(f.image || '') ? f.image : null,
       lat: Number.isFinite(+f.lat) ? +f.lat : null,
       lng: Number.isFinite(+f.lng) ? +f.lng : null,
@@ -364,7 +389,7 @@ async function main() {
       `- Nota: ${res.note || '—'}`,
       res.sources?.length ? `- Fonti: ${res.sources.join(' · ')}` : '- Fonti: —',
       '',
-      '_Dati aggiornati in \`public/listings.json\` — visibili nell\'app al prossimo deploy._',
+      '_Dati aggiornati in `public/listings.json` — visibili nell\'app al prossimo deploy._',
     ].join('\n')
     await commentAndClose(process.env.ISSUE_NUMBER, lines, process.env.GITHUB_TOKEN)
     out('status', 'ok'); out('summary', `${l.name}: ${res.outcome}`)

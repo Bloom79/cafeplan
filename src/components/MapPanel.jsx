@@ -2,22 +2,12 @@ import React, { useEffect, useMemo, useState } from 'react'
 import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet'
 import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
-import { SEED_DATA } from '../data/listings.js'
 import { gbp } from '../data/model.js'
-import { DATA_URL } from '../config.js'
+import { gmapsHref, isWalled, listingHref, listingLabel, searchHref } from '../lib/links.js'
 import { useLocalStorage } from '../hooks/useLocalStorage.js'
+import { useListings } from '../hooks/useListings.js'
 
 const EDINBURGH = [55.9435, -3.2015]
-
-// Rightbiz challenges direct deep links and bounces to its homepage; going
-// through a Google search of the exact listing lands on the right page.
-// Other portals deep-link fine.
-const listingHref = (l) =>
-  /rightbiz\.co\.uk/.test(l.url || '')
-    ? `https://www.google.com/search?q=${encodeURIComponent(`site:rightbiz.co.uk ${l.name}`)}`
-    : l.url
-const listingLabel = (l) =>
-  /rightbiz\.co\.uk/.test(l.url || '') ? 'Find on Rightbiz ↗' : 'Open the listing ↗'
 
 const STATUS_COLOR = {
   live: '#4ca97e',      // stream-green: for sale
@@ -64,20 +54,13 @@ const bandOf = (l) => {
 }
 
 export default function MapPanel() {
-  const [data, setData] = useState(SEED_DATA)
+  const [data] = useListings()
   const [band, setBand] = useState('all')
   const [statuses, setStatuses] = useLocalStorage('cafeplan:mapStatus', {
     live: true, under: true, gone: false,
   })
-  const [favs, setFavs] = useLocalStorage('cafeplan:favs', [])
+  const [favs] = useLocalStorage('cafeplan:favs', [])
   const [favsOnly, setFavsOnly] = useState(false)
-
-  useEffect(() => {
-    fetch(`${DATA_URL}?t=${Date.now()}`, { cache: 'no-store' })
-      .then((r) => (r.ok ? r.json() : null))
-      .then((d) => d && setData(d))
-      .catch(() => {})
-  }, [])
 
   const shown = useMemo(
     () =>
@@ -178,12 +161,12 @@ export default function MapPanel() {
                     <a className="cp-btn primary" href={listingHref(l)} target="_blank" rel="noreferrer">
                       {listingLabel(l)}
                     </a>
-                    <a
-                      className="cp-btn"
-                      href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${l.name} ${l.area} Edinburgh`)}`}
-                      target="_blank"
-                      rel="noreferrer"
-                    >
+                    {l.url && isWalled(l) && (
+                      <a className="cp-btn" href={searchHref(l)} target="_blank" rel="noreferrer">
+                        via search ↗
+                      </a>
+                    )}
+                    <a className="cp-btn" href={gmapsHref(l)} target="_blank" rel="noreferrer">
                       Google Maps ↗
                     </a>
                   </div>

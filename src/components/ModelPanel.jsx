@@ -1,6 +1,6 @@
 import React, { useMemo, useState } from 'react'
 import {
-  DEFAULTS, GROUPS, SCENARIOS, STARTUP, STARTUP_TOTALS, compute, gbp, gbp2, pct,
+  DEFAULTS, GROUPS, SCENARIOS, STARTUP, STARTUP_TOTALS, compute, gbp, pct,
 } from '../data/model.js'
 import { useLocalStorage } from '../hooks/useLocalStorage.js'
 import DayRibbon from './DayRibbon.jsx'
@@ -13,29 +13,35 @@ export default function ModelPanel() {
   const [a, setA] = useLocalStorage('cafeplan:model', DEFAULTS)
   const [scenario, setScenario] = useLocalStorage('cafeplan:scenario', 'conservative')
   const [showStartup, setShowStartup] = useState(false)
+  // While a field is being retyped it may be empty or half-written ("8." ,
+  // ""); keep that text here so the box doesn't snap back to 0 mid-edit.
+  const [draft, setDraft] = useState(null)
 
   const r = useMemo(() => compute(a), [a])
-  const dirty = useMemo(
-    () => Object.keys(DEFAULTS).some((k) => a[k] !== DEFAULTS[k]),
-    [a],
-  )
 
   const applyScenario = (key) => {
+    setDraft(null)
     setScenario(key)
-    setA({ ...a, ...SCENARIOS[key] })
+    setA({ ...a, ...SCENARIOS[key].values })
   }
 
   const set = (k, vRaw) => {
     const v = parseFloat(vRaw)
+    const ok = Number.isFinite(v) && v >= 0
+    setDraft(ok && String(v) === vRaw.trim() ? null : { k, text: vRaw })
     setScenario('custom')
-    setA({ ...a, [k]: Number.isFinite(v) && v >= 0 ? v : 0 })
+    setA({ ...a, [k]: ok ? v : 0 })
   }
 
   // scenario comparison — presets over the current structure
-  const scenarioResults = Object.entries(SCENARIOS).map(([key, s]) => {
-    const res = compute({ ...a, ...s })
-    return { key, label: s.label, profit: res.profit, margin: res.margin }
-  })
+  const scenarioResults = useMemo(
+    () =>
+      Object.entries(SCENARIOS).map(([key, s]) => {
+        const res = compute({ ...a, ...s.values })
+        return { key, label: s.label, profit: res.profit, margin: res.margin }
+      }),
+    [a],
+  )
   const maxProfit = Math.max(...scenarioResults.map((s) => Math.max(s.profit, 1)))
 
   const costRows = [
@@ -46,7 +52,7 @@ export default function ModelPanel() {
     ...(a.rates > 0 ? [['Business rates', a.rates]] : []),
     ['Overheads', a.overheads],
   ]
-  const maxCost = Math.max(...costRows.map(([, v]) => v))
+  const maxCost = Math.max(...costRows.map(([, v]) => v), 1)
 
   const streams = [
     ['Daytime café', r.dayRev, 'var(--brass)'],
@@ -72,7 +78,7 @@ export default function ModelPanel() {
           </button>
         ))}
         {scenario === 'custom' && <span className="dirty-note">custom edits</span>}
-        <button className="reset-btn" onClick={() => { setA(DEFAULTS); setScenario('conservative') }}>
+        <button className="reset-btn" onClick={() => { setDraft(null); setA(DEFAULTS); setScenario('conservative') }}>
           Reset to plan
         </button>
       </div>
@@ -97,8 +103,9 @@ export default function ModelPanel() {
                     inputMode="decimal"
                     step={stepFor[kind]}
                     min={0}
-                    value={a[k]}
+                    value={draft && draft.k === k ? draft.text : a[k]}
                     onChange={(e) => set(k, e.target.value)}
+                    onBlur={() => setDraft(null)}
                   />
                 </div>
               ))}
@@ -127,7 +134,7 @@ export default function ModelPanel() {
             </div>
             <div className="stat">
               <div className="k">Breakeven</div>
-              <div className="v">{r.coversBE.toFixed(1)}</div>
+              <div className="v">{Number.isFinite(r.coversBE) ? r.coversBE.toFixed(1) : '—'}</div>
               <div className="s">daytime covers/day, evening netted</div>
             </div>
             <div className="stat">
@@ -203,7 +210,7 @@ export default function ModelPanel() {
           </div>
 
           <p className="footnote">
-            Breakeven standalone (no evening trade): <b className="mono">{r.coversBEStandalone.toFixed(1)}</b> daytime
+            Breakeven standalone (no evening trade): <b className="mono">{Number.isFinite(r.coversBEStandalone) ? r.coversBEStandalone.toFixed(1) : '—'}</b> daytime
             covers/day. The gap between the two breakeven figures is the case for the evening offer in one number.
             Owner profit and owner wage are the same pot in this model — read the margin as pay for your
             full-time presence plus risk, not income on top of a salary.

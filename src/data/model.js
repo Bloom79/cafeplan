@@ -21,30 +21,23 @@ export const pct = (x) => `${(x * 100).toFixed(1)}%`
 
 // Scenario presets vary only what the case study evidence supports varying:
 // daytime volume/spend and evening uptake. Structure stays identical.
+// `values` is kept separate from the labels so applying a preset writes
+// only real assumptions into the saved model.
 export const SCENARIOS = {
   conservative: {
     label: 'Conservative',
     note: 'Plan base — residential-only footfall, cautious evening uptake',
-    coversDay: 40,
-    spendDay: 8.5,
-    apCovers: 15,
-    wineCovers: 18,
+    values: { coversDay: 40, spendDay: 8.5, apCovers: 15, wineCovers: 18 },
   },
   mid: {
     label: 'Mid',
     note: 'Established trade after year one',
-    coversDay: 65,
-    spendDay: 8.5,
-    apCovers: 20,
-    wineCovers: 20,
+    values: { coversDay: 65, spendDay: 8.5, apCovers: 20, wineCovers: 20 },
   },
   optimistic: {
     label: 'Optimistic',
     note: 'Strong canal-side draw, full sessions',
-    coversDay: 90,
-    spendDay: 10.5,
-    apCovers: 25,
-    wineCovers: 24,
+    values: { coversDay: 90, spendDay: 10.5, apCovers: 25, wineCovers: 24 },
   },
 }
 
@@ -135,8 +128,11 @@ export function compute(a) {
     + r.wineFoodRev * (1 - a.wineCogsPct / 100)
     + r.wineFeeRev
     - a.apStaff
-  r.coversBE = Math.max(0, (fixed - eveningNet) / (perCover * a.tradingDays))
-  r.coversBEStandalone = fixed / (perCover * a.tradingDays)
+  // No contribution per cover (spend or trading days zeroed out) means no
+  // number of covers ever breaks even — say so rather than print Infinity.
+  const coverBase = perCover * a.tradingDays
+  r.coversBE = coverBase > 0 ? Math.max(0, (fixed - eveningNet) / coverBase) : Infinity
+  r.coversBEStandalone = coverBase > 0 ? fixed / coverBase : Infinity
 
   // Payback on the acquisition
   r.paybackYears = r.profit > 0 ? a.startupTotal / r.profit : Infinity

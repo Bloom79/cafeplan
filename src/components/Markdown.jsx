@@ -9,7 +9,7 @@ export default function Markdown({ text }) {
   const out = []
   let list = null
 
-  const inline = (s, key) => {
+  const inline = (s) => {
     const parts = []
     let rest = s
     let n = 0

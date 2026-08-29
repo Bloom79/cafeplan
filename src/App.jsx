@@ -1,15 +1,18 @@
-import React, { useEffect, useState } from 'react'
+import React, { Suspense, lazy, useEffect, useState } from 'react'
 import Header from './components/Header.jsx'
 import ModelPanel from './components/ModelPanel.jsx'
 import ListingsPanel from './components/ListingsPanel.jsx'
-import MapPanel from './components/MapPanel.jsx'
 import CasePanel from './components/CasePanel.jsx'
 import StepsPanel from './components/StepsPanel.jsx'
-import { SEED_DATA } from './data/listings.js'
+import { useListings } from './hooks/useListings.js'
+
+// Leaflet is a third of the bundle and only the Map tab needs it — load it
+// when that tab is opened, not on the first paint of the Model tab.
+const MapPanel = lazy(() => import('./components/MapPanel.jsx'))
 
 const TABS = [
   ['model', 'Model'],
-  ['listings', 'Listings', SEED_DATA.listings.length],
+  ['listings', 'Listings'],
   ['map', 'Map'],
   ['case', 'Business case'],
   ['steps', 'Next steps'],
@@ -17,11 +20,14 @@ const TABS = [
 
 const VALID = new Set(TABS.map(([id]) => id))
 
+const readHash = () => {
+  const h = window.location.hash.replace(/^#case-\d$/, '#case').slice(1)
+  return VALID.has(h) ? h : null
+}
+
 export default function App() {
-  const [tab, setTabState] = useState(() => {
-    const h = window.location.hash.replace(/^#case-\d$/, '#case')
-    return VALID.has(h.slice(1)) ? h.slice(1) : 'model'
-  })
+  const [tab, setTabState] = useState(() => readHash() || 'model')
+  const [data] = useListings()
 
   const setTab = (t) => {
     window.history.replaceState(null, '', `#${t}`)
@@ -31,20 +37,28 @@ export default function App() {
 
   useEffect(() => {
     const onHash = () => {
-      const h = window.location.hash.replace(/^#case-\d$/, '#case')
-      if (VALID.has(h.slice(1))) setTabState(h.slice(1))
+      const h = readHash()
+      if (h) setTabState(h)
     }
     window.addEventListener('hashchange', onHash)
     return () => window.removeEventListener('hashchange', onHash)
   }, [])
 
+  const tabs = TABS.map(([id, label]) =>
+    id === 'listings' ? [id, label, data.listings.length] : [id, label],
+  )
+
   return (
     <>
-      <Header tab={tab} setTab={setTab} tabs={TABS} />
-      <main className="page">
+      <Header tab={tab} setTab={setTab} tabs={tabs} />
+      <main className="page" id={`panel-${tab}`} role="tabpanel" aria-labelledby={`tab-${tab}`}>
         {tab === 'model' && <ModelPanel />}
         {tab === 'listings' && <ListingsPanel />}
-        {tab === 'map' && <MapPanel />}
+        {tab === 'map' && (
+          <Suspense fallback={<div className="empty panel">loading the map…</div>}>
+            <MapPanel />
+          </Suspense>
+        )}
         {tab === 'case' && <CasePanel />}
         {tab === 'steps' && <StepsPanel />}
       </main>
