@@ -149,6 +149,14 @@ export default function MapPanel() {
               <Marker key={l.id} position={[l.lat, l.lng]} icon={pinIcon(STATUS_COLOR[st])}>
                 <Popup>
                   <div className="cp-pop">
+                    {l.image && (
+                      <img
+                        className="cp-pop-img"
+                        src={l.image}
+                        alt=""
+                        onError={(e) => { e.currentTarget.style.display = 'none' }}
+                      />
+                    )}
                     <strong>{l.name}</strong>
                     <span className="cp-pop-meta">
                       {l.area} · {l.price != null ? gbp(l.price) : 'POA'}
@@ -157,8 +165,11 @@ export default function MapPanel() {
                     <span className={`cp-pop-status ${st}`}>
                       {st === 'live' ? 'for sale' : st === 'under' ? 'under offer' : 'gone / withdrawn'}
                     </span>
-                    <a href={l.url} target="_blank" rel="noreferrer">Open the listing ↗</a>
+                    <a className="cp-btn primary" href={l.url} target="_blank" rel="noreferrer">
+                      Open the listing ↗
+                    </a>
                     <a
+                      className="cp-btn"
                       href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${l.name} ${l.area} Edinburgh`)}`}
                       target="_blank"
                       rel="noreferrer"
