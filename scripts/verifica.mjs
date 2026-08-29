@@ -165,11 +165,12 @@ async function discoverListings(known) {
   const prompt = `Today is ${TODAY}. Search the LIVE web WIDELY for café / coffee-shop / dessert / small-restaurant / deli / bistro businesses-for-sale that are CURRENTLY listed in Edinburgh (going concerns, not franchises, not outside Edinburgh), especially in or near: ${TARGET_AREAS}.
 
 Cover as many of these sources as you can:
-- Portals: rightbiz.co.uk · daltonsbusiness.com · uk.businessesforsale.com · dynamicbusinesses.co.uk · businessesforsale.scot · primelocation.com (commercial) · gumtree.com (Edinburgh, business section) · facebook.com Marketplace (Edinburgh business for sale)
-- Business-transfer agents active in Scotland: Christie & Co (christieandco.com) · The Restaurant Agency (therestaurantagency.com) · Central Business Sales · DJK Group · Cornerstone Business Agents · McKay Commercial
+- Portals: rightbiz.co.uk · daltonsbusiness.com · uk.businessesforsale.com · dynamicbusinesses.co.uk · businessesforsale.scot · primelocation.com · gumtree.com (Edinburgh, business section) · facebook.com Marketplace (Edinburgh business for sale) · business-asset.com (anti-bot — use search snippets: /gb/scotland/edinburgh/businesses-for-sale/cafe/) · zoopla.co.uk/commercial hospitality Edinburgh (dozens of listings in our band — note it cross-posts agent stock: dedupe) · scottishbusinessagency.co.uk (listings at scottishbusinessagency.search-prop.com/properties — £10k–£60k band, Scotland-wide)
+- Business-transfer agents: Christie & Co (christieandco.com) · The Restaurant Agency (therestaurantagency.com) · Central Business Sales · DJK Group · Cornerstone Business Agents · McKay Commercial · Graham & Sibbald (g-s.co.uk — premises-heavy, >£75k common, but has Edinburgh restaurants)
+- Auctions: futurepropertyauctions.co.uk — check the current catalogues for cheap leasehold hospitality lots (they appear)
+- News: Edinburgh Evening News · The Scotsman · Edinburgh Live (runs sub-£50k café-for-sale roundups)
 - Searches: "business for sale" + each of: Bruntsfield, Morningside, Marchmont, Stockbridge, Leith, Haymarket, Corstorphine, "Union Canal", "canal side"
-- News: Edinburgh Evening News / The Scotsman often cover café sales before portals update
-Rightbiz blocks direct fetches — snippets and indexed pages are fine evidence.
+Anti-bot walls are common (rightbiz, business-asset) — snippets and indexed pages are fine evidence.
 
 Already on our watchlist (do NOT repeat): ${known.map((l) => l.name).join('; ')}
 
