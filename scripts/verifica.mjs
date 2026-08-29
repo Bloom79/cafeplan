@@ -214,6 +214,9 @@ const slug = (s) => String(s).toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(
 function mergeVerification(db, id, res) {
   const l = db.listings.find((x) => x.id === id)
   if (!l) return null
+  // A failed verdict (no model available, transient auth) must never
+  // overwrite a previous good verification — keep the old badge instead.
+  if (res.outcome === 'unclear' && /verdict unavailable|no model/i.test(res.note || '')) return l
   if (res.url && !l.url) l.url = res.url
   if (res.price != null && l.price != null && res.price !== l.price) {
     l.history = [...(l.history || []), { date: TODAY, price: l.price }]
