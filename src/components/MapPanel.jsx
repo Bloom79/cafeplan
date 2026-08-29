@@ -159,7 +159,7 @@ export default function MapPanel() {
                     </span>
                     <a href={l.url} target="_blank" rel="noreferrer">Open the listing ↗</a>
                     <a
-                      href={`https://www.google.com/maps/search/?api=1&query=${l.lat},${l.lng}`}
+                      href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${l.name} ${l.area} Edinburgh`)}`}
                       target="_blank"
                       rel="noreferrer"
                     >

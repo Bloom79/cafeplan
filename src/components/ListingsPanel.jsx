@@ -187,7 +187,7 @@ export default function ListingsPanel() {
                 {l.lat != null && l.lng != null && (
                   <a
                     className="map-preview"
-                    href={`https://www.google.com/maps/search/?api=1&query=${l.lat},${l.lng}`}
+                    href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${l.name} ${l.area} Edinburgh`)}`}
                     target="_blank"
                     rel="noreferrer"
                     title="Open in Google Maps"
