@@ -8,6 +8,11 @@ on:
   schedule:
     - cron: '17 6 * * *'
   workflow_dispatch:
+    inputs:
+      discover:
+        description: 'Also search for new listings (beyond the Monday default)'
+        type: boolean
+        default: false
 
 permissions:
   contents: write
@@ -29,7 +34,7 @@ jobs:
       - name: Install dependencies + Copilot CLI
         run: npm ci && npm install -g @github/copilot
 
-      - name: Run verify agent (all listings; discovery on Mondays)
+      - name: Run verify agent (all listings; discovery Mondays or on demand)
         env:
           COPILOT_GITHUB_TOKEN: ${{ secrets.G_COPILOT }}
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
@@ -37,6 +42,7 @@ jobs:
         run: |
           FLAGS=""
           [ "$(date +%u)" = "1" ] && FLAGS="--discover"
+          [ "${{ inputs.discover }}" = "true" ] && FLAGS="--discover"
           node scripts/verifica.mjs --all $FLAGS
 
       - name: Commit updated listings

@@ -170,7 +170,6 @@ export default function ListingsPanel() {
                   {l.turnover != null && (
                     <span>Turnover {gbp(l.turnover)}/yr · profit {gbp(l.profit)} ({Math.round((l.profit / l.turnover) * 100)}%)</span>
                   )}
-                  {l.url && <a href={l.url} target="_blank" rel="noreferrer">listing ↗</a>}
                 </div>
                 <div className="badge-row">
                   <span className={`status-badge ${l.status === 'under offer' ? 'under' : l.status === 'gone' ? 'gone' : 'active'}`}>
@@ -203,6 +202,11 @@ export default function ListingsPanel() {
                 )}
 
                 <div className="card-actions">
+                  {l.url && (
+                    <a className="action-btn view" href={l.url} target="_blank" rel="noreferrer">
+                      Open the listing ↗
+                    </a>
+                  )}
                   <button className="action-btn" disabled={act?.busy} onClick={() => request('verifica', l)}>
                     {act?.busy && act?.kind === 'verifica' ? 'verifying…' : 'Verify now'}
                   </button>

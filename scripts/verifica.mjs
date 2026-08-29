@@ -162,17 +162,22 @@ Reply with ONLY this JSON object:
 const TARGET_AREAS = 'Shandon, Polwarth, Merchiston, Bruntsfield, Morningside, Marchmont, Fountainbridge, Slateford, Haymarket, Stockbridge, Corstorphine, Edinburgh'
 
 async function discoverListings(known) {
-  const prompt = `Today is ${TODAY}. Search the LIVE web for café / coffee-shop / dessert / small-restaurant businesses-for-sale that are CURRENTLY listed in Edinburgh (going concerns, not franchises, not outside Edinburgh), especially in or near: ${TARGET_AREAS}.
+  const prompt = `Today is ${TODAY}. Search the LIVE web WIDELY for café / coffee-shop / dessert / small-restaurant / deli / bistro businesses-for-sale that are CURRENTLY listed in Edinburgh (going concerns, not franchises, not outside Edinburgh), especially in or near: ${TARGET_AREAS}.
 
-Useful angles: site:rightbiz.co.uk cafe Edinburgh; site:daltonsbusiness.com; "business for sale" Bruntsfield OR Morningside OR Marchmont; business-transfer agents (Christie & Co, The Restaurant Agency, Central Business Sales, DJK Group) Edinburgh café listings; Businesses for Sale Scotland. Rightbiz blocks direct fetches — snippets and indexed pages are fine.
+Cover as many of these sources as you can:
+- Portals: rightbiz.co.uk · daltonsbusiness.com · uk.businessesforsale.com · dynamicbusinesses.co.uk · businessesforsale.scot · primelocation.com (commercial) · gumtree.com (Edinburgh, business section) · facebook.com Marketplace (Edinburgh business for sale)
+- Business-transfer agents active in Scotland: Christie & Co (christieandco.com) · The Restaurant Agency (therestaurantagency.com) · Central Business Sales · DJK Group · Cornerstone Business Agents · McKay Commercial
+- Searches: "business for sale" + each of: Bruntsfield, Morningside, Marchmont, Stockbridge, Leith, Haymarket, Corstorphine, "Union Canal", "canal side"
+- News: Edinburgh Evening News / The Scotsman often cover café sales before portals update
+Rightbiz blocks direct fetches — snippets and indexed pages are fine evidence.
 
 Already on our watchlist (do NOT repeat): ${known.map((l) => l.name).join('; ')}
 
-Reply with ONLY a JSON array (empty if nothing new), max 6 items:
-[{"id":"kebab-case-id","name":"","area":"","price":<number|null>,"tenure":"","rent":<number|null>,"turnover":<number|null>,"profit":<number|null>,"url":<string|null>,"image":<direct photo url from the listing, or null>,"notes":"<=140 chars English — why it matters for a canal-side café plan"}]`
+Reply with ONLY a JSON array (empty if nothing new), max 8 items:
+[{"id":"kebab-case-id","name":"","area":"","price":<number|null>,"tenure":"","rent":<number|null>,"turnover":<number|null>,"profit":<number|null>,"url":<string|null>,"image":<direct photo url from the listing, or null>,"lat":<number|null>,"lng":<number|null>,"notes":"<=140 chars English — why it matters for a canal-side café plan"}]`
   try {
     const arr = extractJson(await judge(prompt))
-    return Array.isArray(arr) ? arr.slice(0, 6) : []
+    return Array.isArray(arr) ? arr.slice(0, 8) : []
   } catch (e) {
     console.log('  discovery verdict failed: ' + e.message)
     return []
@@ -262,6 +267,8 @@ function mergeDiscovery(db, found) {
       source: `agent discovery (${TODAY})`,
       url: f.url || null,
       image: /^https:\/\//.test(f.image || '') ? f.image : null,
+      lat: Number.isFinite(+f.lat) ? +f.lat : null,
+      lng: Number.isFinite(+f.lng) ? +f.lng : null,
       lastVerified: TODAY,
       verification: { outcome: 'live', note: 'found by discovery scan', date: TODAY },
     })

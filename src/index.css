@@ -928,7 +928,17 @@ details.startup summary:hover { color: var(--chalk); }
 .vbadge.gone { color: var(--clay); border-color: rgba(201, 111, 74, 0.5); }
 .vbadge.unclear { color: var(--faint); }
 
-.card-actions { display: flex; gap: 8px; }
+.card-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+
+.action-btn.view {
+  flex: 1 1 100%;
+  text-align: center;
+  padding: 9px 14px;
+  font-size: 13.5px;
+  text-decoration: none;
+  display: inline-block;
+}
+.action-btn.view:hover { text-decoration: none; opacity: 0.9; }
 
 .action-btn {
   appearance: none;
