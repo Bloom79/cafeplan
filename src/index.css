@@ -906,6 +906,11 @@ details.startup summary:hover { color: var(--chalk); }
 .map-wrap { padding: 8px; }
 .the-map { height: clamp(420px, 62vh, 680px); border-radius: 8px; background: #101d1c; }
 
+/* Standard OSM tiles, gently dimmed so they sit calmly in the dark UI. */
+.the-map .leaflet-tile-pane {
+  filter: saturate(0.75) brightness(0.88) contrast(1.02);
+}
+
 .filter-chip .dot {
   display: inline-block;
   width: 8px; height: 8px;
