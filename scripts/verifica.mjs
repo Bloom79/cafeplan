@@ -372,6 +372,10 @@ async function main() {
     }
     if (mode === 'analizza') {
       const report = await analyseListing(l)
+      // Keep it: a due-diligence run costs credits, and the app used to
+      // drop the report the moment the tab was closed.
+      l.analysis = { date: TODAY, report }
+      writeDb(db)
       await commentAndClose(process.env.ISSUE_NUMBER, report, process.env.GITHUB_TOKEN)
       out('status', 'ok'); out('summary', `due diligence posted for ${l.name}`)
       return

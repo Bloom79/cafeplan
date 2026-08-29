@@ -1,13 +1,21 @@
 import React, { useEffect, useMemo, useState } from 'react'
-import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet'
+import { Circle, MapContainer, TileLayer, Marker, Popup, Tooltip, useMap } from 'react-leaflet'
 import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
 import { gbp } from '../data/model.js'
+import { applyListingToModel } from '../lib/applyListing.js'
 import { gmapsHref, isWalled, listingHref, listingLabel, searchHref } from '../lib/links.js'
 import { useLocalStorage } from '../hooks/useLocalStorage.js'
 import { useListings } from '../hooks/useListings.js'
 
 const EDINBURGH = [55.9435, -3.2015]
+
+// The thesis in one shape: everything the case argues about — canal-side
+// residential trade, walk-in catchment, the £14k rent anchor — is within a
+// kilometre of Ashley Terrace. A pin outside it is a comparable, not a
+// candidate, and on a plain map the two look identical.
+const ANCHOR = [55.9323, -3.228] // Ashley Terrace, Shandon (Nominatim)
+const CATCHMENT_M = 1000
 
 const STATUS_COLOR = {
   live: '#4ca97e',      // stream-green: for sale
@@ -61,6 +69,7 @@ export default function MapPanel() {
   })
   const [favs] = useLocalStorage('cafeplan:favs', [])
   const [favsOnly, setFavsOnly] = useState(false)
+  const [showCatchment, setShowCatchment] = useLocalStorage('cafeplan:catchment', true)
 
   const shown = useMemo(
     () =>
@@ -123,6 +132,14 @@ export default function MapPanel() {
         >
           ♥ Saved {favs.length > 0 && `(${favs.length})`}
         </button>
+        <button
+          className="filter-chip"
+          aria-pressed={showCatchment}
+          onClick={() => setShowCatchment(!showCatchment)}
+          title="1 km around Ashley Terrace — the corridor the case is built on"
+        >
+          ◎ Target corridor
+        </button>
         <span className="updated-line mono">
           {shown.length} of {data.listings.length} on map · data {data.updated}
         </span>
@@ -135,6 +152,28 @@ export default function MapPanel() {
             url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
             maxZoom={19}
           />
+          {showCatchment && (
+            <>
+              {/* Dark casing first: a thin brass line alone disappears into
+                  the pastel OSM raster. */}
+              <Circle
+                center={ANCHOR}
+                radius={CATCHMENT_M}
+                interactive={false}
+                pathOptions={{ color: '#0c2321', weight: 6, opacity: 0.45, fill: false }}
+              />
+              <Circle
+                center={ANCHOR}
+                radius={CATCHMENT_M}
+                pathOptions={{
+                  color: '#d9a441', weight: 2.5, dashArray: '9 7',
+                  fillColor: '#d9a441', fillOpacity: 0.08,
+                }}
+              >
+                <Tooltip>Target corridor — 1 km around Ashley Terrace</Tooltip>
+              </Circle>
+            </>
+          )}
           <FitBounds points={shown} />
           {shown.map((l) => {
             const st = statusOf(l)
@@ -166,6 +205,12 @@ export default function MapPanel() {
                         via search ↗
                       </a>
                     )}
+                    <button
+                      className="cp-btn model"
+                      onClick={() => { applyListingToModel(l); window.location.hash = '#model' }}
+                    >
+                      Run in the model →
+                    </button>
                     <a className="cp-btn" href={gmapsHref(l)} target="_blank" rel="noreferrer">
                       Google Maps ↗
                     </a>

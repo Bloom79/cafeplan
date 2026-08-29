@@ -140,6 +140,61 @@ export function compute(a) {
   return r
 }
 
+// ————— seasonality ——————————————————————————————
+// Edinburgh trades nothing like a flat year: the Festival fills August, and
+// January–February empty out. Weights are relative to an average month and
+// sum to 12, so the annual totals above are untouched — they only say when
+// the money arrives, which is the question working capital has to answer.
+export const MONTHS = [
+  ['Jan', 0.80], ['Feb', 0.82], ['Mar', 0.92], ['Apr', 0.98],
+  ['May', 1.05], ['Jun', 1.08], ['Jul', 1.15], ['Aug', 1.35],
+  ['Sep', 1.05], ['Oct', 0.98], ['Nov', 0.92], ['Dec', 0.90],
+]
+
+// Mid-case working capital from the startup budget (3 months).
+export const WORKING_CAPITAL = 20000
+
+// Month-by-month cash, starting from the working capital in the budget.
+// Revenue and its COGS swing with the season; rent, labour and overheads
+// do not — which is exactly why a quiet February bites.
+export function monthly(a, r, workingCapital = WORKING_CAPITAL) {
+  const fixed = (a.labour + a.apStaff + a.rent + a.rates + a.overheads) / 12
+  let cash = workingCapital
+  let trough = { month: null, cash: Infinity }
+  const rows = MONTHS.map(([name, w]) => {
+    const revenue = (r.totalRev / 12) * w
+    const cogs = (r.cogs / 12) * w
+    const profit = revenue - cogs - fixed
+    cash += profit
+    if (cash < trough.cash) trough = { month: name, cash }
+    return { name, weight: w, revenue, profit, cash }
+  })
+  return { rows, trough, fixed }
+}
+
+// ————— sensitivity ——————————————————————————————
+// Which assumption actually moves the answer. Same ±10% nudge on each, so
+// the bars are comparable; sorted by how much they swing the profit.
+export const SENSITIVITY = [
+  ['coversDay', 'Covers / day'],
+  ['spendDay', 'Average spend'],
+  ['cogsDayPct', 'Food & drink COGS'],
+  ['rent', 'Rent'],
+  ['labour', 'Core labour'],
+  ['overheads', 'Overheads'],
+  ['apCovers', 'Aperitivo covers'],
+  ['tradingDays', 'Trading days'],
+]
+
+export function sensitivity(a, delta = 0.1) {
+  const base = compute(a).profit
+  return SENSITIVITY.map(([key, label]) => {
+    const down = compute({ ...a, [key]: a[key] * (1 - delta) }).profit - base
+    const up = compute({ ...a, [key]: a[key] * (1 + delta) }).profit - base
+    return { key, label, down, up, swing: Math.abs(up - down) }
+  }).sort((x, y) => y.swing - x.swing)
+}
+
 // Assumption groups drive the left-hand editor and the day ribbon anchors.
 export const GROUPS = [
   {

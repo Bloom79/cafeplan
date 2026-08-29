@@ -1,7 +1,9 @@
 import React, { useMemo, useState } from 'react'
 import {
-  DEFAULTS, GROUPS, SCENARIOS, STARTUP, STARTUP_TOTALS, compute, gbp, pct,
+  DEFAULTS, GROUPS, SCENARIOS, STARTUP, STARTUP_TOTALS, WORKING_CAPITAL,
+  compute, gbp, monthly, pct, sensitivity,
 } from '../data/model.js'
+import { APPLIED_KEY } from '../lib/applyListing.js'
 import { useLocalStorage } from '../hooks/useLocalStorage.js'
 import DayRibbon from './DayRibbon.jsx'
 
@@ -13,6 +15,7 @@ export default function ModelPanel() {
   const [a, setA] = useLocalStorage('cafeplan:model', DEFAULTS)
   const [scenario, setScenario] = useLocalStorage('cafeplan:scenario', 'conservative')
   const [showStartup, setShowStartup] = useState(false)
+  const [applied, setApplied] = useLocalStorage(APPLIED_KEY, null)
   // While a field is being retyped it may be empty or half-written ("8." ,
   // ""); keep that text here so the box doesn't snap back to 0 mid-edit.
   const [draft, setDraft] = useState(null)
@@ -54,6 +57,16 @@ export default function ModelPanel() {
   ]
   const maxCost = Math.max(...costRows.map(([, v]) => v), 1)
 
+  const sens = useMemo(() => sensitivity(a), [a])
+  const maxSwing = Math.max(...sens.map((s) => Math.max(Math.abs(s.down), Math.abs(s.up))), 1)
+  const rentSwing = sens.find((s) => s.key === 'rent')?.swing || 0
+
+  const cash = useMemo(() => monthly(a, r), [a, r])
+  // Bars are the month's profit, not its revenue: revenue only swings with
+  // the season, profit swings with the season *against a flat cost base* —
+  // which is the whole point of looking at the year month by month.
+  const maxMonthProfit = Math.max(...cash.rows.map((m) => Math.abs(m.profit)), 1)
+
   const streams = [
     ['Daytime café', r.dayRev, 'var(--brass)'],
     ['Aperitivo', r.apRev, 'var(--green)'],
@@ -63,6 +76,35 @@ export default function ModelPanel() {
   return (
     <>
       <DayRibbon r={r} />
+
+      {applied && (
+        <div className="applied-bar panel">
+          <div>
+            <span className="k">Modelled on</span>
+            <b>{applied.name}</b>
+            <span className="sep">·</span>
+            {applied.area}
+            <span className="sep">·</span>
+            rent {applied.rent != null ? gbp(applied.rent) : '—'}
+            <span className="sep">·</span>
+            asking {applied.price != null ? gbp(applied.price) : 'POA'}
+            {applied.startup != null && <> → budget {gbp(applied.startup)}</>}
+          </div>
+          {applied.turnover != null && (
+            <div className="seller">
+              Seller declares {gbp(applied.turnover)} turnover
+              {applied.profit != null && <> · {gbp(applied.profit)} profit</>} — this model makes{' '}
+              {gbp(r.totalRev)} and {gbp(r.profit)} on your concept.
+            </div>
+          )}
+          <button
+            className="reset-btn"
+            onClick={() => { setApplied(null); setA(DEFAULTS); setScenario('conservative') }}
+          >
+            Back to the plan
+          </button>
+        </div>
+      )}
 
       <div className="scenario-bar">
         <span className="label">Scenario</span>
@@ -209,6 +251,41 @@ export default function ModelPanel() {
             </div>
           </div>
 
+          {/* what actually moves the answer */}
+          <div className="chart-block">
+            <h3 className="chart-title">
+              Sensitivity
+              <span className="side">±10% on each assumption</span>
+            </h3>
+            <div className="tornado">
+              {sens.map((s) => (
+                <div className="tor-row" key={s.key}>
+                  <span className="bl">{s.label}</span>
+                  <span className="tor-track">
+                    <span className="axis" />
+                    <span
+                      className="seg down"
+                      style={{ width: `${(Math.abs(Math.min(s.down, s.up)) / maxSwing) * 50}%` }}
+                      title={`−10%: ${gbp(Math.min(s.down, s.up))}`}
+                    />
+                    <span
+                      className="seg up"
+                      style={{ width: `${(Math.abs(Math.max(s.down, s.up)) / maxSwing) * 50}%` }}
+                      title={`+10%: ${gbp(Math.max(s.down, s.up))}`}
+                    />
+                  </span>
+                  <span className="bv">±{gbp(s.swing / 2)}</span>
+                </div>
+              ))}
+            </div>
+            <p className="footnote" style={{ marginTop: 10 }}>
+              Covers, spend and trading days tie because they are the same lever: any 10% shortfall
+              in daytime trade costs the same {gbp(sens[0].swing / 2)}
+              {rentSwing > 0 && <> — about {Math.round(sens[0].swing / rentSwing)}× what a 10% rent
+              rise costs</>}. Rent is fixed the day you sign; trade is the part you can still work on.
+            </p>
+          </div>
+
           <p className="footnote">
             Breakeven standalone (no evening trade): <b className="mono">{Number.isFinite(r.coversBEStandalone) ? r.coversBEStandalone.toFixed(1) : '—'}</b> daytime
             covers/day. The gap between the two breakeven figures is the case for the evening offer in one number.
@@ -244,6 +321,44 @@ export default function ModelPanel() {
           </details>
         </section>
       </div>
+
+      {/* the year is not flat, and that is a working-capital question */}
+      <section className="panel season" aria-label="The first year, month by month">
+        <h2 className="panel-title">
+          The first year, month by month
+          <span className="side">
+            cash starts at {gbp(WORKING_CAPITAL)} working capital
+          </span>
+        </h2>
+
+        <div className="season-chart">
+          {cash.rows.map((m) => (
+            <div className="s-col" key={m.name} title={`${m.name}: ${gbp(m.revenue)} revenue · ${gbp(m.profit)} profit · cash ${gbp(m.cash)}`}>
+              <span className="cap mono">{m.profit >= 0 ? '+' : ''}{Math.round(m.profit / 100) / 10}k</span>
+              <div className="col-wrap">
+                <div
+                  className={`col ${m.profit < 0 ? 'neg' : ''}`}
+                  style={{ height: `${(Math.abs(m.profit) / maxMonthProfit) * 100}%` }}
+                />
+              </div>
+              <span className={`m ${m.name === cash.trough.month ? 'low' : ''}`}>{m.name}</span>
+            </div>
+          ))}
+        </div>
+
+        <p className={`trough ${cash.trough.cash < 0 ? 'bad' : ''}`}>
+          Lowest cash point: <b className="mono">{gbp(cash.trough.cash)}</b> in {cash.trough.month}
+          {cash.trough.cash < 0
+            ? ' — the plan runs out of money before the season turns. Raise the working capital, or cut the fixed base.'
+            : ' — the buffer holds through the quiet months.'}
+        </p>
+
+        <p className="footnote">
+          Same annual totals as above, spread over an Edinburgh year: the Festival fills August,
+          January and February empty out. Rent, labour and overheads do not follow the season —
+          that gap is the whole reason the budget carries three months of working capital.
+        </p>
+      </section>
     </>
   )
 }

@@ -456,7 +456,10 @@ a:hover { text-decoration: underline; }
 .bar-row .bl { font-size: 12.5px; color: var(--muted); }
 
 .bar-row .track { height: 13px; background: var(--ink); border-radius: 4px; overflow: hidden; }
-.bar-row .fill { height: 100%; border-radius: 4px; background: var(--neutral-bar); }
+/* display:block — the track is a grid item so it blockifies, but the fill
+   inside it is a plain span, and a percentage width on an inline box does
+   nothing: the cost bars were rendering 0px wide. */
+.bar-row .fill { display: block; height: 100%; border-radius: 4px; background: var(--neutral-bar); }
 
 .bar-row .bv {
   font-family: var(--font-mono);
@@ -1163,3 +1166,178 @@ details.startup summary:hover { color: var(--chalk); }
 }
 .md strong { color: var(--chalk); font-weight: 600; }
 
+
+/* ————— a listing loaded into the model ————— */
+
+.applied-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px 14px;
+  padding: 12px 16px;
+  margin-bottom: 14px;
+  border-left: 3px solid var(--brass-bright);
+  font-size: 13px;
+  color: var(--muted);
+}
+.applied-bar b { color: var(--chalk); }
+.applied-bar .k {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--faint);
+  margin-right: 8px;
+}
+.applied-bar .sep { color: var(--faint); margin: 0 6px; }
+.applied-bar .seller { flex: 1 1 100%; font-size: 12.5px; color: var(--faint); }
+.applied-bar .reset-btn { margin-left: auto; }
+
+/* ————— sensitivity (tornado) ————— */
+
+.tor-row {
+  display: grid;
+  grid-template-columns: 150px 1fr 84px;
+  align-items: center;
+  gap: 10px;
+  padding: 4px 0;
+}
+.tor-row .bl { font-size: 12.5px; color: var(--muted); }
+.tor-row .bv {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  text-align: right;
+  color: var(--chalk);
+}
+.tor-track {
+  position: relative;
+  display: flex;
+  justify-content: center;
+  height: 13px;
+  background: var(--ink);
+  border-radius: 4px;
+  overflow: hidden;
+}
+.tor-track .axis {
+  position: absolute;
+  left: 50%;
+  top: 0;
+  bottom: 0;
+  width: 1px;
+  background: var(--line);
+}
+.tor-track .seg { height: 100%; }
+.tor-track .seg.down { background: var(--clay); border-radius: 4px 0 0 4px; }
+.tor-track .seg.up { background: var(--green); border-radius: 0 4px 4px 0; }
+
+/* ————— the year, month by month ————— */
+
+.season { margin-top: 16px; }
+.season .side {
+  margin-left: auto;
+  font-family: var(--font-ui);
+  font-size: 11.5px;
+  letter-spacing: 0;
+  text-transform: none;
+  color: var(--faint);
+}
+.season-chart { display: flex; gap: 4px; align-items: flex-end; height: 150px; }
+.s-col {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  height: 100%;
+  gap: 5px;
+  min-width: 0;
+}
+.s-col .col-wrap { flex: 1; display: flex; align-items: flex-end; }
+/* A losing month hangs from the top instead of standing on the floor. */
+.s-col .col.neg { align-self: flex-start; border-radius: 0 0 4px 4px; }
+.s-col .col {
+  width: 100%;
+  border-radius: 4px 4px 0 0;
+  background: var(--brass);
+  min-height: 2px;
+  transition: height 0.4s cubic-bezier(0.22, 0.8, 0.32, 1);
+}
+.s-col .col.neg { background: var(--clay); }
+.s-col .cap { font-family: var(--font-mono); font-size: 10px; color: var(--faint); text-align: center; }
+.s-col .m {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--muted);
+  text-align: center;
+}
+.s-col .m.low { color: var(--clay); font-weight: 600; }
+.trough { font-size: 13px; color: var(--muted); margin: 14px 0 0; }
+.trough.bad { color: var(--clay); }
+
+/* ————— price history & your own notes ————— */
+
+.price-history {
+  font-family: var(--font-mono);
+  font-size: 11.5px;
+  color: var(--faint);
+  margin: -6px 0 8px;
+}
+.price-history b { color: var(--chalk); }
+.price-history i { font-style: normal; opacity: 0.6; }
+.price-history .when { margin-left: 8px; }
+
+.own-note { display: block; margin-top: 10px; }
+.own-note span {
+  font-family: var(--font-mono);
+  font-size: 9.5px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--faint);
+}
+.own-note textarea {
+  width: 100%;
+  margin-top: 4px;
+  resize: vertical;
+  font-family: var(--font-ui);
+  font-size: 12.5px;
+  color: var(--chalk);
+  background: var(--ink);
+  border: 1px dashed var(--line);
+  border-radius: 6px;
+  padding: 6px 8px;
+}
+.own-note textarea:focus { border-style: solid; border-color: var(--faint); outline: none; }
+
+.action-btn.model { background: none; border-color: var(--brass); color: var(--brass-bright); }
+.action-btn.model:hover { background: rgba(191, 138, 44, 0.12); }
+
+.cp-pop button.cp-btn {
+  appearance: none;
+  width: 100%;
+  background: none;
+  cursor: pointer;
+  color: var(--brass-bright);
+  border-color: var(--brass);
+}
+
+/* ————— compare table ————— */
+
+.compare-wrap { overflow-x: auto; margin-bottom: 16px; }
+.compare { min-width: 720px; margin-bottom: 8px; }
+.compare th { padding: 0 10px 8px 0; }
+.compare .th-sort {
+  appearance: none;
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  font: inherit;
+  color: inherit;
+  letter-spacing: inherit;
+  text-transform: inherit;
+}
+.compare .th-sort:hover { color: var(--chalk); }
+.compare .th-sort .dir { margin-left: 4px; color: var(--brass-bright); }
+.compare td.mono { font-family: var(--font-mono); font-size: 12.5px; }
+.compare td.name a { color: var(--chalk); font-weight: 500; }
+.compare .none { color: var(--faint); }
+.compare tr.faded td { opacity: 0.5; }

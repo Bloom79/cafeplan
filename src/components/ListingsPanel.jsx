@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react'
 import { gbp } from '../data/model.js'
+import { applyListingToModel } from '../lib/applyListing.js'
 import { gmapsHref, isWalled, listingHref, listingLabel, searchHref } from '../lib/links.js'
 import { WORKER_URL } from '../config.js'
 import { useLocalStorage } from '../hooks/useLocalStorage.js'
@@ -35,6 +36,81 @@ const mosaic = (lat, lng) => {
   return { urls, px: (X - x0) / 2, py: (Y - y0) / 2 }
 }
 
+// Side-by-side comparison. The columns are the ones that decide whether a
+// listing is worth a phone call: what it costs, what it costs to run, and
+// what it earns against the 1.5×–2.5× SDE band we value on.
+const COLUMNS = [
+  ['name', 'Listing', (l) => l.name],
+  ['area', 'Area', (l) => l.area],
+  ['price', 'Asking', (l) => l.price],
+  ['rent', 'Rent / yr', (l) => l.rent],
+  ['turnover', 'Turnover', (l) => l.turnover],
+  ['profit', 'Profit', (l) => l.profit],
+  ['multiple', 'Price / profit', (l) => (l.price != null && l.profit ? l.price / l.profit : null)],
+  ['rentPct', 'Rent / turnover', (l) => (l.rent != null && l.turnover ? l.rent / l.turnover : null)],
+  ['status', 'Status', (l) => l.status],
+]
+
+const cell = (key, v) => {
+  if (v == null) return <span className="none">—</span>
+  if (key === 'multiple') return `${v.toFixed(1)}×`
+  if (key === 'rentPct') return `${Math.round(v * 100)}%`
+  if (['price', 'rent', 'turnover', 'profit'].includes(key)) return gbp(v)
+  return v
+}
+
+function CompareTable({ rows, sort, setSort }) {
+  const get = Object.fromEntries(COLUMNS.map(([k, , fn]) => [k, fn]))
+  const sorted = [...rows].sort((a, b) => {
+    const x = get[sort.key](a)
+    const y = get[sort.key](b)
+    if (x == null) return 1
+    if (y == null) return -1
+    const d = typeof x === 'number' ? x - y : String(x).localeCompare(String(y))
+    return sort.dir === 'asc' ? d : -d
+  })
+  const toggle = (key) =>
+    setSort({ key, dir: sort.key === key && sort.dir === 'asc' ? 'desc' : 'asc' })
+
+  return (
+    <div className="panel compare-wrap">
+      <table className="case-table compare">
+        <thead>
+          <tr>
+            {COLUMNS.map(([key, label]) => (
+              <th key={key}>
+                <button className="th-sort" onClick={() => toggle(key)} aria-label={`Sort by ${label}`}>
+                  {label}
+                  {sort.key === key && <span className="dir">{sort.dir === 'asc' ? '▲' : '▼'}</span>}
+                </button>
+              </th>
+            ))}
+          </tr>
+        </thead>
+        <tbody>
+          {sorted.map((l) => (
+            <tr key={l.id} className={l.status === 'gone' ? 'faded' : ''}>
+              {COLUMNS.map(([key, , fn]) => (
+                <td key={key} className={key === 'name' ? 'name' : 'mono'}>
+                  {key === 'name'
+                    ? <a href={listingHref(l)} target="_blank" rel="noreferrer">{l.name}</a>
+                    : cell(key, fn(l))}
+                </td>
+              ))}
+            </tr>
+          ))}
+        </tbody>
+      </table>
+      <p className="footnote">
+        Price / profit is the multiple you are being asked to pay — small UK cafés change hands at
+        1.5×–2.5× adjusted profit, so anything above that needs a reason. Rent / turnover above
+        ~12% is the number that quietly eats the year. Blanks are undisclosed: that is itself the
+        first question for the agent.
+      </p>
+    </div>
+  )
+}
+
 const ago = (date) => {
   if (!date) return null
   const d = (Date.now() - new Date(date).getTime()) / 86400000
@@ -49,6 +125,9 @@ export default function ListingsPanel() {
   const [area, setArea] = useLocalStorage('cafeplan:area', 'All')
   const [favsOnly, setFavsOnly] = useLocalStorage('cafeplan:favsOnly', false)
   const [favs, setFavs] = useLocalStorage('cafeplan:favs', [])
+  const [notes, setNotes] = useLocalStorage('cafeplan:listingNotes', {})
+  const [view, setView] = useLocalStorage('cafeplan:listingsView', 'cards')
+  const [sort, setSort] = useState({ key: 'price', dir: 'asc' })
   // per-listing action state: { kind, issue, busy, outcome, report, error }
   const [actions, setActions] = useState({})
   const pollTimers = useRef({})
@@ -145,12 +224,24 @@ export default function ListingsPanel() {
         >
           ♥ Saved {favs.length > 0 && `(${favs.length})`}
         </button>
+        <button
+          className="filter-chip"
+          aria-pressed={view === 'table'}
+          onClick={() => setView(view === 'table' ? 'cards' : 'table')}
+          title="Compare every listing side by side"
+        >
+          ▤ Compare
+        </button>
         <span className="updated-line mono">data updated {data.updated}</span>
       </div>
 
+      {view === 'table' && shown.length > 0 && (
+        <CompareTable rows={shown} sort={sort} setSort={setSort} />
+      )}
+
       {shown.length === 0 ? (
         <div className="empty panel">No listings match. Clear the area filter or turn off “♥ Saved”.</div>
-      ) : (
+      ) : view === 'table' ? null : (
         <div className="listing-grid">
           {shown.map((l) => {
             const v = l.verification
@@ -180,6 +271,15 @@ export default function ListingsPanel() {
                   </button>
                 </div>
                 <div className="price">{l.price != null ? gbp(l.price) : 'POA'}</div>
+                {l.history?.length > 0 && (
+                  <div className="price-history" title="Asking price since we started watching">
+                    {l.history.map((h) => (
+                      <span key={h.date}>{gbp(h.price)} <i>→</i> </span>
+                    ))}
+                    <b>{l.price != null ? gbp(l.price) : 'POA'}</b>
+                    <span className="when">changed {l.history[l.history.length - 1].date}</span>
+                  </div>
+                )}
                 <div className="meta">
                   <span>{l.area} · {l.tenure}</span>
                   {l.rent != null && <span>Rent {gbp(l.rent)}/yr</span>}
@@ -243,15 +343,27 @@ export default function ListingsPanel() {
                   <button className="action-btn ghost" disabled={act?.busy} onClick={() => request('analizza', l)}>
                     {act?.busy && act?.kind === 'analizza' ? 'analysing…' : 'Analyse'}
                   </button>
-                  <a
-                    className="action-btn ghost gmaps"
-                    href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${l.name} ${l.area} Edinburgh`)}`}
-                    target="_blank"
-                    rel="noreferrer"
+                  <button
+                    className="action-btn model"
+                    onClick={() => { applyListingToModel(l); window.location.hash = '#model' }}
+                    title="Load this site's rent and asking price into the model"
                   >
+                    Run in the model →
+                  </button>
+                  <a className="action-btn ghost gmaps" href={gmapsHref(l)} target="_blank" rel="noreferrer">
                     Google Maps ↗
                   </a>
                 </div>
+
+                <label className="own-note">
+                  <span>Your notes</span>
+                  <textarea
+                    rows={2}
+                    value={notes[l.id] || ''}
+                    placeholder="what the agent said, what to check, what it felt like…"
+                    onChange={(e) => setNotes({ ...notes, [l.id]: e.target.value })}
+                  />
+                </label>
 
                 {act?.error && <p className="act-error">{act.error}</p>}
                 {act?.busy && !act?.error && (
@@ -259,12 +371,19 @@ export default function ListingsPanel() {
                     agent running{act.issue ? ` · issue #${act.issue}` : ''} — a minute or two, this tab keeps polling
                   </p>
                 )}
-                {act?.open && !act?.busy && act?.report && (
+                {act?.open && !act?.busy && act?.report ? (
                   <details className="report" open>
                     <summary>{act.kind === 'analizza' ? 'Due diligence report' : 'Verification report'}</summary>
                     <Markdown text={act.report} />
                   </details>
-                )}
+                ) : l.analysis?.report ? (
+                  // The stored copy: an Analyse run costs credits, so it is
+                  // kept in the data rather than lost with the tab.
+                  <details className="report">
+                    <summary>Due diligence · {l.analysis.date}</summary>
+                    <Markdown text={l.analysis.report} />
+                  </details>
+                ) : null}
 
                 <span className="src">snapshot · {l.source}</span>
               </article>
