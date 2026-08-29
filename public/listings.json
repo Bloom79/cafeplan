@@ -22,8 +22,8 @@
       "url": "https://www.rightbiz.co.uk/buy_business/for_sale/655298_edinburgh.html",
       "lastVerified": "2026-08-29",
       "verification": {
-        "outcome": "live",
-        "note": "still listed at £35,000 on Rightbiz category pages",
+        "outcome": "unclear",
+        "note": "verdict unavailable: no model output",
         "date": "2026-08-29"
       }
     },
@@ -47,8 +47,8 @@
       "url": "https://www.rightbiz.co.uk/buy_business/for_sale/630935_edinburgh.html",
       "lastVerified": "2026-08-29",
       "verification": {
-        "outcome": "live",
-        "note": "live on Daltons; price-reduced banner on the listing",
+        "outcome": "unclear",
+        "note": "verdict unavailable: no model output",
         "date": "2026-08-29"
       }
     },
@@ -72,8 +72,8 @@
       "url": "https://www.rightbiz.co.uk/buy_business/for_sale/622797_edinburgh.html",
       "lastVerified": "2026-08-29",
       "verification": {
-        "outcome": "live",
-        "note": "still listed, still under offer (POA)",
+        "outcome": "unclear",
+        "note": "verdict unavailable: no model output",
         "date": "2026-08-29"
       }
     },
@@ -97,8 +97,8 @@
       "url": "https://www.rightbiz.co.uk/buy_business/for_sale/615407_edinburgh.html",
       "lastVerified": "2026-08-29",
       "verification": {
-        "outcome": "live",
-        "note": "live on Rightbiz at £40,000; Daltons leg delisted",
+        "outcome": "unclear",
+        "note": "verdict unavailable: no model output",
         "date": "2026-08-29"
       }
     },
@@ -122,8 +122,8 @@
       "url": null,
       "lastVerified": "2026-08-29",
       "verification": {
-        "outcome": "gone",
-        "note": "cafe permanently closed April 2026; listing withdrawn",
+        "outcome": "unclear",
+        "note": "verdict unavailable: no model output",
         "date": "2026-08-29"
       }
     },
@@ -147,8 +147,8 @@
       "url": "https://therestaurantagency.com/properties/property/121/mirth-zest-cafe-gelateria-marchmont-edinburgh",
       "lastVerified": "2026-08-29",
       "verification": {
-        "outcome": "live",
-        "note": "verified live on the Restaurant Agency site 2026-08-29",
+        "outcome": "unclear",
+        "note": "verdict unavailable: no model output",
         "date": "2026-08-29"
       }
     },
@@ -171,8 +171,8 @@
       "url": "https://www.daltonsbusiness.com/listing/very-busy-and-profitable-dessert-and-ice-for-sale-DB2541715/",
       "lastVerified": "2026-08-29",
       "verification": {
-        "outcome": "live",
-        "note": "live on Daltons 2026-08-29; also on Rightbiz as advert 650399",
+        "outcome": "unclear",
+        "note": "verdict unavailable: no model output",
         "date": "2026-08-29"
       }
     },
@@ -194,8 +194,8 @@
       "url": "https://www.rightbiz.co.uk/buy_business/for_sale/640162_edinburgh.html",
       "lastVerified": "2026-08-29",
       "verification": {
-        "outcome": "live",
-        "note": "live on Rightbiz café category pages 2026-08-29",
+        "outcome": "unclear",
+        "note": "verdict unavailable: no model output",
         "date": "2026-08-29"
       }
     },
@@ -216,11 +216,11 @@
       "notes": "Christie & Co ref 1834, surfaced via Businesses for Sale Scotland. Cross-listed on Rightbiz and PrimeLocation; £15,000/yr rent per the listing.",
       "source": "agent discovery (2026-08-29)",
       "url": "https://www.rightbiz.co.uk/buy_business/for_sale/655143_edinburgh.html",
-      "lastVerified": "2026-08-28",
+      "lastVerified": "2026-08-29",
       "verification": {
-        "outcome": "live",
-        "note": "Still listed on Rightbiz at £29,500 guide price, £15,000/yr rent, matches snapshot details.",
-        "date": "2026-08-28"
+        "outcome": "unclear",
+        "note": "verdict unavailable: no model output",
+        "date": "2026-08-29"
       }
     }
   ]
