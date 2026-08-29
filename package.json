@@ -6,6 +6,7 @@
   "description": "CafePlan — interactive business case for an Edinburgh canal-side cafe (financial model, listings monitor, business case, next steps)",
   "scripts": {
     "dev": "vite",
+    "lint": "eslint .",
     "build": "vite build",
     "preview": "vite preview"
   },
@@ -17,7 +18,12 @@
     "react-leaflet": "^4.2.1"
   },
   "devDependencies": {
+    "@eslint/js": "^9.39.5",
     "@vitejs/plugin-react": "^4.3.4",
+    "eslint": "^9.39.5",
+    "eslint-plugin-react": "^7.37.5",
+    "eslint-plugin-react-hooks": "^7.1.1",
+    "globals": "^17.11.0",
     "vite": "^5.4.11"
   }
 }
