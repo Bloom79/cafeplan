@@ -1,0 +1,26 @@
+name: Smoke — quick secret/token check
+
+# One listing, one Copilot call: proves the G_COPILOT token works
+# end-to-end without waiting for the full daily run.
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 6
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Install Copilot CLI
+        run: npm install -g @github/copilot
+      - name: Verify one listing
+        env:
+          COPILOT_GITHUB_TOKEN: ${{ secrets.G_COPILOT }}
+          VERIFY_DEBUG: '1'
+        run: node scripts/verifica.mjs --test bennitos
