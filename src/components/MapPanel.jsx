@@ -9,6 +9,16 @@ import { useLocalStorage } from '../hooks/useLocalStorage.js'
 
 const EDINBURGH = [55.9435, -3.2015]
 
+// Rightbiz challenges direct deep links and bounces to its homepage; going
+// through a Google search of the exact listing lands on the right page.
+// Other portals deep-link fine.
+const listingHref = (l) =>
+  /rightbiz\.co\.uk/.test(l.url || '')
+    ? `https://www.google.com/search?q=${encodeURIComponent(`site:rightbiz.co.uk ${l.name}`)}`
+    : l.url
+const listingLabel = (l) =>
+  /rightbiz\.co\.uk/.test(l.url || '') ? 'Find on Rightbiz ↗' : 'Open the listing ↗'
+
 const STATUS_COLOR = {
   live: '#4ca97e',      // stream-green: for sale
   under: '#d9a441',     // brass: under offer
@@ -165,8 +175,8 @@ export default function MapPanel() {
                     <span className={`cp-pop-status ${st}`}>
                       {st === 'live' ? 'for sale' : st === 'under' ? 'under offer' : 'gone / withdrawn'}
                     </span>
-                    <a className="cp-btn primary" href={l.url} target="_blank" rel="noreferrer">
-                      Open the listing ↗
+                    <a className="cp-btn primary" href={listingHref(l)} target="_blank" rel="noreferrer">
+                      {listingLabel(l)}
                     </a>
                     <a
                       className="cp-btn"

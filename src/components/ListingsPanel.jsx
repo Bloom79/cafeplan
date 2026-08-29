@@ -203,8 +203,15 @@ export default function ListingsPanel() {
 
                 <div className="card-actions">
                   {l.url && (
-                    <a className="action-btn view" href={l.url} target="_blank" rel="noreferrer">
-                      Open the listing ↗
+                    <a
+                      className="action-btn view"
+                      href={/rightbiz\.co\.uk/.test(l.url)
+                        ? `https://www.google.com/search?q=${encodeURIComponent(`site:rightbiz.co.uk ${l.name}`)}`
+                        : l.url}
+                      target="_blank"
+                      rel="noreferrer"
+                    >
+                      {/rightbiz\.co\.uk/.test(l.url) ? 'Find on Rightbiz ↗' : 'Open the listing ↗'}
                     </a>
                   )}
                   <button className="action-btn" disabled={act?.busy} onClick={() => request('verifica', l)}>
