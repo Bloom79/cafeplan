@@ -23,9 +23,11 @@
       "lastVerified": "2026-08-29",
       "verification": {
         "outcome": "live",
-        "note": "Listing still active on Rightbiz: £35,000 leasehold, £11,000 rent, matches snapshot exactly.",
+        "note": "Listing still active on Rightbiz at £35,000 leasehold, £11,000 rent, matches snapshot exactly.",
         "date": "2026-08-29"
-      }
+      },
+      "lat": 55.9269,
+      "lng": -3.209
     },
     {
       "id": "bruntsfield-coffee",
@@ -48,9 +50,12 @@
       "lastVerified": "2026-08-29",
       "verification": {
         "outcome": "live",
-        "note": "Still listed at £40,000 (rent £22,500) across Rightbiz, Daltons Business and BusinessesForSale.com; matches snapshot.",
+        "note": "Still listed at £40,000 (fixed price), rent £22,500, matching snapshot; corroborated by Cornerstone & Daltons listings.",
         "date": "2026-08-29"
-      }
+      },
+      "lat": 55.9382,
+      "lng": -3.2095,
+      "image": "https://cdn.daltonsbusiness.com/wp-content/uploads/2025/11/1763472586-Bonnie-scaled.webp"
     },
     {
       "id": "marchmont-20seat",
@@ -73,9 +78,11 @@
       "lastVerified": "2026-08-29",
       "verification": {
         "outcome": "gone",
-        "note": "Listing now marked 'Under Offer'; accepted offer pending, not actively for sale, matches recorded gone status.",
+        "note": "Listing title confirms 'Under Offer'; offer accepted, agent says will re-advertise if it falls through.",
         "date": "2026-08-29"
-      }
+      },
+      "lat": 55.9363,
+      "lng": -3.1878
     },
     {
       "id": "bennitos",
@@ -98,9 +105,11 @@
       "lastVerified": "2026-08-29",
       "verification": {
         "outcome": "live",
-        "note": "Still listed on Rightbiz at £40,000, rent £18,000/yr, matches snapshot; also covered by Edinburgh Evening News.",
+        "note": "Still listed on Rightbiz, £40,000 leasehold/£18,000 rent, matches snapshot; also covered by Edinburgh Evening News/Live.",
         "date": "2026-08-29"
-      }
+      },
+      "lat": 55.9442,
+      "lng": -3.287
     },
     {
       "id": "dower-house",
@@ -123,9 +132,11 @@
       "lastVerified": "2026-08-29",
       "verification": {
         "outcome": "live",
-        "note": "Still listed as going concern, offers over £35,000, via McEwan Fraser Legal; no sold/withdrawn evidence found.",
+        "note": "Dower House Cafe, Corstorphine, actively listed leasehold, offers over £35,000 via McEwan Fraser Legal, contradicts 'gone' snapshot.",
         "date": "2026-08-29"
-      }
+      },
+      "lat": 55.9423,
+      "lng": -3.291
     },
     {
       "id": "mirth-zest",
@@ -148,9 +159,11 @@
       "lastVerified": "2026-08-29",
       "verification": {
         "outcome": "live",
-        "note": "Still listed at offers over £10,000, rent £9,500/yr, 10-year lease to 2029.",
+        "note": "Still listed by The Restaurant Agency, offers over £10,000, rent £9,500pa, matches snapshot price.",
         "date": "2026-08-29"
-      }
+      },
+      "lat": 55.9363,
+      "lng": -3.1878
     },
     {
       "id": "dessert-parlour-morningside",
@@ -172,9 +185,12 @@
       "lastVerified": "2026-08-29",
       "verification": {
         "outcome": "live",
-        "note": "Still listed on Daltons Business at £35,000, same details as snapshot.",
+        "note": "Still listed on Daltons Business, Morningside Edinburgh, asking £35,000, matches snapshot.",
         "date": "2026-08-29"
-      }
+      },
+      "lat": 55.9269,
+      "lng": -3.209,
+      "image": "https://cdn.daltonsbusiness.com/wp-content/uploads/2026/05/1778590333-sweet-paradise-6-scaled.webp"
     },
     {
       "id": "charming-dessert-bruntsfield",
@@ -195,9 +211,11 @@
       "lastVerified": "2026-08-29",
       "verification": {
         "outcome": "unclear",
-        "note": "Listing not directly accessible (Rightbiz blocks fetch); no search snippets found matching this specific reference or name.",
+        "note": "Could not access rightbiz listing directly; no matching current listing found via search at £30,000 for this Bruntsfield dessert shop.",
         "date": "2026-08-29"
-      }
+      },
+      "lat": 55.9382,
+      "lng": -3.2095
     },
     {
       "id": "tearoom-brasserie-marchmont",
@@ -219,9 +237,11 @@
       "lastVerified": "2026-08-29",
       "verification": {
         "outcome": "live",
-        "note": "Still listed on Rightbiz at £29,500, leasehold, £15,000/yr rent; same listing as snapshot.",
+        "note": "Rightbiz listing still active: leasehold £29,500, rent £15,000/yr, Marchmont tearoom/brasserie/creperie.",
         "date": "2026-08-29"
-      }
+      },
+      "lat": 55.9363,
+      "lng": -3.1878
     }
   ]
 }
