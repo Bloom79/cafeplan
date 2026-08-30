@@ -1,5 +1,5 @@
 {
-  "updated": "2026-08-29",
+  "updated": "2026-08-30",
   "source": "seed refreshed by live research 2026-08-29; the daily verify agent keeps this file current",
   "listings": [
     {
@@ -20,11 +20,11 @@
       "notes": "Confidential sale, cross-listed as \"Fully Fitted Morningside Cafe, Long Lease, Low Rent\" on BusinessesForSale. Closest active listing to the Polwarth/Merchiston corridor.",
       "source": "Rightbiz (Aug 2026)",
       "url": "https://www.rightbiz.co.uk/buy_business/for_sale/655298_edinburgh.html",
-      "lastVerified": "2026-08-29",
+      "lastVerified": "2026-08-30",
       "verification": {
         "outcome": "live",
-        "note": "Still listed on Rightbiz at £35,000 with £11,000/yr rent, matches snapshot details exactly.",
-        "date": "2026-08-29"
+        "note": "Listing still active on Rightbiz; price £35,000 and rent £11,000 match snapshot exactly, long lease to Dec 2035.",
+        "date": "2026-08-30"
       },
       "lat": 55.9269,
       "lng": -3.209
@@ -47,11 +47,11 @@
       "notes": "The Bonnie Barista, east end of Bruntsfield Place. Commercial kitchen plus large basement. Rent runs well above the £14k Ashley Terrace anchor — Bruntsfield commands a premium. Listing now carries a \"PRICE REDUCED – NOW FIXED PRICE\" banner.",
       "source": "Rightbiz / Daltons (Aug 2026)",
       "url": "https://www.rightbiz.co.uk/buy_business/for_sale/630935_edinburgh.html",
-      "lastVerified": "2026-08-29",
+      "lastVerified": "2026-08-30",
       "verification": {
         "outcome": "live",
-        "note": "Still listed at £40,000 across Rightbiz, Daltons, Cornerstone; company remains active per Companies House.",
-        "date": "2026-08-29"
+        "note": "Still listed at £40,000 asking, £22,500 rent, via Cornerstone Business Agents; matches snapshot terms.",
+        "date": "2026-08-30"
       },
       "lat": 55.9382,
       "lng": -3.2095,
@@ -74,11 +74,11 @@
       "notes": "Vegetarian restaurant, retirement sale, new 10-yr lease offered. Offer accepted — \"will re-advertise if that changes\". Useful size/rent benchmark (20 covers, £12k rent).",
       "source": "Rightbiz (Aug 2026)",
       "url": "https://www.rightbiz.co.uk/buy_business/for_sale/622797_edinburgh.html",
-      "lastVerified": "2026-08-29",
+      "lastVerified": "2026-08-30",
       "verification": {
         "outcome": "gone",
-        "note": "Listing shows as under offer (accepted offer); price on application, no longer actively for sale, matching recorded 'gone' status.",
-        "date": "2026-08-29"
+        "note": "Listing title now reads 'Under Offer: Charming 20-Seat Restaurant in Edinburgh'; offer accepted, no longer actively for sale.",
+        "date": "2026-08-30"
       },
       "lat": 55.9363,
       "lng": -3.1878
@@ -101,11 +101,11 @@
       "notes": "199 St John's Rd, Corstorphine High Street — decked front seating + rear conservatory. £150k turnover, £25k profit (17%), ~12 years left on lease with option to extend. Agent: DJK Group. The closest real-world validation of the model.",
       "source": "Rightbiz / Daltons (Aug 2026)",
       "url": "https://www.rightbiz.co.uk/buy_business/for_sale/615407_edinburgh.html",
-      "lastVerified": "2026-08-29",
+      "lastVerified": "2026-08-30",
       "verification": {
         "outcome": "live",
-        "note": "Still listed on Rightbiz at £40,000, rent £18,000, matching snapshot; also covered by local news as recently up for sale.",
-        "date": "2026-08-29"
+        "note": "Still listed on Rightbiz at £40,000/£18,000 rent; cafe still operating (2026 award finalist), no sale/closure evidence.",
+        "date": "2026-08-30"
       },
       "lat": 55.9442,
       "lng": -3.287
@@ -128,11 +128,11 @@
       "notes": "The business closed permanently (final day 19 April 2026; socials marked permanently closed; customers directed to sister cafe The Rosebean). Listing withdrawn — the building belongs to the Corstorphine Trust. Kept as a cautionary comparable.",
       "source": "Daltons (Aug 2026)",
       "url": "https://www.onthemarket.com/details/17268474/",
-      "lastVerified": "2026-08-29",
+      "lastVerified": "2026-08-30",
       "verification": {
         "outcome": "live",
-        "note": "Still listed for sale at offers over £35,000 via McEwan Fraser Legal; confirmed active on OnTheMarket and Zoopla.",
-        "date": "2026-08-29"
+        "note": "Still listed for sale, offers over £35,000, via McEwan Fraser Legal; matches snapshot price.",
+        "date": "2026-08-30"
       },
       "lat": 55.9423,
       "lng": -3.291
@@ -155,11 +155,11 @@
       "notes": "Formerly Todd's Cafe. Re-offered at reduced price 11/8/2026, vacant and equipped, unlicensed. Offers over £10,000 — the cheapest entry point on the watchlist; cheap for reasons worth investigating.",
       "source": "agent discovery (2026-08-29)",
       "url": "https://therestaurantagency.com/properties/property/121/mirth-zest-cafe-gelateria-marchmont-edinburgh",
-      "lastVerified": "2026-08-29",
+      "lastVerified": "2026-08-30",
       "verification": {
         "outcome": "live",
-        "note": "Still listed on The Restaurant Agency at offers over £10,000, rent £9,500pa, unchanged from snapshot.",
-        "date": "2026-08-29"
+        "note": "Still listed by The Restaurant Agency; offers over £10,000, recently reduced from £15,000; rent £9,500/yr.",
+        "date": "2026-08-30"
       },
       "lat": 55.9363,
       "lng": -3.1878
@@ -181,11 +181,11 @@
       "notes": "\"Very busy and profitable\" per agent Central Business Sales. Same price band as the Morningside cafe — two Morningside options to compare directly.",
       "source": "agent discovery (2026-08-29)",
       "url": "https://www.daltonsbusiness.com/listing/very-busy-and-profitable-dessert-and-ice-for-sale-DB2541715/",
-      "lastVerified": "2026-08-29",
+      "lastVerified": "2026-08-30",
       "verification": {
         "outcome": "live",
-        "note": "Still listed at £35,000 on Daltons and mirrored on Rightbiz; Morningside, Edinburgh dessert/ice cream parlour.",
-        "date": "2026-08-29"
+        "note": "Still listed on Daltons Business at £35,000, same description (fully refurbished, Morningside, leasehold).",
+        "date": "2026-08-30"
       },
       "lat": 55.9269,
       "lng": -3.209,
@@ -207,11 +207,11 @@
       "notes": "£30,000 leasehold on Rightbiz's live Edinburgh café pages — under the £35k–£40k cluster.",
       "source": "agent discovery (2026-08-29)",
       "url": "https://www.rightbiz.co.uk/buy_business/for_sale/640162_edinburgh.html",
-      "lastVerified": "2026-08-29",
+      "lastVerified": "2026-08-30",
       "verification": {
         "outcome": "unclear",
-        "note": "Could not find cached/indexed snippet for this specific listing; rightbiz blocks fetches and searches only surfaced unrelated dessert shops.",
-        "date": "2026-08-29"
+        "note": "Could not verify this specific listing; rightbiz blocks fetches and searches only surfaced unrelated Bruntsfield cafes at different prices.",
+        "date": "2026-08-30"
       },
       "lat": 55.9382,
       "lng": -3.2095
@@ -233,11 +233,11 @@
       "notes": "Christie & Co ref 1834, surfaced via Businesses for Sale Scotland. Cross-listed on Rightbiz and PrimeLocation; £15,000/yr rent per the listing.",
       "source": "agent discovery (2026-08-29)",
       "url": "https://www.rightbiz.co.uk/buy_business/for_sale/655143_edinburgh.html",
-      "lastVerified": "2026-08-29",
+      "lastVerified": "2026-08-30",
       "verification": {
         "outcome": "live",
-        "note": "Still listed on Rightbiz at £29,500, rent £15,000/yr, Marchmont Road, Edinburgh; no change from snapshot.",
-        "date": "2026-08-29"
+        "note": "Still listed on Rightbiz, £29,500 leasehold price unchanged; rent £15,000/yr now shown.",
+        "date": "2026-08-30"
       },
       "lat": 55.9363,
       "lng": -3.1878
