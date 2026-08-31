@@ -5,7 +5,10 @@ import { gmapsHref, isWalled, listingHref, listingLabel, searchHref } from '../l
 import { WORKER_URL } from '../config.js'
 import { useLocalStorage } from '../hooks/useLocalStorage.js'
 import { useListings } from '../hooks/useListings.js'
+import { fitScore, scoreBand } from '../lib/score.js'
 import Markdown from './Markdown.jsx'
+import FairPrice from './FairPrice.jsx'
+import Sparkline from './Sparkline.jsx'
 
 const OUTCOME_LABEL = {
   live: { text: '✓ verified for sale', cls: 'live' },
@@ -50,6 +53,7 @@ const COLUMNS = [
   ['rentPct', 'Rent / turnover', (l) => (l.rent != null && l.turnover ? l.rent / l.turnover : null)],
   ['startup', 'Budget if bought', (l) => l._startup ?? null],
   ['payback', 'Payback (your concept)', (l) => l._payback ?? null],
+  ['fit', 'Fit', (l) => l._fit ?? null],
   ['status', 'Status', (l) => l.status],
 ]
 
@@ -58,6 +62,7 @@ const cell = (key, v) => {
   if (key === 'multiple') return `${v.toFixed(1)}×`
   if (key === 'rentPct') return `${Math.round(v * 100)}%`
   if (key === 'payback') return `${v.toFixed(1)} yr`
+  if (key === 'fit') return <span className={`fit-chip ${scoreBand(v)}`}>{v}</span>
   if (['price', 'rent', 'turnover', 'profit', 'startup'].includes(key)) return gbp(v)
   return v
 }
@@ -131,6 +136,7 @@ export default function ListingsPanel() {
   const [favsOnly, setFavsOnly] = useLocalStorage('cafeplan:favsOnly', false)
   const [favs, setFavs] = useLocalStorage('cafeplan:favs', [])
   const [notes, setNotes] = useLocalStorage('cafeplan:listingNotes', {})
+  const [sdeInputs, setSdeInputs] = useLocalStorage('cafeplan:sdeInputs', {})
   const [view, setView] = useLocalStorage('cafeplan:listingsView', 'cards')
   const [sort, setSort] = useState({ key: 'price', dir: 'asc' })
   // per-listing action state: { kind, issue, busy, outcome, report, error }
@@ -225,7 +231,7 @@ export default function ListingsPanel() {
         const r = compute({ ...base, rent: l.rent ?? base.rent })
         if (r.profit > 0) payback = startup / r.profit
       }
-      return { ...l, _startup: startup, _payback: payback }
+      return { ...l, _startup: startup, _payback: payback, _fit: fitScore(l).score }
     })
   }, [shown, view])
 
@@ -273,6 +279,7 @@ export default function ListingsPanel() {
             const v = l.verification
             const vLabel = v ? OUTCOME_LABEL[v.outcome] || OUTCOME_LABEL.unclear : null
             const act = actions[l.id]
+            const fit = fitScore(l)
             return (
               <article key={l.id} className={`listing ${favs.includes(l.id) ? 'fav' : ''}`}>
                 {l.image && !brokenImgs[l.id] ? (
@@ -299,10 +306,7 @@ export default function ListingsPanel() {
                 <div className="price">{l.price != null ? gbp(l.price) : 'POA'}</div>
                 {l.history?.length > 0 && (
                   <div className="price-history" title="Asking price since we started watching">
-                    {l.history.map((h) => (
-                      <span key={h.date}>{gbp(h.price)} <i>→</i> </span>
-                    ))}
-                    <b>{l.price != null ? gbp(l.price) : 'POA'}</b>
+                    <Sparkline listing={l} />
                     <span className="when">changed {l.history[l.history.length - 1].date}</span>
                   </div>
                 )}
@@ -322,6 +326,12 @@ export default function ListingsPanel() {
                       {vLabel.text}{l.lastVerified ? ` · ${ago(l.lastVerified) || l.lastVerified}` : ''}
                     </span>
                   )}
+                  <span
+                    className={`fit-chip ${scoreBand(fit.score)}`}
+                    title={fit.parts.map((p) => `${p.label}: ${Math.round(p.s * p.w)}/${p.w}`).join('\n')}
+                  >
+                    fit {fit.score}
+                  </span>
                 </div>
                 <div className="tag-row">{l.tags.map((t) => <span className="tag" key={t}>{t}</span>)}</div>
                 <p className="notes">{l.notes}</p>
@@ -380,6 +390,12 @@ export default function ListingsPanel() {
                     Google Maps ↗
                   </a>
                 </div>
+
+                <FairPrice
+                  listing={l}
+                  inputs={sdeInputs[l.id]}
+                  setInputs={(v) => setSdeInputs({ ...sdeInputs, [l.id]: v })}
+                />
 
                 <label className="own-note">
                   <span>Your notes</span>

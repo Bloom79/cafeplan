@@ -19,6 +19,10 @@ export default function ModelPanel() {
   // While a field is being retyped it may be empty or half-written ("8." ,
   // ""); keep that text here so the box doesn't snap back to 0 mid-edit.
   const [draft, setDraft] = useState(null)
+  // Named snapshots of the assumptions, for comparing deals side by side.
+  const [saved, setSaved] = useLocalStorage('cafeplan:savedScenarios', [])
+  const [naming, setNaming] = useState(false)
+  const [newName, setNewName] = useState('')
 
   const r = useMemo(() => compute(a), [a])
 
@@ -124,6 +128,79 @@ export default function ModelPanel() {
           Reset to plan
         </button>
       </div>
+
+      {/* Saved scenarios: name the current assumptions ("Bennitos deal",
+          "Mirth+Zest budget") and compare them side by side later. */}
+      <div className="saved-bar">
+        <span className="label">Saved</span>
+        {saved.map((s) => (
+          <span key={s.name} className={`saved-chip ${JSON.stringify(s.values) === JSON.stringify(a) ? 'active' : ''}`}>
+            <button
+              className="load"
+              title={`Load "${s.name}" (saved ${s.at})`}
+              onClick={() => { setDraft(null); setScenario('custom'); setA({ ...DEFAULTS, ...s.values }) }}
+            >
+              {s.name}
+            </button>
+            <button className="del" aria-label={`Delete scenario ${s.name}`} onClick={() => setSaved(saved.filter((x) => x.name !== s.name))}>
+              ×
+            </button>
+          </span>
+        ))}
+        {naming ? (
+          <form
+            className="save-form"
+            onSubmit={(e) => {
+              e.preventDefault()
+              const name = newName.trim().slice(0, 30)
+              if (!name) return
+              setSaved([...saved.filter((s) => s.name !== name), { name, at: new Date().toISOString().slice(0, 10), values: a }])
+              setNewName('')
+              setNaming(false)
+            }}
+          >
+            <input
+              autoFocus
+              value={newName}
+              placeholder="e.g. Bennitos deal"
+              onChange={(e) => setNewName(e.target.value)}
+              onBlur={() => !newName.trim() && setNaming(false)}
+            />
+            <button type="submit" className="scenario-pill">Save</button>
+          </form>
+        ) : (
+          <button className="reset-btn save-as" onClick={() => setNaming(true)}>+ Save current as…</button>
+        )}
+      </div>
+
+      {saved.length >= 2 && (
+        <div className="panel saved-compare">
+          <h3 className="chart-title">Saved scenarios, side by side</h3>
+          <div className="sc-scroll">
+            <table className="case-table compare">
+              <thead>
+                <tr><th>Scenario</th><th>Revenue</th><th>Profit</th><th>Margin</th><th>Breakeven</th><th>Payback</th></tr>
+              </thead>
+              <tbody>
+                {saved.map((s) => {
+                  const sr = compute({ ...DEFAULTS, ...s.values })
+                  const sa = { ...DEFAULTS, ...s.values }
+                  return (
+                    <tr key={s.name}>
+                      <td className="name">{s.name}</td>
+                      <td className="mono">{gbp(sr.totalRev)}</td>
+                      <td className="mono">{gbp(sr.profit)}</td>
+                      <td className="mono">{pct(sr.margin)}</td>
+                      <td className="mono">{Number.isFinite(sr.coversBE) ? sr.coversBE.toFixed(1) : '—'}</td>
+                      <td className="mono">{sr.profit > 0 ? (sa.startupTotal / sr.profit).toFixed(1) + ' yr' : '—'}</td>
+                    </tr>
+                  )
+                })}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
 
       <div className="model-grid">
         {/* ————— assumptions ————— */}
