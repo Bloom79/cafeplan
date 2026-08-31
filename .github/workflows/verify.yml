@@ -53,3 +53,7 @@ jobs:
           git config user.email "actions@github.com"
           git add public/listings.json
           git diff --cached --quiet && echo "no data change" || (git commit -m "verify: update listings data [skip ci]" && git push)
+
+      # Wake the alert notifier: it diffs listings.json and pushes to subscribers.
+      - name: Notify alert subscribers
+        run: curl -sf -X POST https://cafeplan-verify.casatrova.workers.dev/check || true

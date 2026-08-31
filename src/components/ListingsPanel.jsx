@@ -9,6 +9,7 @@ import { fitScore, scoreBand } from '../lib/score.js'
 import Markdown from './Markdown.jsx'
 import FairPrice from './FairPrice.jsx'
 import Sparkline from './Sparkline.jsx'
+import AlertsBell from './AlertsBell.jsx'
 
 const OUTCOME_LABEL = {
   live: { text: '✓ verified for sale', cls: 'live' },
@@ -264,6 +265,7 @@ export default function ListingsPanel() {
         >
           ▤ Compare
         </button>
+        <AlertsBell />
         <span className="updated-line mono">data updated {data.updated}</span>
       </div>
 

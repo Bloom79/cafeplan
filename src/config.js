@@ -9,3 +9,7 @@ export const WORKER_URL = 'https://cafeplan-verify.casatrova.workers.dev'
 export const DATA_URL = typeof location !== 'undefined' && location.hostname === 'localhost'
   ? 'listings.json'
   : 'https://raw.githubusercontent.com/Bloom79/cafeplan/main/public/listings.json'
+
+// Web-push application server key (public half; the private half lives as a
+// worker secret). Rotating it requires re-subscribing every device.
+export const VAPID_PUBLIC_KEY = 'BKGrZAooIZ-ZUx8_HqVbXapst2CpXFckF3ojNuV6LRLKdWNca6-rqLqbbpEeey7Pj9FqM7r9bpUpnuBxQPI4uEE'

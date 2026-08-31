@@ -3,8 +3,20 @@ main = "worker.js"
 compatibility_date = "2026-01-01"
 
 # Deploy (from this directory):
-#   npx wrangler secret put GITHUB_TOKEN   # fine-grained PAT, Issues r/w on Bloom79/cafeplan
-#   npx wrangler deploy
+#   npx wrangler secret put GITHUB_TOKEN         # gh OAuth token, Issues r/w on Bloom79/cafeplan
+#   npx wrangler secret put VAPID_PRIVATE_KEY    # web-push private key (pair of VAPID_PUBLIC_KEY)
+#   npm install && npx wrangler deploy
 #
-# Live at: https://cafeplan-verify.<your-subdomain>.workers.dev
+# Live at: https://cafeplan-verify.casatrova.workers.dev
 # The app calls it via WORKER_URL in src/config.js — update that if the name differs.
+
+[vars]
+VAPID_PUBLIC_KEY = "BKGrZAooIZ-ZUx8_HqVbXapst2CpXFckF3ojNuV6LRLKdWNca6-rqLqbbpEeey7Pj9FqM7r9bpUpnuBxQPI4uEE"
+
+[[kv_namespaces]]
+binding = "ALERTS"
+id = "06f6d17f2037453193badfb963b6ddcd"
+
+# Safety-net notification check; workflows also POST /check after data pushes.
+[triggers]
+crons = ["*/30 * * * *"]
