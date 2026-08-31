@@ -44,7 +44,14 @@ const writeDb = (db) => writeFileSync(DATA, JSON.stringify(db, null, 2) + '\n')
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms))
 
+// Set when Copilot reports the monthly premium-request quota is spent —
+// retrying is pointless until it resets on the 1st, so every caller can
+// stop early and say so plainly instead of leaving cryptic "unverified"s.
+export let quotaExhausted = false
+export const QUOTA_NOTE = 'Copilot monthly quota exhausted — checks resume automatically when it resets on the 1st'
+
 async function copilot(prompt) {
+  if (quotaExhausted) return null
   const args = ['-p', prompt]
   if (MODEL) args.push('--model', MODEL)
   // The token check hits api.github.com and can fail transiently; retry a
@@ -64,6 +71,11 @@ async function copilot(prompt) {
     if (stdout && /[[{]/.test(stdout)) {
       if (process.env.VERIFY_DEBUG) console.log('—— copilot raw ——\n' + stdout.slice(0, 1500) + '\n——————')
       return stdout
+    }
+    if (/exceeded your monthly quota/i.test(stderr)) {
+      quotaExhausted = true
+      console.log('—— copilot: monthly quota exhausted; skipping further model calls')
+      return null
     }
     if (process.env.VERIFY_DEBUG)
       console.log(`—— copilot attempt ${attempt} failed: status=${res.status} error=${res.error ? res.error.code : 'none'} stderr=${stderr.slice(0, 200)}`)
@@ -152,7 +164,8 @@ Reply with ONLY this JSON object:
     if (!['live', 'changed', 'gone', 'unclear'].includes(res.outcome)) res.outcome = 'unclear'
     return res
   } catch (e) {
-    return { outcome: 'unclear', price: null, url: null, note: 'verdict unavailable: ' + e.message, sources: [] }
+    const note = quotaExhausted ? QUOTA_NOTE : 'verdict unavailable: ' + e.message
+    return { outcome: 'unclear', price: null, url: null, note, sources: [] }
   }
 }
 
@@ -239,7 +252,7 @@ function mergeVerification(db, id, res) {
   if (!l) return null
   // A failed verdict (no model available, transient auth) must never
   // overwrite a previous good verification — keep the old badge instead.
-  if (res.outcome === 'unclear' && /verdict unavailable|no model/i.test(res.note || '')) return l
+  if (res.outcome === 'unclear' && /verdict unavailable|no model|quota exhausted/i.test(res.note || '')) return l
   // Take the canonical URL the verifier actually landed on, even over one we
   // already had: a stored link that points at the wrong page is exactly what
   // a re-verify should repair. Only a confirmed sighting may overwrite.
@@ -386,6 +399,7 @@ async function main() {
     const lines = [
       `**Verifica — ${l.name}** (${TODAY})`,
       '',
+      ...(quotaExhausted ? ['⚠️ **Quota mensile Copilot esaurita** — la verifica non è stata eseguita; riprova dopo il reset (il 1° del mese).', ''] : []),
       `**Esito:** ${OUTCOME_IT[res.outcome]}`,
       '',
       `- Prezzo attuale: ${res.price != null ? '£' + res.price.toLocaleString('en-GB') : 'non indicato'}`,
@@ -407,9 +421,9 @@ async function main() {
       out('status', 'ok'); return
     }
     const db = readDb()
-    db.updated = TODAY
     let ok = 0, unclear = 0
     for (const l of [...db.listings]) {
+      if (quotaExhausted) break // pointless until the quota resets on the 1st
       try {
         const res = await verifyListing(l)
         mergeVerification(db, l.id, res)
@@ -421,13 +435,22 @@ async function main() {
       }
     }
     let added = 0
-    if (discover) {
+    if (discover && !quotaExhausted) {
       try {
         added = mergeDiscovery(db, await discoverListings(db.listings))
       } catch (e) {
         console.log('discovery failed — ' + e.message)
       }
     }
+    if (quotaExhausted) {
+      // Leave db.updated alone: the data was NOT refreshed today, and the
+      // app's "data updated" line should not claim it was.
+      writeDb(db)
+      out('status', 'ok')
+      out('summary', `quota Copilot esaurita — ${ok} verificate prima dello stop; riparte col reset mensile`)
+      return
+    }
+    db.updated = TODAY
     writeDb(db)
     out('status', 'ok')
     out('summary', `${ok} verificate · ${unclear} incerte · ${added} nuove`)

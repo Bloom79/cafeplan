@@ -1,6 +1,6 @@
-import React, { useEffect, useRef, useState } from 'react'
-import { gbp } from '../data/model.js'
-import { applyListingToModel } from '../lib/applyListing.js'
+import React, { useEffect, useMemo, useRef, useState } from 'react'
+import { DEFAULTS, compute, gbp } from '../data/model.js'
+import { MODEL_KEY, applyListingToModel, startupFor } from '../lib/applyListing.js'
 import { gmapsHref, isWalled, listingHref, listingLabel, searchHref } from '../lib/links.js'
 import { WORKER_URL } from '../config.js'
 import { useLocalStorage } from '../hooks/useLocalStorage.js'
@@ -48,6 +48,8 @@ const COLUMNS = [
   ['profit', 'Profit', (l) => l.profit],
   ['multiple', 'Price / profit', (l) => (l.price != null && l.profit ? l.price / l.profit : null)],
   ['rentPct', 'Rent / turnover', (l) => (l.rent != null && l.turnover ? l.rent / l.turnover : null)],
+  ['startup', 'Budget if bought', (l) => l._startup ?? null],
+  ['payback', 'Payback (your concept)', (l) => l._payback ?? null],
   ['status', 'Status', (l) => l.status],
 ]
 
@@ -55,7 +57,8 @@ const cell = (key, v) => {
   if (v == null) return <span className="none">—</span>
   if (key === 'multiple') return `${v.toFixed(1)}×`
   if (key === 'rentPct') return `${Math.round(v * 100)}%`
-  if (['price', 'rent', 'turnover', 'profit'].includes(key)) return gbp(v)
+  if (key === 'payback') return `${v.toFixed(1)} yr`
+  if (['price', 'rent', 'turnover', 'profit', 'startup'].includes(key)) return gbp(v)
   return v
 }
 
@@ -104,8 +107,10 @@ function CompareTable({ rows, sort, setSort }) {
       <p className="footnote">
         Price / profit is the multiple you are being asked to pay — small UK cafés change hands at
         1.5×–2.5× adjusted profit, so anything above that needs a reason. Rent / turnover above
-        ~12% is the number that quietly eats the year. Blanks are undisclosed: that is itself the
-        first question for the agent.
+        ~12% is the number that quietly eats the year. <b>Budget if bought</b> is the asking price
+        plus the rest of the mid-case startup budget; <b>Payback</b> divides it by the profit YOUR
+        model makes with that listing's rent plugged in — the seller's trade doesn't enter it.
+        Blanks are undisclosed: that is itself the first question for the agent.
       </p>
     </div>
   )
@@ -203,6 +208,27 @@ export default function ListingsPanel() {
     (l) => (area === 'All' || l.area === area) && (!favsOnly || favs.includes(l.id)),
   )
 
+  // Decision columns for the compare view: total budget at the asking price,
+  // and how long YOUR concept (the live model, with this listing's rent
+  // plugged in) takes to pay it back. Reads the model the user last edited.
+  const compareRows = useMemo(() => {
+    if (view !== 'table') return shown
+    let base = DEFAULTS
+    try {
+      const raw = window.localStorage.getItem(MODEL_KEY)
+      if (raw) base = { ...DEFAULTS, ...JSON.parse(raw) }
+    } catch { /* private mode — plan defaults */ }
+    return shown.map((l) => {
+      const startup = startupFor(l)
+      let payback = null
+      if (startup != null) {
+        const r = compute({ ...base, rent: l.rent ?? base.rent })
+        if (r.profit > 0) payback = startup / r.profit
+      }
+      return { ...l, _startup: startup, _payback: payback }
+    })
+  }, [shown, view])
+
   // Images from the portals sometimes rot or hotlink-block; drop broken
   // ones silently instead of showing a torn-image icon.
   const [brokenImgs, setBrokenImgs] = useState({})
@@ -236,7 +262,7 @@ export default function ListingsPanel() {
       </div>
 
       {view === 'table' && shown.length > 0 && (
-        <CompareTable rows={shown} sort={sort} setSort={setSort} />
+        <CompareTable rows={compareRows} sort={sort} setSort={setSort} />
       )}
 
       {shown.length === 0 ? (
