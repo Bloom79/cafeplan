@@ -19,15 +19,17 @@
       ],
       "notes": "Confidential sale, cross-listed as \"Fully Fitted Morningside Cafe, Long Lease, Low Rent\" on BusinessesForSale. Closest active listing to the Polwarth/Merchiston corridor.",
       "source": "Rightbiz (Aug 2026)",
-      "url": "https://www.rightbiz.co.uk/buy_business/for_sale/655298_edinburgh.html",
+      "url": "https://www.daltonsbusiness.com/listing/very-busy-and-profitable-dessert-and-ice-for-sale-DB2541715/",
       "lastVerified": "2026-09-02",
       "verification": {
         "outcome": "live",
-        "note": "Still listed on Rightbiz, price £35,000 and rent £11,000 unchanged from snapshot.",
+        "note": "Active listings found on Daltons, Rightbiz and BusinessesForSale; asking £35,000 (leasehold). Address/photos withheld on public listings.",
         "date": "2026-09-02"
       },
       "lat": 55.9269,
-      "lng": -3.209
+      "lng": -3.209,
+      "lastChecked": "2026-09-02",
+      "unclearStreak": 0
     },
     {
       "id": "bruntsfield-coffee",
@@ -50,12 +52,16 @@
       "lastVerified": "2026-09-02",
       "verification": {
         "outcome": "live",
-        "note": "Still listed at £40,000 fixed price, £22,500 rent, matching snapshot; mirrored on businessesforsale.com, Cornerstone, PrimeLocation.",
+        "note": "Listing appears active on Rightbiz/Daltons/PrimeLocation at £40,000; evidence shows address and representative images on listing pages.",
         "date": "2026-09-02"
       },
-      "lat": 55.9382,
-      "lng": -3.2095,
-      "image": "https://cdn.daltonsbusiness.com/wp-content/uploads/2025/11/1763472586-Bonnie-scaled.webp"
+      "lat": 55.9376478,
+      "lng": -3.2063226,
+      "image": "https://cdn.daltonsbusiness.com/wp-content/uploads/2025/11/1763472586-Bonnie-scaled.webp",
+      "lastChecked": "2026-09-02",
+      "address": "80 Bruntsfield Place, Edinburgh, EH10 4HG",
+      "coordsExact": true,
+      "unclearStreak": 0
     },
     {
       "id": "marchmont-20seat",
@@ -77,11 +83,13 @@
       "lastVerified": "2026-09-02",
       "verification": {
         "outcome": "gone",
-        "note": "Listing now shown as 'Under Offer' (offer accepted); no longer actively for sale, price on application.",
+        "note": "Rightbiz listing (ID 622797) for the 20-seat Marchmont restaurant is marked \"Under Offer\"; no asking price shown.",
         "date": "2026-09-02"
       },
       "lat": 55.9363,
-      "lng": -3.1878
+      "lng": -3.1878,
+      "lastChecked": "2026-09-02",
+      "unclearStreak": 0
     },
     {
       "id": "bennitos",
@@ -100,11 +108,11 @@
       ],
       "notes": "199 St John's Rd, Corstorphine High Street — decked front seating + rear conservatory. £150k turnover, £25k profit (17%), ~12 years left on lease with option to extend. Agent: DJK Group. The closest real-world validation of the model.",
       "source": "Rightbiz / Daltons (Aug 2026)",
-      "url": "https://www.rightbiz.co.uk/buy_business/for_sale/615407_edinburgh.html",
+      "url": "https://www.rightbiz.co.uk/Buy-a-Business-for-Sale/615407_Edinburgh.html",
       "lastVerified": "2026-09-02",
       "verification": {
         "outcome": "live",
-        "note": "Listing still publicly marketed at £40,000; local press coverage confirms the sale listing.",
+        "note": "Rightbiz listing and local press (Edinburgh Live/News) show Bennitos Cafe still for sale at £40,000; business reported open.",
         "date": "2026-09-02"
       },
       "lat": 55.9429196,
@@ -135,11 +143,15 @@
       "lastVerified": "2026-09-02",
       "verification": {
         "outcome": "live",
-        "note": "Still listed for £35,000 (offers over) via McEwan Fraser Legal; consistent across OnTheMarket, PrimeLocation, Zoopla.",
+        "note": "Active estate-agent listings (OnTheMarket/Zoopla/McEwan Fraser) show leasehold offers over £35,000 at 1A Orchardfield Ave.",
         "date": "2026-09-02"
       },
-      "lat": 55.9423,
-      "lng": -3.291
+      "lat": 55.9402634,
+      "lng": -3.2838115,
+      "lastChecked": "2026-09-02",
+      "address": "1A Orchardfield Avenue, Corstorphine, Edinburgh EH12 7SX",
+      "coordsExact": true,
+      "unclearStreak": 0
     },
     {
       "id": "mirth-zest",
@@ -158,15 +170,19 @@
       ],
       "notes": "Formerly Todd's Cafe. Re-offered at reduced price 11/8/2026, vacant and equipped, unlicensed. Offers over £10,000 — the cheapest entry point on the watchlist; cheap for reasons worth investigating.",
       "source": "agent discovery (2026-08-29)",
-      "url": "https://therestaurantagency.com/properties/property/121/mirth-zest-cafe-gelateria-marchmont-edinburgh",
+      "url": "https://www.therestaurantagency.com/properties/property/121/mirth-zest-cafe-gelateria-marchmont-edinburgh",
       "lastVerified": "2026-09-02",
       "verification": {
         "outcome": "live",
-        "note": "Still listed by The Restaurant Agency, offers over £10,000, rent ~£9,500/yr, unchanged from snapshot.",
+        "note": "Listing appears live on The Restaurant Agency (\"offers over £10,000\"); premises at 24 Marchmont Crescent. No definitive photo located.",
         "date": "2026-09-02"
       },
-      "lat": 55.9363,
-      "lng": -3.1878
+      "lat": 55.937956,
+      "lng": -3.192951,
+      "lastChecked": "2026-09-02",
+      "address": "24 Marchmont Crescent, Edinburgh EH9 1HG",
+      "coordsExact": true,
+      "unclearStreak": 0
     },
     {
       "id": "dessert-parlour-morningside",
@@ -188,12 +204,15 @@
       "lastVerified": "2026-09-02",
       "verification": {
         "outcome": "live",
-        "note": "Listing confirmed still active at £35,000 leasehold via Rightbiz/Daltons search results, matches snapshot terms.",
+        "note": "Listing appears active on Daltons/Rightbiz; asking £35,000; premises at 45 Comiston Road, Morningside, Edinburgh.",
         "date": "2026-09-02"
       },
-      "lat": 55.9269,
-      "lng": -3.209,
-      "image": "https://cdn.daltonsbusiness.com/wp-content/uploads/2026/05/1778590333-sweet-paradise-6-scaled.webp"
+      "lat": 55.9237,
+      "lng": -3.21001,
+      "image": "https://cdn.daltonsbusiness.com/wp-content/uploads/2026/05/1778590333-sweet-paradise-6-scaled.webp",
+      "lastChecked": "2026-09-02",
+      "address": "45 Comiston Road, Morningside, Edinburgh, EH10 6AB",
+      "unclearStreak": 0
     },
     {
       "id": "charming-dessert-bruntsfield",
@@ -214,11 +233,14 @@
       "lastVerified": "2026-09-02",
       "verification": {
         "outcome": "unclear",
-        "note": "Could not access rightbiz listing 640162 directly; web searches found no matching snippet confirming status.",
+        "note": "No active Rightbiz listing found in searches; closest indexed ad (Gumtree) exists but cannot confirm it matches the Rightbiz snapshot or current market status.",
         "date": "2026-09-02"
       },
       "lat": 55.9382,
-      "lng": -3.2095
+      "lng": -3.2095,
+      "lastChecked": "2026-09-02",
+      "address": "45 Comiston Road, EH10 6AB (near Bruntsfield)",
+      "unclearStreak": 1
     },
     {
       "id": "tearoom-brasserie-marchmont",
@@ -240,11 +262,15 @@
       "lastVerified": "2026-09-02",
       "verification": {
         "outcome": "live",
-        "note": "T42 Tearoom & Brasserie, Marchmont Crescent, still listed via Cornerstone Business Agents at £29,500 guide price, unchanged.",
+        "note": "Zoopla/agent listing (Cornerstone) shows leasehold guide price £29,500 for a tearoom on Marchmont Crescent — listing appears active.",
         "date": "2026-09-02"
       },
-      "lat": 55.9363,
-      "lng": -3.1878
+      "lat": 55.9363123,
+      "lng": -3.1939905,
+      "lastChecked": "2026-09-02",
+      "address": "92 Marchmont Crescent, Edinburgh EH9 1HD",
+      "coordsExact": true,
+      "unclearStreak": 0
     },
     {
       "id": "contemporary-matcha-stockbridge",
@@ -264,16 +290,18 @@
       "url": "https://www.daltonsbusiness.com/listing/contemporary-matcha-tea-shop-stockbridge-for-sale-DB2597314/",
       "image": null,
       "address": "Stockbridge",
-      "lat": null,
-      "lng": null,
+      "lat": 55.9591715,
+      "lng": -3.2215984,
       "lastChecked": "2026-09-02",
       "lastVerified": "2026-09-02",
       "lastChanged": "2026-09-02",
       "verification": {
         "outcome": "live",
-        "note": "found by discovery scan",
+        "note": "Listing appears still live — asking £49,000 leasehold on Daltons, Rightbiz and agent listing.",
         "date": "2026-09-02"
-      }
+      },
+      "coordsExact": true,
+      "unclearStreak": 0
     },
     {
       "id": "bubble-tea-shandwick-place",
@@ -300,9 +328,10 @@
       "lastChanged": "2026-09-02",
       "verification": {
         "outcome": "live",
-        "note": "found by discovery scan",
+        "note": "Listing appears active on Daltons and mirrored on property portals; no evidence of sale/withdrawal found.",
         "date": "2026-09-02"
-      }
+      },
+      "unclearStreak": 0
     },
     {
       "id": "gorgie-road-coffee-shop-sandwich-bar",
@@ -348,19 +377,21 @@
       ],
       "notes": "Well-fitted, compact Class 1 coffee shop in high-profile central Edinburgh; landlord requires experienced operator with existing business.",
       "source": "agent discovery (2026-09-02)",
-      "url": "https://www.daltonsbusiness.com/listing/a-superb-class-1-cafe-and-coffee-shop-opportunity-for-sale-DB2189945/",
+      "url": "https://cornerstoneba.co.uk/Businesses-For-Sale/Detail/35500/1690-caffe-in-central-edinburgh",
       "image": null,
-      "address": null,
-      "lat": null,
-      "lng": null,
+      "address": "5 Castle Street, Edinburgh EH2 3AH",
+      "lat": 55.951355,
+      "lng": -3.2029253,
       "lastChecked": "2026-09-02",
       "lastVerified": "2026-09-02",
       "lastChanged": "2026-09-02",
       "verification": {
         "outcome": "live",
-        "note": "found by discovery scan",
+        "note": "Listing found live on multiple broker sites (Cornerstone, Rightbiz) at £35,500 for 5 Castle Street; no sold/withdrawn notice found.",
         "date": "2026-09-02"
-      }
+      },
+      "coordsExact": true,
+      "unclearStreak": 0
     },
     {
       "id": "edinburgh-city-centre-cafe-50k",
@@ -379,7 +410,7 @@
       "source": "agent discovery (2026-09-02)",
       "url": "https://www.daltonsbusiness.com/listing/edinburgh-city-centre-cafe-in-excellent-condition-for-sale-DB2540136/",
       "image": null,
-      "address": null,
+      "address": "Shandwick Place, Edinburgh (EH2)",
       "lat": null,
       "lng": null,
       "lastChecked": "2026-09-02",
@@ -387,9 +418,10 @@
       "lastChanged": "2026-09-02",
       "verification": {
         "outcome": "live",
-        "note": "found by discovery scan",
+        "note": "Listing still appears active at £50,000 (Daltons/Zoopla); located on Shandwick Place, Edinburgh. No sold/withdrawn notices found.",
         "date": "2026-09-02"
-      }
+      },
+      "unclearStreak": 0
     },
     {
       "id": "beautifully-presented-gift-and-coffee-shop-70k",
@@ -408,17 +440,19 @@
       "source": "agent discovery (2026-09-02)",
       "url": "https://www.daltonsbusiness.com/listing/beautifully-presented-gift-and-coffee-shop-for-sale-DB2496125/",
       "image": null,
-      "address": null,
-      "lat": null,
-      "lng": null,
+      "address": "Whitehouse Road, Barnton, Edinburgh",
+      "lat": 55.9608628,
+      "lng": -3.3061529,
       "lastChecked": "2026-09-02",
       "lastVerified": "2026-09-02",
       "lastChanged": "2026-09-02",
       "verification": {
         "outcome": "live",
-        "note": "found by discovery scan",
+        "note": "Multiple live listings (Daltons, Rightbiz, BusinessesForSale) show leasehold guide price £70,000 and rent £19,770; appears still on market.",
         "date": "2026-09-02"
-      }
+      },
+      "coordsExact": true,
+      "unclearStreak": 0
     }
   ]
 }
