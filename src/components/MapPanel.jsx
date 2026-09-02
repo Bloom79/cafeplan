@@ -24,7 +24,7 @@ const STATUS_COLOR = {
 }
 
 const statusOf = (l) =>
-  l.status === 'gone' ? 'gone' : l.status === 'under offer' ? 'under' : 'live'
+  l.status === 'gone' || l.status === 'stale' ? 'gone' : l.status === 'under offer' ? 'under' : 'live'
 
 const pinIcon = (color) =>
   L.divIcon({
@@ -68,6 +68,7 @@ export default function MapPanel() {
     live: true, under: true, gone: false,
   })
   const [favs] = useLocalStorage('cafeplan:favs', [])
+  const [dismissed] = useLocalStorage('cafeplan:dismissed', [])
   const [favsOnly, setFavsOnly] = useState(false)
   const [showCatchment, setShowCatchment] = useLocalStorage('cafeplan:catchment', true)
 
@@ -77,11 +78,12 @@ export default function MapPanel() {
         (l) =>
           l.lat != null &&
           l.lng != null &&
+          !dismissed.includes(l.id) &&
           (band === 'all' || bandOf(l) === band) &&
           statuses[statusOf(l)] !== false &&
           (!favsOnly || favs.includes(l.id)),
       ),
-    [data, band, statuses, favsOnly, favs],
+    [data, band, statuses, favsOnly, favs, dismissed],
   )
 
   const areas = useMemo(

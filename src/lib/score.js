@@ -72,7 +72,9 @@ export const scoreBand = (score) =>
 
 export const SDE_MULTIPLES = [1.5, 2.5]
 
-export function sdeCheck({ profit, ownerWage = 0, oneOffs = 0 }, ask) {
+export function sdeCheck({ profit, ownerWage = 0, oneOffs = 0 } = {}, ask) {
+  // An empty box is "not entered", not zero — Number('') would say 0.
+  if (profit === '' || profit == null) return null
   const p = Number(profit)
   if (!Number.isFinite(p)) return null
   const sde = p + (Number(ownerWage) || 0) + (Number(oneOffs) || 0)
@@ -86,4 +88,47 @@ export function sdeCheck({ profit, ownerWage = 0, oneOffs = 0 }, ask) {
     verdict = 'no-ask'
   }
   return { sde, low, high, verdict, ask }
+}
+
+// ————— the verdict ————————————————————————————————
+//
+// One number and a sentence per listing: fit (does the site suit the
+// concept), payback on your own model, the SDE band if you have seller
+// figures, and the market status. Rank = 0–100; the shortlist is the top
+// of the ranking among listings still for sale.
+
+export function verdict(l, { payback = null, sde = null } = {}) {
+  if (l.status === 'gone' || l.status === 'stale') return { rank: 0, band: 'out', reasons: ['no longer on the market'] }
+  const fit = fitScore(l)
+  let rank = fit.score
+  const reasons = []
+
+  const rentPart = fit.parts.find((p) => p.key === 'rent')
+  if (rentPart && rentPart.s >= 0.85) reasons.push('rent under the anchor')
+  else if (rentPart && rentPart.s <= 0.3) reasons.push('rent well above the anchor')
+  const areaPart = fit.parts.find((p) => p.key === 'area')
+  if (areaPart && areaPart.s >= 0.9) reasons.push('in the canal corridor')
+  else if (areaPart && areaPart.s <= 0.4) reasons.push('outside the target catchment')
+
+  if (payback != null) {
+    if (payback <= 2) { rank += 15; reasons.push(`pays back in ${payback.toFixed(1)} yr on your concept`) }
+    else if (payback <= 3) { rank += 5; reasons.push(`${payback.toFixed(1)} yr payback`) }
+    else if (payback > 5) { rank -= 15; reasons.push(`slow payback (${payback.toFixed(1)} yr)`) }
+  }
+  if (sde) {
+    if (sde.verdict === 'below-band') { rank += 10; reasons.push('ask below the SDE band') }
+    else if (sde.verdict === 'in-band') { rank += 5; reasons.push('ask inside the SDE band') }
+    else if (sde.verdict === 'above-band') { rank -= 15; reasons.push('ask above the SDE band') }
+    else if (sde.verdict === 'no-earnings') { rank -= 10; reasons.push('no earnings behind the price') }
+  } else if (l.turnover == null && l.profit == null) {
+    reasons.push('no figures yet — ask the agent')
+  }
+  if (l.status === 'under offer') { rank -= 30; reasons.push('under offer') }
+  // A listing nobody can confirm is on the market is a listing you cannot
+  // call about with confidence — and it drifts to "stale" after a few more.
+  if (l.verification?.outcome === 'unclear') { rank -= 12; reasons.push('could not be verified') }
+
+  rank = Math.max(0, Math.min(100, Math.round(rank)))
+  const band = rank >= 75 ? 'call' : rank >= 55 ? 'watch' : 'pass'
+  return { rank, band, reasons }
 }

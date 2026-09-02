@@ -1,4 +1,9 @@
 import React, { useRef } from 'react'
+import SyncPanel from './SyncPanel.jsx'
+
+// Short labels for narrow screens — "Business case" and "Next steps" were
+// the two that fell off the right edge of the tab strip on a phone.
+const SHORT = { model: 'Model', listings: 'Listings', map: 'Map', case: 'Case', steps: 'Steps' }
 
 export default function Header({ tab, setTab, tabs }) {
   const navRef = useRef(null)
@@ -22,6 +27,7 @@ export default function Header({ tab, setTab, tabs }) {
           <span className="eyebrow">Café business case — Edinburgh</span>
         </div>
         <div className="header-spacer" />
+        <SyncPanel />
         <div className="header-meta">
           SHANDON · POLWARTH · MERCHISTON<br />
           UNION CANAL CORRIDOR
@@ -39,7 +45,8 @@ export default function Header({ tab, setTab, tabs }) {
             className="tab"
             onClick={() => setTab(id)}
           >
-            {label}
+            <span className="long">{label}</span>
+            <span className="short">{SHORT[id] || label}</span>
             {count != null && <span className="count">{count}</span>}
           </button>
         ))}

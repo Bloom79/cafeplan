@@ -138,7 +138,7 @@ export default function ModelPanel() {
             <button
               className="load"
               title={`Load "${s.name}" (saved ${s.at})`}
-              onClick={() => { setDraft(null); setScenario('custom'); setA({ ...DEFAULTS, ...s.values }) }}
+              onClick={() => { setDraft(null); setApplied(null); setScenario('custom'); setA({ ...DEFAULTS, ...s.values }) }}
             >
               {s.name}
             </button>

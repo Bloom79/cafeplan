@@ -1,0 +1,250 @@
+import React, { useState } from 'react'
+import { gbp } from '../data/model.js'
+import { applyListingToModel } from '../lib/applyListing.js'
+import { gmapsHref, isWalled, listingHref, listingLabel, searchHref } from '../lib/links.js'
+import { fitScore, scoreBand } from '../lib/score.js'
+import { useInView } from '../hooks/useInView.js'
+import Markdown from './Markdown.jsx'
+import FairPrice from './FairPrice.jsx'
+import Sparkline from './Sparkline.jsx'
+
+const OUTCOME_LABEL = {
+  live: { text: '✓ verified for sale', cls: 'live' },
+  changed: { text: '⚠ changed', cls: 'changed' },
+  gone: { text: '✕ no longer available', cls: 'gone' },
+  unclear: { text: '? unverified', cls: 'unclear' },
+}
+
+const STATUS_CLS = { 'under offer': 'under', gone: 'gone', stale: 'gone' }
+
+// Card thumbnails are a static 2×2 OpenStreetMap tile mosaic, not an
+// <iframe> of the OSM embed app: four ~20 kB PNGs instead of a whole second
+// web app per card, and no third-party attribution bar sprawling across a
+// 140px thumbnail. The block is chosen so the listing is never near an edge,
+// which lets the CSS centre it without exposing empty space.
+const TILE_Z = 15
+
+const mosaic = (lat, lng) => {
+  const n = 2 ** TILE_Z
+  const X = ((lng + 180) / 360) * n
+  const rad = (lat * Math.PI) / 180
+  const Y = ((1 - Math.log(Math.tan(rad) + 1 / Math.cos(rad)) / Math.PI) / 2) * n
+  const x0 = Math.floor(X) - (X - Math.floor(X) < 0.5 ? 1 : 0)
+  const y0 = Math.floor(Y) - (Y - Math.floor(Y) < 0.5 ? 1 : 0)
+  const wrap = (v) => ((v % n) + n) % n
+  const urls = []
+  for (let dy = 0; dy < 2; dy++)
+    for (let dx = 0; dx < 2; dx++)
+      urls.push(`https://tile.openstreetmap.org/${TILE_Z}/${wrap(x0 + dx)}/${wrap(y0 + dy)}.png`)
+  return { urls, px: (X - x0) / 2, py: (Y - y0) / 2 }
+}
+
+const ago = (date) => {
+  if (!date) return null
+  const d = (Date.now() - new Date(date).getTime()) / 86400000
+  if (!Number.isFinite(d)) return null
+  if (d < 1) return 'today'
+  if (d < 2) return 'yesterday'
+  return `${Math.floor(d)} days ago`
+}
+
+// "checked today, unchanged since 29 Aug" — the honest freshness line.
+const freshness = (l) => {
+  const checked = l.lastChecked || l.lastVerified
+  if (!checked) return null
+  const changed = l.lastChanged
+  return `checked ${ago(checked) || checked}${changed ? ` · unchanged since ${changed}` : ''}`
+}
+
+export default function ListingCard({
+  listing: l, fav, onFav, dismissed, onDismiss, note, onNote,
+  sdeInputs, onSdeInputs, action, onRequest, verdict,
+}) {
+  const v = l.verification
+  const vLabel = v ? OUTCOME_LABEL[v.outcome] || OUTCOME_LABEL.unclear : null
+  const fit = fitScore(l)
+  const [showFit, setShowFit] = useState(false)
+  const [imgBroken, setImgBroken] = useState(false)
+  const [mapRef, mapSeen] = useInView()
+
+  return (
+    <article className={`listing ${fav ? 'fav' : ''} ${dismissed ? 'dismissed' : ''}`}>
+      {l.image && !imgBroken ? (
+        <a className="photo" href={l.url || l.image} target="_blank" rel="noreferrer" tabIndex={-1} aria-hidden="true">
+          <img src={l.image} alt="" loading="lazy" onError={() => setImgBroken(true)} />
+        </a>
+      ) : (
+        <div className="photo tile" aria-hidden="true">
+          <span className="tile-name">{l.name}</span>
+          <span className="tile-area">{l.area} · Edinburgh</span>
+        </div>
+      )}
+
+      <div className="top">
+        <h3>{l.name}</h3>
+        <button
+          className={`fav-btn ${fav ? 'on' : ''}`}
+          aria-label={fav ? `Remove ${l.name} from saved` : `Save ${l.name}`}
+          aria-pressed={fav}
+          onClick={onFav}
+        >
+          {fav ? '★' : '☆'}
+        </button>
+      </div>
+
+      {verdict && verdict.band !== 'out' && (
+        <div className={`verdict-line ${verdict.band}`}>
+          <b>{verdict.band === 'call' ? 'Call first' : verdict.band === 'watch' ? 'Worth a look' : 'Probably pass'}</b>
+          <span className="mono"> · {verdict.rank}</span>
+          {verdict.reasons.length > 0 && <span className="why"> — {verdict.reasons.slice(0, 3).join(', ')}</span>}
+        </div>
+      )}
+
+      <div className="price">{l.price != null ? gbp(l.price) : 'POA'}</div>
+      {l.history?.length > 0 && (
+        <div className="price-history" title="Asking price since we started watching">
+          <Sparkline listing={l} />
+          <span className="when">changed {l.history[l.history.length - 1].date}</span>
+        </div>
+      )}
+      <div className="meta">
+        <span>{l.area} · {l.tenure}</span>
+        {l.address && <span className="addr">{l.address}</span>}
+        {l.rent != null && <span>Rent {gbp(l.rent)}/yr</span>}
+        {l.turnover != null && (
+          <span>Turnover {gbp(l.turnover)}/yr · profit {gbp(l.profit)} ({Math.round((l.profit / l.turnover) * 100)}%)</span>
+        )}
+      </div>
+
+      <div className="badge-row">
+        <span className={`status-badge ${STATUS_CLS[l.status] || 'active'}`}>{l.status}</span>
+        {vLabel && (
+          <span className={`vbadge ${vLabel.cls}`} title={v.note || ''}>
+            {vLabel.text}
+          </span>
+        )}
+        <button
+          className={`fit-chip ${scoreBand(fit.score)}`}
+          aria-expanded={showFit}
+          onClick={() => setShowFit(!showFit)}
+          title="How well this site fits the concept — tap for the breakdown"
+        >
+          fit {fit.score}
+        </button>
+      </div>
+      {freshness(l) && <div className="freshness mono">{freshness(l)}</div>}
+      {showFit && (
+        <ul className="fit-breakdown">
+          {fit.parts.map((p) => (
+            <li key={p.key}>
+              <span>{p.label}</span>
+              <b className="mono">{Math.round(p.s * p.w)}/{p.w}</b>
+            </li>
+          ))}
+        </ul>
+      )}
+
+      <div className="tag-row">{l.tags.map((t) => <span className="tag" key={t}>{t}</span>)}</div>
+      <p className="notes">{l.notes}</p>
+
+      {l.lat != null && l.lng != null && (
+        <a
+          ref={mapRef}
+          className="map-preview"
+          href={gmapsHref(l)}
+          target="_blank"
+          rel="noreferrer"
+          title="Open in Google Maps"
+          aria-label={`${l.name} on the map — opens Google Maps`}
+        >
+          {mapSeen && (() => {
+            const m = mosaic(l.lat, l.lng)
+            return (
+              <span className="mosaic" style={{ '--px': m.px, '--py': m.py }}>
+                {m.urls.map((u) => (
+                  <img key={u} src={u} alt="" width="256" height="256" loading="lazy" />
+                ))}
+                <span className={`mpin ${l.coordsExact ? 'exact' : ''}`} />
+              </span>
+            )
+          })()}
+          <span className="osm-credit">© OpenStreetMap{l.coordsExact ? '' : ' · area centre'}</span>
+        </a>
+      )}
+
+      <div className="card-actions">
+        <a className="action-btn view" href={listingHref(l)} target="_blank" rel="noreferrer">
+          {listingLabel(l)}
+        </a>
+        {l.url && isWalled(l) && (
+          <a
+            className="action-btn ghost"
+            href={searchHref(l)}
+            target="_blank"
+            rel="noreferrer"
+            title="Rightbiz may ask you to prove you are human — this route goes via search instead"
+          >
+            via search ↗
+          </a>
+        )}
+        <button className="action-btn" disabled={action?.busy} onClick={() => onRequest('verifica', l)}>
+          {action?.busy && action?.kind === 'verifica' ? 'verifying…' : 'Verify now'}
+        </button>
+        <button className="action-btn ghost" disabled={action?.busy} onClick={() => onRequest('analizza', l)}>
+          {action?.busy && action?.kind === 'analizza' ? 'analysing…' : 'Analyse'}
+        </button>
+        <button
+          className="action-btn model"
+          onClick={() => { applyListingToModel(l); window.location.hash = '#model' }}
+          title="Load this site's rent and asking price into the model"
+        >
+          Run in the model →
+        </button>
+        <a className="action-btn ghost gmaps" href={gmapsHref(l)} target="_blank" rel="noreferrer">
+          Google Maps ↗
+        </a>
+        <button
+          className="action-btn ghost dismiss"
+          onClick={onDismiss}
+          title={dismissed ? 'Bring it back into the running' : 'Hide it from the shortlist, compare and map'}
+        >
+          {dismissed ? 'Reconsider' : 'Not for me'}
+        </button>
+      </div>
+
+      <FairPrice listing={l} inputs={sdeInputs} setInputs={onSdeInputs} />
+
+      <label className="own-note">
+        <span>Your notes</span>
+        <textarea
+          rows={2}
+          value={note || ''}
+          placeholder="what the agent said, what to check, what it felt like…"
+          onChange={(e) => onNote(e.target.value)}
+        />
+      </label>
+
+      {action?.error && <p className="act-error">{action.error}</p>}
+      {action?.busy && !action?.error && (
+        <p className="act-status mono">
+          agent running{action.issue ? ` · issue #${action.issue}` : ''} — a minute or two, this tab keeps polling
+        </p>
+      )}
+      {action?.open && !action?.busy && action?.report ? (
+        <details className="report" open>
+          <summary>{action.kind === 'analizza' ? 'Due diligence report' : 'Verification report'}</summary>
+          <Markdown text={action.report} />
+        </details>
+      ) : l.analysis?.report ? (
+        // The stored copy: an Analyse run costs credits, so it is kept in
+        // the data rather than lost with the tab.
+        <details className="report">
+          <summary>Due diligence · {l.analysis.date}</summary>
+          <Markdown text={l.analysis.report} />
+        </details>
+      ) : null}
+
+      <span className="src">snapshot · {l.source}</span>
+    </article>
+  )
+}

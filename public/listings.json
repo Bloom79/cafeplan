@@ -104,11 +104,15 @@
       "lastVerified": "2026-09-02",
       "verification": {
         "outcome": "live",
-        "note": "Still listed on Rightbiz at £40,000 leasehold, £18,000 rent; corroborated by Edinburgh news coverage.",
+        "note": "Listing still publicly marketed at £40,000; local press coverage confirms the sale listing.",
         "date": "2026-09-02"
       },
-      "lat": 55.9442,
-      "lng": -3.287
+      "lat": 55.9429196,
+      "lng": -3.2860658,
+      "lastChecked": "2026-09-02",
+      "address": "199 St John’s Road, Corstorphine, Edinburgh EH12 7UU",
+      "coordsExact": true,
+      "unclearStreak": 0
     },
     {
       "id": "dower-house",

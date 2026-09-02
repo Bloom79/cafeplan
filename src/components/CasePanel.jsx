@@ -1,5 +1,22 @@
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useMemo, useState } from 'react'
 import { CASE_SECTIONS } from '../data/businessCase.js'
+import { DEFAULTS, compute, gbp } from '../data/model.js'
+import { APPLIED_KEY, MODEL_KEY } from '../lib/applyListing.js'
+
+// Live paragraphs read the model the user last edited, so the written case
+// never contradicts the numbers on the Model tab.
+const readLive = () => {
+  let a = DEFAULTS
+  let applied = null
+  try {
+    const raw = window.localStorage.getItem(MODEL_KEY)
+    if (raw) a = { ...DEFAULTS, ...JSON.parse(raw) }
+    applied = JSON.parse(window.localStorage.getItem(APPLIED_KEY))
+  } catch { /* private mode — defaults */ }
+  const r = compute(a)
+  const k = (n) => `£${Math.round(n / 1000)}k`
+  return { r, a, k, gbp, applied }
+}
 
 export default function CasePanel() {
   const [active, setActive] = useState(() => {
@@ -8,6 +25,11 @@ export default function CasePanel() {
   })
 
   const section = CASE_SECTIONS[active - 1]
+  // Re-read on every section change: the Model tab may have been edited
+  // since this panel mounted (the panel unmounts between tabs, so a
+  // mount-time read plus this is enough).
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const live = useMemo(() => readLive(), [active])
 
   useEffect(() => {
     window.history.replaceState(null, '', `#case-${active}`)
@@ -35,6 +57,7 @@ export default function CasePanel() {
         <h2>{section.title}</h2>
         <div className="sec-eyebrow">Section {String(section.n).padStart(2, '0')} / 09</div>
         {section.blocks.map((b, i) => {
+          if (b.live) return <p key={i} className="live-para">{b.live(live)} <span className="live-tag mono">live</span></p>
           if (b.p) return <p key={i}>{b.p}</p>
           if (b.h) return <h3 key={i}>{b.h}</h3>
           if (b.ul) return <ul key={i}>{b.ul.map((li, j) => <li key={j}>{li}</li>)}</ul>

@@ -3,19 +3,26 @@
 // The whole agent is the GitHub Copilot CLI (`copilot -p ...`) on the
 // owner's Copilot subscription: it searches the live web itself (built-in
 // web search), which also gets past Rightbiz's anti-bot wall via search
-// snippets and indexed pages. Zero marginal API cost on the default model;
-// set VERIFY_MODEL (e.g. claude-opus-5) to spend premium credits for
-// sharper judgements — note ~20 credits per opus request with search.
-// Optional ANTHROPIC_API_KEY falls back to the Anthropic API with its
-// server-side web_search tool if Copilot is unavailable.
+// snippets and indexed pages.
+//
+// Cost: verification runs on gpt-5-mini — measured at ~0.3 credits per
+// listing with search, versus ~6 on the default model — so a daily sweep of
+// the whole watchlist is ~80 credits/month. Due diligence (Analyse) keeps
+// the default model: it is on demand and the judgement matters more.
+// VERIFY_MODEL / ANALYSE_MODEL override either. Optional ANTHROPIC_API_KEY
+// falls back to the Anthropic API (server-side web_search) if Copilot is
+// unavailable.
 //
 // Modes (first match wins):
 //   env ISSUE_BODY set   → single request from the app: "Verifica:" re-checks
 //                          one listing, "Analizza:" runs due diligence. Posts
 //                          the report as the issue comment the app polls,
 //                          closes the issue.
-//   --all                → daily run: verify every listing + discover new
-//                          Edinburgh going-concerns; rewrite listings.json.
+//   --all                → daily run: verify what is due (cadence in
+//                          lib.mjs: active every 2 days, parked weekly;
+//                          --force checks everything) + --discover scans
+//                          for new Edinburgh going-concerns.
+//   --test <id>          → one local verification, no GitHub plumbing.
 //   --dry                → no model, no network: prints the plan (testing).
 //
 // Never exits non-zero: workflows branch on the `status` GITHUB_OUTPUT.
@@ -24,13 +31,14 @@ import { appendFileSync, readFileSync, writeFileSync } from 'fs'
 import { spawnSync as run } from 'child_process'
 import { fileURLToPath } from 'url'
 import { dirname, join } from 'path'
+import { extractJson, mergeDiscovery, mergeVerification, needsCheck } from './lib.mjs'
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..')
 const DATA = join(ROOT, 'public', 'listings.json')
 const TODAY = new Date().toISOString().slice(0, 10)
 
-// Empty = the subscription's default model (no premium credits).
-const MODEL = process.env.VERIFY_MODEL || ''
+const VERIFY_MODEL = process.env.VERIFY_MODEL || 'gpt-5-mini'
+const ANALYSE_MODEL = process.env.ANALYSE_MODEL || '' // '' = subscription default
 
 const out = (k, v) => {
   console.log(`${k}=${v}`)
@@ -50,10 +58,10 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms))
 export let quotaExhausted = false
 export const QUOTA_NOTE = 'Copilot monthly quota exhausted — checks resume automatically when it resets on the 1st'
 
-async function copilot(prompt) {
+async function copilot(prompt, model) {
   if (quotaExhausted) return null
   const args = ['-p', prompt]
-  if (MODEL) args.push('--model', MODEL)
+  if (model) args.push('--model', model)
   // The token check hits api.github.com and can fail transiently; retry a
   // couple of times before giving up.
   for (let attempt = 1; attempt <= 3; attempt++) {
@@ -91,7 +99,7 @@ async function anthropic(prompt) {
     const { default: Anthropic } = await import('@anthropic-ai/sdk')
     const client = new Anthropic()
     const resp = await client.messages.create({
-      model: MODEL || 'claude-opus-5',
+      model: 'claude-opus-5',
       max_tokens: 4000,
       system: 'You verify UK businesses-for-sale listings. Search the web for current evidence. Reply with ONLY the requested JSON or Markdown.',
       tools: [{ type: 'web_search_20260209', name: 'web_search', max_uses: 8 }],
@@ -105,39 +113,29 @@ async function anthropic(prompt) {
   }
 }
 
-async function judge(prompt) {
-  return (await copilot(prompt)) || (await anthropic(prompt))
+async function judge(prompt, model = VERIFY_MODEL) {
+  return (await copilot(prompt, model)) || (await anthropic(prompt))
 }
 
-// The CLI's output carries banner/progress noise — including TRUNCATED json
-// fragments from tool results whose braces never close (which would poison
-// a brace-matcher). The model's actual answer always sits on its own
-// line(s), so: try to parse every line that starts with { or [, joining up
-// to 6 following lines for pretty-printed output.
-const extractJson = (text, expectedKey) => {
-  if (!text) throw new Error('no model output')
-  const parsed = []
-  const fenced = [...text.matchAll(/```(?:json)?\s*([\s\S]*?)```/g)].map((m) => m[1])
-  const lines = text.split('\n')
-  for (let i = 0; i < lines.length; i++) {
-    const t = lines[i].trim()
-    if (!t.startsWith('{') && !t.startsWith('[')) continue
-    for (let j = i; j < Math.min(i + 6, lines.length); j++) {
-      const chunk = lines.slice(i, j + 1).join('\n').trim()
-      if (!/^[[{]/.test(chunk)) break
-      try { parsed.push(JSON.parse(chunk)); break } catch { /* keep joining */ }
-    }
+// Free geocoding for the listing's street address (Nominatim, 1 req/s
+// policy). Only runs when the model surfaced an address and we do not yet
+// hold exact coordinates — area centroids get replaced, exact ones kept.
+async function geocode(address) {
+  try {
+    const q = encodeURIComponent(`${address}, Edinburgh, UK`)
+    const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&limit=1&q=${q}`, {
+      headers: { 'User-Agent': 'cafeplan-verify-agent (github.com/Bloom79/cafeplan)' },
+    })
+    if (!res.ok) return null
+    const [hit] = await res.json()
+    if (!hit) return null
+    const lat = +hit.lat, lng = +hit.lon
+    // Sanity: inside greater Edinburgh.
+    if (lat < 55.85 || lat > 56.02 || lng < -3.45 || lng > -3.05) return null
+    return { lat, lng }
+  } catch {
+    return null
   }
-  for (const raw of fenced) {
-    try { parsed.push(JSON.parse(raw.trim())) } catch { /* skip */ }
-  }
-  if (!parsed.length) throw new Error('no JSON in model output')
-  if (expectedKey) {
-    const hit = parsed.reverse().find((p) => p && typeof p === 'object' && !Array.isArray(p) && expectedKey in p)
-    if (hit) return hit
-  }
-  const obj = parsed.find((p) => p && typeof p === 'object' && !Array.isArray(p))
-  return obj || parsed[0]
 }
 
 // ————— verify one listing ————————————————————————
@@ -157,11 +155,19 @@ Search angles that work: the business name + area + "for sale"; site:rightbiz.co
 
 Judgement rules: still listed / clearly for sale = live; listed but price or terms differ from our snapshot = changed; sold / under offer / withdrawn / business closed = gone; evidence insufficient = unclear. Prefer the freshest asking price you actually saw.
 
+Also capture, if any source shows them: the street address of the premises (street + number, or at least the street/parade name), and a photo URL of the business — from the listing OR from news coverage / the business's own pages (og:image is fine).
+
 Reply with ONLY this JSON object:
-{"outcome":"live|changed|gone|unclear","price":<current asking price as number, or null>,"url":<best canonical listing url you saw, or null>,"image":<direct image url of a photo from the listing (og:image or similar), or null>,"lat":<latitude number if the listing reveals coordinates, else null>,"lng":<longitude number, else null>,"note":"<=160 chars English","sources":[<=3 urls you actually used]}`
+{"outcome":"live|changed|gone|unclear","price":<current asking price as number, or null>,"url":<best canonical listing url you saw, or null>,"image":<direct photo url, or null>,"address":<street address string, or null>,"lat":<latitude number if a source states coordinates, else null>,"lng":<longitude number, else null>,"note":"<=160 chars English","sources":[<=3 urls you actually used]}`
   try {
     const res = extractJson(await judge(prompt), 'outcome')
     if (!['live', 'changed', 'gone', 'unclear'].includes(res.outcome)) res.outcome = 'unclear'
+    // Exact coordinates come from the address, not the model's guess.
+    const address = res.address || l.address
+    if (address && !l.coordsExact) {
+      const g = await geocode(address)
+      if (g) { res.lat = g.lat; res.lng = g.lng; res.coordsExact = true }
+    }
     return res
   } catch (e) {
     const note = quotaExhausted ? QUOTA_NOTE : 'verdict unavailable: ' + e.message
@@ -173,28 +179,76 @@ Reply with ONLY this JSON object:
 
 const TARGET_AREAS = 'Shandon, Polwarth, Merchiston, Bruntsfield, Morningside, Marchmont, Fountainbridge, Slateford, Haymarket, Stockbridge, Corstorphine, Edinburgh'
 
-async function discoverListings(known) {
-  const prompt = `Today is ${TODAY}. Search the LIVE web WIDELY for café / coffee-shop / dessert / small-restaurant / deli / bistro businesses-for-sale that are CURRENTLY listed in Edinburgh (going concerns, not franchises, not outside Edinburgh), especially in or near: ${TARGET_AREAS}.
+const FIND_SHAPE = `Reply with ONLY a JSON array (empty if nothing new), max 6 items:
+[{"id":"kebab-case-id","name":"","area":"","price":<number|null>,"tenure":"","rent":<number|null>,"turnover":<number|null>,"profit":<number|null>,"url":<specific listing page url|null>,"image":<direct photo url|null>,"address":<street address|null>,"notes":"<=140 chars English — why it matters for a canal-side café plan"}]`
 
-Cover as many of these sources as you can:
-- Portals: rightbiz.co.uk · daltonsbusiness.com · uk.businessesforsale.com · dynamicbusinesses.co.uk · businessesforsale.scot · primelocation.com · gumtree.com (Edinburgh, business section) · facebook.com Marketplace (Edinburgh business for sale) · business-asset.com (anti-bot — use search snippets: /gb/scotland/edinburgh/businesses-for-sale/cafe/) · zoopla.co.uk/commercial hospitality Edinburgh (dozens of listings in our band — it cross-posts agent stock: dedupe only EXACT same business name, keep genuinely different ones) · scottishbusinessagency.co.uk (listings at scottishbusinessagency.search-prop.com/properties — £10k–£60k band, Scotland-wide)
-- Business-transfer agents: Christie & Co (christieandco.com) · The Restaurant Agency (therestaurantagency.com) · Central Business Sales · DJK Group · Cornerstone Business Agents · McKay Commercial · Graham & Sibbald (g-s.co.uk — premises-heavy, >£75k common, but has Edinburgh restaurants)
-- Auctions: futurepropertyauctions.co.uk — check the current catalogues for cheap leasehold hospitality lots (they appear)
-- News: Edinburgh Evening News · The Scotsman · Edinburgh Live (runs sub-£50k café-for-sale roundups)
-- Searches: "business for sale" + each of: Bruntsfield, Morningside, Marchmont, Stockbridge, Leith, Haymarket, Corstorphine, "Union Canal", "canal side"
-Anti-bot walls are common (rightbiz, business-asset) — snippets and indexed pages are fine evidence.
+// Portals that answer a plain fetch: their category pages become evidence
+// text the model reads instead of having to find them itself.
+const OPEN_SOURCES = [
+  ['Daltons — Edinburgh cafés', 'https://www.daltonsbusiness.com/businesses-for-sale/cafes-coffee-shops/edinburgh/'],
+  ['Daltons — Edinburgh restaurants', 'https://www.daltonsbusiness.com/businesses-for-sale/restaurants/edinburgh/'],
+  ['The Restaurant Agency — Edinburgh', 'https://therestaurantagency.com/properties/?location=edinburgh'],
+]
 
-Already on our watchlist (do NOT repeat): ${known.map((l) => l.name).join('; ')}
-
-Reply with ONLY a JSON array (empty if nothing new), max 8 items:
-[{"id":"kebab-case-id","name":"","area":"","price":<number|null>,"tenure":"","rent":<number|null>,"turnover":<number|null>,"profit":<number|null>,"url":<string|null>,"image":<direct photo url from the listing, or null>,"lat":<number|null>,"lng":<number|null>,"notes":"<=140 chars English — why it matters for a canal-side café plan"}]`
+async function fetchText(url) {
   try {
-    const arr = extractJson(await judge(prompt))
-    return Array.isArray(arr) ? arr.slice(0, 8) : []
-  } catch (e) {
-    console.log('  discovery verdict failed: ' + e.message)
-    return []
+    const res = await fetch(url, { headers: { 'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 Chrome/120 Safari/537.36' }, signal: AbortSignal.timeout(20000) })
+    if (!res.ok) return null
+    const html = await res.text()
+    return html.replace(/<script[\s\S]*?<\/script>|<style[\s\S]*?<\/style>/gi, ' ')
+      .replace(/<[^>]+>/g, ' ').replace(/&amp;/g, '&').replace(/&#?\w+;/g, ' ')
+      .replace(/\s+/g, ' ').trim().slice(0, 6000)
+  } catch {
+    return null
   }
+}
+
+// Discovery runs as several narrow passes rather than one sprawling prompt:
+// a model given fifteen sources at once skims all of them; given one, it
+// actually reads it. Each pass is ~0.3 credits on gpt-5-mini.
+async function discoverListings(known) {
+  const knownList = known.map((l) => l.name).join('; ')
+  const found = []
+  const seen = new Set()
+  const take = (arr) => {
+    for (const f of Array.isArray(arr) ? arr : []) {
+      const key = String(f?.name || '').toLowerCase().replace(/[^a-z0-9]+/g, '')
+      if (!key || seen.has(key)) continue
+      seen.add(key)
+      found.push(f)
+    }
+  }
+
+  // Pass 1: the open portals, fetched directly and handed over as text.
+  for (const [label, url] of OPEN_SOURCES) {
+    const text = await fetchText(url)
+    if (!text || text.length < 300) { console.log(`  discovery: ${label} — no page text`); continue }
+    const prompt = `Today is ${TODAY}. Below is the text of a businesses-for-sale category page (${label}). Extract every café / coffee shop / dessert / small restaurant / deli in EDINBURGH that is currently for sale (skip franchises, skip anything outside Edinburgh, skip "sold"/"under offer").
+Already on our watchlist (do NOT repeat): ${knownList}
+
+PAGE TEXT:
+${text}
+
+${FIND_SHAPE}`
+    try { take(extractJson(await judge(prompt))) } catch (e) { console.log(`  discovery: ${label} — ${e.message}`) }
+  }
+
+  // Pass 2: the walled portals through search snippets.
+  const passes = [
+    ['Rightbiz + BusinessesForSale via search', `Search the web for café / coffee shop / dessert / small restaurant businesses for sale in Edinburgh listed on rightbiz.co.uk or uk.businessesforsale.com (use site: searches; these portals block direct fetches — snippets and indexed pages are fine). Areas that matter most: ${TARGET_AREAS}.`],
+    ['Zoopla Commercial + agents', `Search zoopla.co.uk/for-sale/commercial hospitality listings in Edinburgh, and the Edinburgh café/restaurant stock of Christie & Co, Cornerstone Business Agents, Central Business Sales, DJK Group and Scottish Business Agency. Only going concerns in the £10k–£80k band; skip premises-only sales above that.`],
+    ['Local news', `Search Edinburgh Evening News, The Scotsman and Edinburgh Live for cafés / coffee shops put up for sale in the last 60 days (they run "café for sale" pieces). Extract the business, area and asking price when stated.`],
+  ]
+  for (const [label, brief] of passes) {
+    const prompt = `Today is ${TODAY}. ${brief}
+Already on our watchlist (do NOT repeat): ${knownList}
+
+${FIND_SHAPE}`
+    try { take(extractJson(await judge(prompt))) } catch (e) { console.log(`  discovery: ${label} — ${e.message}`) }
+    if (quotaExhausted) break
+  }
+  console.log(`  discovery: ${found.length} candidate(s) across passes`)
+  return found.slice(0, 8)
 }
 
 // ————— due diligence ————————————————————————————
@@ -220,104 +274,9 @@ Write GitHub-flavoured Markdown, English, starting with "## Due diligence — ${
 - **Fit with our concept** — catchment, daytime trade, evening aperitivo potential on that street.
 - **Risks & questions for the agent** — bullets for the first call.
 Cite the URLs you relied on inline. Direct, no padding, max ~400 words.`
-  const report = await judge(prompt)
+  const report = await judge(prompt, ANALYSE_MODEL)
   if (!report) throw new Error('no model available (install Copilot CLI or set COPILOT_GITHUB_TOKEN / ANTHROPIC_API_KEY)')
   return report
-}
-
-// ————— data merge ——————————————————————————————
-
-const slug = (s) => String(s).toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 50)
-
-// Tags that duplicate (and outlive) the status badge.
-const STATUS_TAG = /^(under offer|for sale|sold|withdrawn|gone|on the market)$/i
-
-// A link is only worth storing if it points at a specific listing page:
-// https, a real path, and not a search engine's results page — the model
-// sometimes hands back the query it ran instead of the page it found, and
-// the app then sends you somewhere plausible but wrong.
-const okUrl = (u) => {
-  try {
-    const { protocol, hostname, pathname } = new URL(String(u))
-    return protocol === 'https:'
-      && !/(^|\.)(google|bing|duckduckgo|yandex|search)\./.test(hostname)
-      && pathname.length > 1
-  } catch {
-    return false
-  }
-}
-
-function mergeVerification(db, id, res) {
-  const l = db.listings.find((x) => x.id === id)
-  if (!l) return null
-  // A failed verdict (no model available, transient auth) must never
-  // overwrite a previous good verification — keep the old badge instead.
-  if (res.outcome === 'unclear' && /verdict unavailable|no model|quota exhausted/i.test(res.note || '')) return l
-  // Take the canonical URL the verifier actually landed on, even over one we
-  // already had: a stored link that points at the wrong page is exactly what
-  // a re-verify should repair. Only a confirmed sighting may overwrite.
-  if (okUrl(res.url) && (!l.url || res.outcome === 'live' || res.outcome === 'changed'))
-    l.url = res.url
-  if (res.image && /^https:\/\//.test(res.image) && !l.image) l.image = res.image
-  if (Number.isFinite(res.lat) && Number.isFinite(res.lng) && Math.abs(res.lat) < 58 && Math.abs(res.lng) < 5) {
-    l.lat = +res.lat
-    l.lng = +res.lng
-  }
-  if (res.price != null && l.price != null && res.price !== l.price) {
-    l.history = [...(l.history || []), { date: TODAY, price: l.price }]
-    l.price = res.price
-    res.outcome = res.outcome === 'live' ? 'changed' : res.outcome
-  } else if (res.price != null && l.price == null) {
-    l.price = res.price
-  }
-  if (res.outcome === 'gone') l.status = 'gone'
-  if (res.outcome === 'live' && l.status === 'gone') l.status = 'active'
-  // Tags are editorial, but a few of them assert a market state the badge
-  // already shows — and go stale the moment the verdict moves ("under offer"
-  // sitting on a listing we have just marked gone). Drop those.
-  if (Array.isArray(l.tags)) l.tags = l.tags.filter((t) => !STATUS_TAG.test(String(t).trim()))
-  l.lastVerified = TODAY
-  l.verification = { outcome: res.outcome, note: res.note || '', date: TODAY }
-  return l
-}
-
-function mergeDiscovery(db, found) {
-  const ids = new Set(db.listings.map((l) => l.id))
-  let added = 0
-  for (const f of found) {
-    if (!f || !f.name || !f.area) continue
-    let id = slug(f.id || f.name)
-    while (ids.has(id)) id = id + '-2'
-    if (!/^[a-z0-9-]{2,60}$/.test(id)) continue
-    ids.add(id)
-    const num = (v) => (f[v] != null && Number.isFinite(+f[v]) ? +f[v] : null)
-    db.listings.push({
-      id,
-      name: String(f.name).slice(0, 90),
-      area: String(f.area).slice(0, 40),
-      price: num('price'),
-      tenure: String(f.tenure || 'Leasehold').slice(0, 40),
-      rent: num('rent'),
-      turnover: num('turnover'),
-      profit: num('profit'),
-      status: 'active',
-      tags: ['agent find'],
-      notes: String(f.notes || '').slice(0, 240),
-      source: `agent discovery (${TODAY})`,
-      url: okUrl(f.url) ? f.url : null,
-      image: /^https:\/\//.test(f.image || '') ? f.image : null,
-      lat: Number.isFinite(+f.lat) ? +f.lat : null,
-      lng: Number.isFinite(+f.lng) ? +f.lng : null,
-      lastVerified: TODAY,
-      verification: { outcome: 'live', note: 'found by discovery scan', date: TODAY },
-    })
-    added++
-  }
-  while (db.listings.length > 20) {
-    const i = db.listings.findIndex((l) => l.status === 'gone')
-    db.listings.splice(i === -1 ? 0 : i, 1)
-  }
-  return added
 }
 
 // ————— GitHub issue plumbing (single-request mode) —————
@@ -363,7 +322,7 @@ async function main() {
     console.log(`verifying: ${l.name} …`)
     const res = await verifyListing(l)
     console.log(JSON.stringify(res, null, 2))
-    mergeVerification(db, l.id, res)
+    mergeVerification(db, l.id, res, TODAY)
     writeDb(db)
     console.log('data updated.')
     return
@@ -394,7 +353,7 @@ async function main() {
       return
     }
     const res = await verifyListing(l)
-    mergeVerification(db, payload.id, res)
+    mergeVerification(db, payload.id, res, TODAY)
     writeDb(db)
     const lines = [
       `**Verifica — ${l.name}** (${TODAY})`,
@@ -416,17 +375,19 @@ async function main() {
 
   if (all) {
     const discover = process.argv.includes('--discover')
+    const force = process.argv.includes('--force')
+    const db = readDb()
+    const due = db.listings.filter((l) => needsCheck(l, TODAY, force))
     if (dry) {
-      console.log(`[dry] would verify all listings${discover ? ' + run discovery' : ''} (no model, no network)`)
+      console.log(`[dry] would verify ${due.length}/${db.listings.length} due listing(s)${discover ? ' + run discovery' : ''} (no model, no network)`)
       out('status', 'ok'); return
     }
-    const db = readDb()
-    let ok = 0, unclear = 0
-    for (const l of [...db.listings]) {
+    let ok = 0, unclear = 0, skipped = db.listings.length - due.length
+    for (const l of due) {
       if (quotaExhausted) break // pointless until the quota resets on the 1st
       try {
         const res = await verifyListing(l)
-        mergeVerification(db, l.id, res)
+        mergeVerification(db, l.id, res, TODAY)
         res.outcome === 'unclear' ? unclear++ : ok++
         console.log(`${l.name}: ${res.outcome}${res.note ? ' — ' + res.note : ''}`)
       } catch (e) {
@@ -437,7 +398,7 @@ async function main() {
     let added = 0
     if (discover && !quotaExhausted) {
       try {
-        added = mergeDiscovery(db, await discoverListings(db.listings))
+        added = mergeDiscovery(db, await discoverListings(db.listings), TODAY)
       } catch (e) {
         console.log('discovery failed — ' + e.message)
       }
@@ -453,11 +414,11 @@ async function main() {
     db.updated = TODAY
     writeDb(db)
     out('status', 'ok')
-    out('summary', `${ok} verificate · ${unclear} incerte · ${added} nuove`)
+    out('summary', `${ok} verificate · ${unclear} incerte · ${skipped} non dovute · ${added} nuove`)
     return
   }
 
-  console.log('usage: node scripts/verifica.mjs [--all] [--dry]   (or run with ISSUE_BODY for single-request mode)')
+  console.log('usage: node scripts/verifica.mjs [--all [--force] [--discover]] [--test <id>] [--dry]   (or run with ISSUE_BODY for single-request mode)')
 }
 
 main().catch((e) => {

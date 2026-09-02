@@ -1,44 +1,13 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react'
+import React, { useMemo, useState } from 'react'
 import { DEFAULTS, compute, gbp } from '../data/model.js'
-import { MODEL_KEY, applyListingToModel, startupFor } from '../lib/applyListing.js'
-import { gmapsHref, isWalled, listingHref, listingLabel, searchHref } from '../lib/links.js'
-import { WORKER_URL } from '../config.js'
+import { MODEL_KEY, startupFor } from '../lib/applyListing.js'
+import { listingHref } from '../lib/links.js'
+import { fitScore, scoreBand, sdeCheck, verdict as rankListing } from '../lib/score.js'
 import { useLocalStorage } from '../hooks/useLocalStorage.js'
 import { useListings } from '../hooks/useListings.js'
-import { fitScore, scoreBand } from '../lib/score.js'
-import Markdown from './Markdown.jsx'
-import FairPrice from './FairPrice.jsx'
-import Sparkline from './Sparkline.jsx'
+import { useAgentRequest } from '../hooks/useAgentRequest.js'
+import ListingCard from './ListingCard.jsx'
 import AlertsBell from './AlertsBell.jsx'
-
-const OUTCOME_LABEL = {
-  live: { text: '✓ verified for sale', cls: 'live' },
-  changed: { text: '⚠ changed', cls: 'changed' },
-  gone: { text: '✕ no longer available', cls: 'gone' },
-  unclear: { text: '? unverified', cls: 'unclear' },
-}
-
-// Card thumbnails are a static 2×2 OpenStreetMap tile mosaic, not an
-// <iframe> of the OSM embed app: four ~20 kB PNGs instead of a whole second
-// web app per card, and no third-party attribution bar sprawling across a
-// 140px thumbnail. The block is chosen so the listing is never near an edge,
-// which lets the CSS centre it without exposing empty space.
-const TILE_Z = 15
-
-const mosaic = (lat, lng) => {
-  const n = 2 ** TILE_Z
-  const X = ((lng + 180) / 360) * n
-  const rad = (lat * Math.PI) / 180
-  const Y = ((1 - Math.log(Math.tan(rad) + 1 / Math.cos(rad)) / Math.PI) / 2) * n
-  const x0 = Math.floor(X) - (X - Math.floor(X) < 0.5 ? 1 : 0)
-  const y0 = Math.floor(Y) - (Y - Math.floor(Y) < 0.5 ? 1 : 0)
-  const wrap = (v) => ((v % n) + n) % n
-  const urls = []
-  for (let dy = 0; dy < 2; dy++)
-    for (let dx = 0; dx < 2; dx++)
-      urls.push(`https://tile.openstreetmap.org/${TILE_Z}/${wrap(x0 + dx)}/${wrap(y0 + dy)}.png`)
-  return { urls, px: (X - x0) / 2, py: (Y - y0) / 2 }
-}
 
 // Side-by-side comparison. The columns are the ones that decide whether a
 // listing is worth a phone call: what it costs, what it costs to run, and
@@ -55,8 +24,13 @@ const COLUMNS = [
   ['startup', 'Budget if bought', (l) => l._startup ?? null],
   ['payback', 'Payback (your concept)', (l) => l._payback ?? null],
   ['fit', 'Fit', (l) => l._fit ?? null],
+  ['rank', 'Verdict', (l) => l._rank ?? null],
   ['status', 'Status', (l) => l.status],
 ]
+
+// On a phone the table scrolls sideways; "essentials" keeps the decision
+// columns in the first screen instead of hiding them off to the right.
+const ESSENTIALS = new Set(['name', 'price', 'rent', 'payback', 'rank'])
 
 const cell = (key, v) => {
   if (v == null) return <span className="none">—</span>
@@ -64,11 +38,13 @@ const cell = (key, v) => {
   if (key === 'rentPct') return `${Math.round(v * 100)}%`
   if (key === 'payback') return `${v.toFixed(1)} yr`
   if (key === 'fit') return <span className={`fit-chip ${scoreBand(v)}`}>{v}</span>
+  if (key === 'rank') return <span className={`fit-chip ${v >= 75 ? 'good' : v >= 55 ? 'mid' : 'low'}`}>{v}</span>
   if (['price', 'rent', 'turnover', 'profit', 'startup'].includes(key)) return gbp(v)
   return v
 }
 
-function CompareTable({ rows, sort, setSort }) {
+function CompareTable({ rows, sort, setSort, essentials, setEssentials }) {
+  const cols = essentials ? COLUMNS.filter(([k]) => ESSENTIALS.has(k)) : COLUMNS
   const get = Object.fromEntries(COLUMNS.map(([k, , fn]) => [k, fn]))
   const sorted = [...rows].sort((a, b) => {
     const x = get[sort.key](a)
@@ -83,52 +59,76 @@ function CompareTable({ rows, sort, setSort }) {
 
   return (
     <div className="panel compare-wrap">
-      <table className="case-table compare">
-        <thead>
-          <tr>
-            {COLUMNS.map(([key, label]) => (
-              <th key={key}>
-                <button className="th-sort" onClick={() => toggle(key)} aria-label={`Sort by ${label}`}>
-                  {label}
-                  {sort.key === key && <span className="dir">{sort.dir === 'asc' ? '▲' : '▼'}</span>}
-                </button>
-              </th>
-            ))}
-          </tr>
-        </thead>
-        <tbody>
-          {sorted.map((l) => (
-            <tr key={l.id} className={l.status === 'gone' ? 'faded' : ''}>
-              {COLUMNS.map(([key, , fn]) => (
-                <td key={key} className={key === 'name' ? 'name' : 'mono'}>
-                  {key === 'name'
-                    ? <a href={listingHref(l)} target="_blank" rel="noreferrer">{l.name}</a>
-                    : cell(key, fn(l))}
-                </td>
+      <div className="compare-tools">
+        <button className="filter-chip" aria-pressed={essentials} onClick={() => setEssentials(true)}>Essentials</button>
+        <button className="filter-chip" aria-pressed={!essentials} onClick={() => setEssentials(false)}>All columns</button>
+        <span className="scroll-hint mono">scroll sideways for more →</span>
+      </div>
+      <div className="compare-scroll">
+        <table className="case-table compare">
+          <thead>
+            <tr>
+              {cols.map(([key, label]) => (
+                <th key={key} className={key === 'name' ? 'sticky' : ''}>
+                  <button className="th-sort" onClick={() => toggle(key)} aria-label={`Sort by ${label}`}>
+                    {label}
+                    {sort.key === key && <span className="dir">{sort.dir === 'asc' ? '▲' : '▼'}</span>}
+                  </button>
+                </th>
               ))}
             </tr>
-          ))}
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            {sorted.map((l) => (
+              <tr key={l.id} className={l.status === 'gone' || l.status === 'stale' ? 'faded' : ''}>
+                {cols.map(([key, , fn]) => (
+                  <td key={key} className={key === 'name' ? 'name sticky' : 'mono'}>
+                    {key === 'name'
+                      ? <a href={listingHref(l)} target="_blank" rel="noreferrer">{l.name}</a>
+                      : cell(key, fn(l))}
+                  </td>
+                ))}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
       <p className="footnote">
         Price / profit is the multiple you are being asked to pay — small UK cafés change hands at
         1.5×–2.5× adjusted profit, so anything above that needs a reason. Rent / turnover above
         ~12% is the number that quietly eats the year. <b>Budget if bought</b> is the asking price
         plus the rest of the mid-case startup budget; <b>Payback</b> divides it by the profit YOUR
         model makes with that listing's rent plugged in — the seller's trade doesn't enter it.
+        <b> Verdict</b> folds fit, payback, the SDE band and market status into one 0–100 rank.
         Blanks are undisclosed: that is itself the first question for the agent.
       </p>
     </div>
   )
 }
 
-const ago = (date) => {
-  if (!date) return null
-  const d = (Date.now() - new Date(date).getTime()) / 86400000
-  if (!Number.isFinite(d)) return null
-  if (d < 1) return 'today'
-  if (d < 2) return 'yesterday'
-  return `${Math.floor(d)} days ago`
+function Shortlist({ rows }) {
+  const top = rows.filter((l) => l._verdict && l._verdict.band !== 'out').slice(0, 3)
+  if (!top.length) return null
+  return (
+    <div className="panel shortlist">
+      <h2 className="panel-title">Call these first</h2>
+      <ol>
+        {top.map((l) => (
+          <li key={l.id}>
+            <span className={`fit-chip ${l._rank >= 75 ? 'good' : l._rank >= 55 ? 'mid' : 'low'}`}>{l._rank}</span>
+            <b>{l.name}</b>
+            <span className="muted"> · {l.area} · {l.price != null ? gbp(l.price) : 'POA'}</span>
+            {l._verdict.reasons.length > 0 && <span className="why"> — {l._verdict.reasons.slice(0, 3).join(', ')}</span>}
+          </li>
+        ))}
+      </ol>
+      <p className="footnote">
+        Ranked by the verdict score: how well the site fits the concept, what it pays back on your own model,
+        the SDE band where you have seller figures, and whether it is actually still for sale. Save (★) the ones
+        you call; dismiss (Not for me) the ones you rule out and they drop out of everything.
+      </p>
+    </div>
+  )
 }
 
 export default function ListingsPanel() {
@@ -136,110 +136,49 @@ export default function ListingsPanel() {
   const [area, setArea] = useLocalStorage('cafeplan:area', 'All')
   const [favsOnly, setFavsOnly] = useLocalStorage('cafeplan:favsOnly', false)
   const [favs, setFavs] = useLocalStorage('cafeplan:favs', [])
+  const [dismissed, setDismissed] = useLocalStorage('cafeplan:dismissed', [])
+  const [showDismissed, setShowDismissed] = useState(false)
   const [notes, setNotes] = useLocalStorage('cafeplan:listingNotes', {})
   const [sdeInputs, setSdeInputs] = useLocalStorage('cafeplan:sdeInputs', {})
   const [view, setView] = useLocalStorage('cafeplan:listingsView', 'cards')
-  const [sort, setSort] = useState({ key: 'price', dir: 'asc' })
-  // per-listing action state: { kind, issue, busy, outcome, report, error }
-  const [actions, setActions] = useState({})
-  const pollTimers = useRef({})
-  const mounted = useRef(true)
+  const [essentials, setEssentials] = useLocalStorage('cafeplan:compareEssentials', true)
+  const [sort, setSort] = useState({ key: 'rank', dir: 'desc' })
+  const [actions, request] = useAgentRequest(refetch)
 
-  useEffect(() => {
-    mounted.current = true
-    const timers = pollTimers.current
-    return () => {
-      mounted.current = false
-      Object.values(timers).forEach(clearTimeout)
-    }
-  }, [])
-
-  const setAction = (id, patch) =>
-    setActions((a) => ({ ...a, [id]: { ...a[id], ...patch } }))
-
-  const stopPoll = (id) => {
-    if (pollTimers.current[id]) { clearTimeout(pollTimers.current[id]); delete pollTimers.current[id] }
-  }
-
-  const poll = (id, issue, tries = 0) => {
-    if (!mounted.current || tries > 60) {
-      stopPoll(id)
-      if (mounted.current && tries > 60) setAction(id, { busy: false, error: 'timed out — check the issue on GitHub' })
-      return
-    }
-    pollTimers.current[id] = setTimeout(async () => {
-      try {
-        const res = await fetch(`${WORKER_URL}/stato?issue=${issue}`, { cache: 'no-store' })
-        if (res.ok) {
-          const { state, outcome } = await res.json()
-          if (state === 'closed') {
-            const rr = await fetch(`${WORKER_URL}/report?issue=${issue}`, { cache: 'no-store' })
-            const { report } = rr.ok ? await rr.json() : {}
-            setAction(id, { busy: false, outcome, report, open: true })
-            setTimeout(() => mounted.current && refetch(), 4000)
-            return
-          }
-        }
-      } catch { /* transient — keep polling */ }
-      poll(id, issue, tries + 1)
-    }, 5000)
-  }
-
-  const request = async (kind, l) => {
-    setAction(l.id, { kind, busy: true, error: null, report: null, open: true })
-    try {
-      const res = await fetch(`${WORKER_URL}/${kind}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ id: l.id, name: l.name, url: l.url }),
-      })
-      const body = await res.json()
-      if (!res.ok || !body.ok) throw new Error(body.error || `worker ${res.status}`)
-      setAction(l.id, { issue: body.issue })
-      poll(l.id, body.issue)
-    } catch (e) {
-      setAction(l.id, {
-        busy: false,
-        error: /failed to fetch|networkerror/i.test(String(e))
-          ? 'verifier not reachable — is the worker deployed? (see README)'
-          : String(e.message || e),
-      })
-    }
-  }
-
-  const toggleFav = (id) =>
-    setFavs(favs.includes(id) ? favs.filter((f) => f !== id) : [...favs, id])
+  const toggleIn = (list, setList, id) =>
+    setList(list.includes(id) ? list.filter((x) => x !== id) : [...list, id])
 
   const areas = ['All', ...new Set(data.listings.map((l) => l.area))]
-  const shown = data.listings.filter(
-    (l) => (area === 'All' || l.area === area) && (!favsOnly || favs.includes(l.id)),
-  )
 
-  // Decision columns for the compare view: total budget at the asking price,
-  // and how long YOUR concept (the live model, with this listing's rent
-  // plugged in) takes to pay it back. Reads the model the user last edited.
-  const compareRows = useMemo(() => {
-    if (view !== 'table') return shown
+  // Decision figures for every listing: total budget at the asking price,
+  // payback of YOUR concept (live model, this listing's rent plugged in),
+  // fit score, SDE band from your inputs, and the verdict that folds them.
+  const enriched = useMemo(() => {
     let base = DEFAULTS
     try {
       const raw = window.localStorage.getItem(MODEL_KEY)
       if (raw) base = { ...DEFAULTS, ...JSON.parse(raw) }
     } catch { /* private mode — plan defaults */ }
-    return shown.map((l) => {
+    return data.listings.map((l) => {
       const startup = startupFor(l)
       let payback = null
       if (startup != null) {
         const r = compute({ ...base, rent: l.rent ?? base.rent })
         if (r.profit > 0) payback = startup / r.profit
       }
-      return { ...l, _startup: startup, _payback: payback, _fit: fitScore(l).score }
+      const sde = sdeCheck(sdeInputs[l.id], l.price)
+      const v = rankListing(l, { payback, sde })
+      return { ...l, _startup: startup, _payback: payback, _fit: fitScore(l).score, _rank: v.rank, _verdict: v }
     })
-  }, [shown, view])
+  }, [data, sdeInputs])
 
-  // Images from the portals sometimes rot or hotlink-block; drop broken
-  // ones silently instead of showing a torn-image icon.
-  const [brokenImgs, setBrokenImgs] = useState({})
-  const imgFailed = (id) => setBrokenImgs((b) => ({ ...b, [id]: true }))
+  const shown = enriched.filter(
+    (l) =>
+      (area === 'All' || l.area === area)
+      && (!favsOnly || favs.includes(l.id))
+      && (showDismissed ? dismissed.includes(l.id) : !dismissed.includes(l.id)),
+  )
+  const ranked = [...shown].sort((a, b) => b._rank - a._rank)
 
   return (
     <>
@@ -257,6 +196,16 @@ export default function ListingsPanel() {
         >
           ♥ Saved {favs.length > 0 && `(${favs.length})`}
         </button>
+        {dismissed.length > 0 && (
+          <button
+            className="filter-chip"
+            aria-pressed={showDismissed}
+            onClick={() => setShowDismissed(!showDismissed)}
+            title="Listings you ruled out"
+          >
+            ✕ Dismissed ({dismissed.length})
+          </button>
+        )}
         <button
           className="filter-chip"
           aria-pressed={view === 'table'}
@@ -269,176 +218,42 @@ export default function ListingsPanel() {
         <span className="updated-line mono">data updated {data.updated}</span>
       </div>
 
+      {!showDismissed && !favsOnly && area === 'All' && <Shortlist rows={ranked} />}
+
       {view === 'table' && shown.length > 0 && (
-        <CompareTable rows={compareRows} sort={sort} setSort={setSort} />
+        <CompareTable rows={shown} sort={sort} setSort={setSort} essentials={essentials} setEssentials={setEssentials} />
       )}
 
       {shown.length === 0 ? (
-        <div className="empty panel">No listings match. Clear the area filter or turn off “♥ Saved”.</div>
+        <div className="empty panel">
+          {showDismissed ? 'Nothing dismissed yet.' : 'No listings match. Clear the area filter or turn off “♥ Saved”.'}
+        </div>
       ) : view === 'table' ? null : (
         <div className="listing-grid">
-          {shown.map((l) => {
-            const v = l.verification
-            const vLabel = v ? OUTCOME_LABEL[v.outcome] || OUTCOME_LABEL.unclear : null
-            const act = actions[l.id]
-            const fit = fitScore(l)
-            return (
-              <article key={l.id} className={`listing ${favs.includes(l.id) ? 'fav' : ''}`}>
-                {l.image && !brokenImgs[l.id] ? (
-                  <a className="photo" href={l.url || l.image} target="_blank" rel="noreferrer" tabIndex={-1} aria-hidden="true">
-                    <img src={l.image} alt="" loading="lazy" onError={() => imgFailed(l.id)} />
-                  </a>
-                ) : (
-                  <div className="photo tile" aria-hidden="true">
-                    <span className="tile-name">{l.name}</span>
-                    <span className="tile-area">{l.area} · Edinburgh</span>
-                  </div>
-                )}
-                <div className="top">
-                  <h3>{l.name}</h3>
-                  <button
-                    className={`fav-btn ${favs.includes(l.id) ? 'on' : ''}`}
-                    aria-label={favs.includes(l.id) ? `Remove ${l.name} from saved` : `Save ${l.name}`}
-                    aria-pressed={favs.includes(l.id)}
-                    onClick={() => toggleFav(l.id)}
-                  >
-                    {favs.includes(l.id) ? '★' : '☆'}
-                  </button>
-                </div>
-                <div className="price">{l.price != null ? gbp(l.price) : 'POA'}</div>
-                {l.history?.length > 0 && (
-                  <div className="price-history" title="Asking price since we started watching">
-                    <Sparkline listing={l} />
-                    <span className="when">changed {l.history[l.history.length - 1].date}</span>
-                  </div>
-                )}
-                <div className="meta">
-                  <span>{l.area} · {l.tenure}</span>
-                  {l.rent != null && <span>Rent {gbp(l.rent)}/yr</span>}
-                  {l.turnover != null && (
-                    <span>Turnover {gbp(l.turnover)}/yr · profit {gbp(l.profit)} ({Math.round((l.profit / l.turnover) * 100)}%)</span>
-                  )}
-                </div>
-                <div className="badge-row">
-                  <span className={`status-badge ${l.status === 'under offer' ? 'under' : l.status === 'gone' ? 'gone' : 'active'}`}>
-                    {l.status}
-                  </span>
-                  {vLabel && (
-                    <span className={`vbadge ${vLabel.cls}`} title={v.note || ''}>
-                      {vLabel.text}{l.lastVerified ? ` · ${ago(l.lastVerified) || l.lastVerified}` : ''}
-                    </span>
-                  )}
-                  <span
-                    className={`fit-chip ${scoreBand(fit.score)}`}
-                    title={fit.parts.map((p) => `${p.label}: ${Math.round(p.s * p.w)}/${p.w}`).join('\n')}
-                  >
-                    fit {fit.score}
-                  </span>
-                </div>
-                <div className="tag-row">{l.tags.map((t) => <span className="tag" key={t}>{t}</span>)}</div>
-                <p className="notes">{l.notes}</p>
-
-                {l.lat != null && l.lng != null && (() => {
-                  const m = mosaic(l.lat, l.lng)
-                  return (
-                    <a
-                      className="map-preview"
-                      href={gmapsHref(l)}
-                      target="_blank"
-                      rel="noreferrer"
-                      title="Open in Google Maps"
-                      aria-label={`${l.name} on the map — opens Google Maps`}
-                    >
-                      <span className="mosaic" style={{ '--px': m.px, '--py': m.py }}>
-                        {m.urls.map((u) => (
-                          <img key={u} src={u} alt="" width="256" height="256" loading="lazy" />
-                        ))}
-                        <span className="mpin" />
-                      </span>
-                      <span className="osm-credit">© OpenStreetMap</span>
-                    </a>
-                  )
-                })()}
-
-                <div className="card-actions">
-                  <a className="action-btn view" href={listingHref(l)} target="_blank" rel="noreferrer">
-                    {listingLabel(l)}
-                  </a>
-                  {l.url && isWalled(l) && (
-                    <a
-                      className="action-btn ghost"
-                      href={searchHref(l)}
-                      target="_blank"
-                      rel="noreferrer"
-                      title="Rightbiz may ask you to prove you are human — this route goes via search instead"
-                    >
-                      via search ↗
-                    </a>
-                  )}
-                  <button className="action-btn" disabled={act?.busy} onClick={() => request('verifica', l)}>
-                    {act?.busy && act?.kind === 'verifica' ? 'verifying…' : 'Verify now'}
-                  </button>
-                  <button className="action-btn ghost" disabled={act?.busy} onClick={() => request('analizza', l)}>
-                    {act?.busy && act?.kind === 'analizza' ? 'analysing…' : 'Analyse'}
-                  </button>
-                  <button
-                    className="action-btn model"
-                    onClick={() => { applyListingToModel(l); window.location.hash = '#model' }}
-                    title="Load this site's rent and asking price into the model"
-                  >
-                    Run in the model →
-                  </button>
-                  <a className="action-btn ghost gmaps" href={gmapsHref(l)} target="_blank" rel="noreferrer">
-                    Google Maps ↗
-                  </a>
-                </div>
-
-                <FairPrice
-                  listing={l}
-                  inputs={sdeInputs[l.id]}
-                  setInputs={(v) => setSdeInputs({ ...sdeInputs, [l.id]: v })}
-                />
-
-                <label className="own-note">
-                  <span>Your notes</span>
-                  <textarea
-                    rows={2}
-                    value={notes[l.id] || ''}
-                    placeholder="what the agent said, what to check, what it felt like…"
-                    onChange={(e) => setNotes({ ...notes, [l.id]: e.target.value })}
-                  />
-                </label>
-
-                {act?.error && <p className="act-error">{act.error}</p>}
-                {act?.busy && !act?.error && (
-                  <p className="act-status mono">
-                    agent running{act.issue ? ` · issue #${act.issue}` : ''} — a minute or two, this tab keeps polling
-                  </p>
-                )}
-                {act?.open && !act?.busy && act?.report ? (
-                  <details className="report" open>
-                    <summary>{act.kind === 'analizza' ? 'Due diligence report' : 'Verification report'}</summary>
-                    <Markdown text={act.report} />
-                  </details>
-                ) : l.analysis?.report ? (
-                  // The stored copy: an Analyse run costs credits, so it is
-                  // kept in the data rather than lost with the tab.
-                  <details className="report">
-                    <summary>Due diligence · {l.analysis.date}</summary>
-                    <Markdown text={l.analysis.report} />
-                  </details>
-                ) : null}
-
-                <span className="src">snapshot · {l.source}</span>
-              </article>
-            )
-          })}
+          {ranked.map((l) => (
+            <ListingCard
+              key={l.id}
+              listing={l}
+              verdict={l._verdict}
+              fav={favs.includes(l.id)}
+              onFav={() => toggleIn(favs, setFavs, l.id)}
+              dismissed={dismissed.includes(l.id)}
+              onDismiss={() => toggleIn(dismissed, setDismissed, l.id)}
+              note={notes[l.id]}
+              onNote={(v) => setNotes({ ...notes, [l.id]: v })}
+              sdeInputs={sdeInputs[l.id]}
+              onSdeInputs={(v) => setSdeInputs({ ...sdeInputs, [l.id]: v })}
+              action={actions[l.id]}
+              onRequest={request}
+            />
+          ))}
         </div>
       )}
 
       <p className="footnote" style={{ marginTop: 18 }}>
         Verify re-checks a listing against the live web (Copilot agent) and updates the badge; Analyse runs a full
-        due-diligence report against our valuation anchors. A daily run keeps everything fresh automatically.
+        due-diligence report against our valuation anchors. Active listings are re-checked every two days
+        automatically, parked ones weekly.
       </p>
     </>
   )

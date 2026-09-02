@@ -153,6 +153,15 @@ export default {
     // ————— GET routes —————
 
     if (request.method === 'GET') {
+      // GET /sync?code=X — download a workspace snapshot.
+      if (u.pathname === '/sync') {
+        const code = (u.searchParams.get('code') || '').toUpperCase()
+        if (!/^[A-Z0-9]{6,12}$/.test(code)) return json({ error: 'invalid code' }, 400, cors)
+        const rec = await env.ALERTS.get('sync:' + code)
+        if (!rec) return json({ error: 'not found' }, 404, cors)
+        return json({ ok: true, data: JSON.parse(rec) }, 200, cors)
+      }
+
       const issue = +u.searchParams.get('issue')
       if (!issue) return json({ error: 'issue param required' }, 400, cors)
 
@@ -197,8 +206,27 @@ export default {
 
     // ————— POST routes —————
 
+    // /check is self-sourcing (reads the repo's own data) and throttled, so
+    // it needs no Origin: GitHub Actions call it with none after each data
+    // commit, and the worst an abuser can trigger is a no-op re-check.
+    if (u.pathname === '/check') return json(await runCheck(env), 200, cors)
+
     if (!ALLOWED_ORIGINS.includes(origin))
       return json({ error: 'origin not allowed' }, 403, cors)
+
+    // POST /sync — {code, data}: upload a workspace snapshot (favourites,
+    // notes, SDE inputs, saved scenarios, step statuses) under a share
+    // code, 90-day TTL. Codes are short and unguessable enough for a
+    // personal tool; the payload holds no secrets.
+    if (u.pathname === '/sync') {
+      const body = await readBody()
+      const code = String(body?.code || '').toUpperCase()
+      if (!/^[A-Z0-9]{6,12}$/.test(code)) return json({ error: 'invalid code' }, 400, cors)
+      const data = JSON.stringify(body.data || {})
+      if (data.length > 200e3) return json({ error: 'too large' }, 413, cors)
+      await env.ALERTS.put('sync:' + code, data, { expirationTtl: 90 * 86400 })
+      return json({ ok: true }, 200, cors)
+    }
 
     // Requests filed in the last hour, whoever asked for them. `since`
     // filters on last-updated, so this over-counts rather than under —
@@ -254,8 +282,6 @@ export default {
     }
 
     // Push endpoints — no GitHub, no rate ceiling needed (KV writes only).
-    if (u.pathname === '/check') return json(await runCheck(env), 200, cors)
-
     if (u.pathname === '/subscribe') {
       const body = await readBody()
       const s = body?.subscription
