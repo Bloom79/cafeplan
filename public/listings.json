@@ -245,6 +245,180 @@
       },
       "lat": 55.9363,
       "lng": -3.1878
+    },
+    {
+      "id": "contemporary-matcha-stockbridge",
+      "name": "Contemporary Matcha Tea Shop",
+      "area": "Stockbridge, Edinburgh",
+      "price": 49000,
+      "tenure": "Leasehold",
+      "rent": null,
+      "turnover": null,
+      "profit": null,
+      "status": "active",
+      "tags": [
+        "agent find"
+      ],
+      "notes": "Recently refurbished matcha tea house in Stockbridge; turn-key takeaway-focused with scope to expand cafe/takeaway offerings.",
+      "source": "agent discovery (2026-09-02)",
+      "url": "https://www.daltonsbusiness.com/listing/contemporary-matcha-tea-shop-stockbridge-for-sale-DB2597314/",
+      "image": null,
+      "address": "Stockbridge",
+      "lat": null,
+      "lng": null,
+      "lastChecked": "2026-09-02",
+      "lastVerified": "2026-09-02",
+      "lastChanged": "2026-09-02",
+      "verification": {
+        "outcome": "live",
+        "note": "found by discovery scan",
+        "date": "2026-09-02"
+      }
+    },
+    {
+      "id": "bubble-tea-shandwick-place",
+      "name": "Edinburgh City Centre Bubble Tea Business",
+      "area": "Shandwick Place, Edinburgh City Centre",
+      "price": 50000,
+      "tenure": "Leasehold",
+      "rent": null,
+      "turnover": null,
+      "profit": null,
+      "status": "active",
+      "tags": [
+        "agent find"
+      ],
+      "notes": "Stylish, fully refurbished bubble tea business in Edinburgh city centre on Shandwick Place; presented in excellent condition.",
+      "source": "agent discovery (2026-09-02)",
+      "url": "https://www.daltonsbusiness.com/listing/edinburgh-city-centre-cafe-in-excellent-condition-for-sale-DB2540136/",
+      "image": null,
+      "address": "Shandwick Place",
+      "lat": null,
+      "lng": null,
+      "lastChecked": "2026-09-02",
+      "lastVerified": "2026-09-02",
+      "lastChanged": "2026-09-02",
+      "verification": {
+        "outcome": "live",
+        "note": "found by discovery scan",
+        "date": "2026-09-02"
+      }
+    },
+    {
+      "id": "gorgie-road-coffee-shop-sandwich-bar",
+      "name": "City Centre Coffee Shop and Sandwich Bar (Ref 1874)",
+      "area": "Gorgie Road, Edinburgh",
+      "price": 29995,
+      "tenure": "Leasehold",
+      "rent": null,
+      "turnover": null,
+      "profit": null,
+      "status": "active",
+      "tags": [
+        "agent find"
+      ],
+      "notes": "Recently fully renovated coffee shop on Gorgie Road; high footfall location near a local high school and nearby amenities.",
+      "source": "agent discovery (2026-09-02)",
+      "url": "https://www.daltonsbusiness.com/listing/city-centre-coffee-shop-and-sandwich-bar-for-sale-DB2355387/",
+      "image": null,
+      "address": "Gorgie Road",
+      "lat": null,
+      "lng": null,
+      "lastChecked": "2026-09-02",
+      "lastVerified": "2026-09-02",
+      "lastChanged": "2026-09-02",
+      "verification": {
+        "outcome": "live",
+        "note": "found by discovery scan",
+        "date": "2026-09-02"
+      }
+    },
+    {
+      "id": "class-1-cafe-central-edinburgh-ref-1690",
+      "name": "Class 1 Cafe and Coffee Shop Opportunity (Ref 1690)",
+      "area": "Central Edinburgh",
+      "price": 35500,
+      "tenure": "Leasehold",
+      "rent": null,
+      "turnover": null,
+      "profit": null,
+      "status": "active",
+      "tags": [
+        "agent find"
+      ],
+      "notes": "Well-fitted, compact Class 1 coffee shop in high-profile central Edinburgh; landlord requires experienced operator with existing business.",
+      "source": "agent discovery (2026-09-02)",
+      "url": "https://www.daltonsbusiness.com/listing/a-superb-class-1-cafe-and-coffee-shop-opportunity-for-sale-DB2189945/",
+      "image": null,
+      "address": null,
+      "lat": null,
+      "lng": null,
+      "lastChecked": "2026-09-02",
+      "lastVerified": "2026-09-02",
+      "lastChanged": "2026-09-02",
+      "verification": {
+        "outcome": "live",
+        "note": "found by discovery scan",
+        "date": "2026-09-02"
+      }
+    },
+    {
+      "id": "edinburgh-city-centre-cafe-50k",
+      "name": "Edinburgh City Centre Cafe (Turn-key)",
+      "area": "Edinburgh City Centre",
+      "price": 50000,
+      "tenure": "Leasehold",
+      "rent": null,
+      "turnover": null,
+      "profit": null,
+      "status": "active",
+      "tags": [
+        "agent find"
+      ],
+      "notes": "Turn-key city-centre cafe in excellent condition; leasehold £50,000; advert states Edinburgh City Centre.",
+      "source": "agent discovery (2026-09-02)",
+      "url": "https://www.daltonsbusiness.com/listing/edinburgh-city-centre-cafe-in-excellent-condition-for-sale-DB2540136/",
+      "image": null,
+      "address": null,
+      "lat": null,
+      "lng": null,
+      "lastChecked": "2026-09-02",
+      "lastVerified": "2026-09-02",
+      "lastChanged": "2026-09-02",
+      "verification": {
+        "outcome": "live",
+        "note": "found by discovery scan",
+        "date": "2026-09-02"
+      }
+    },
+    {
+      "id": "beautifully-presented-gift-and-coffee-shop-70k",
+      "name": "Beautifully Presented Gift and Coffee Shop",
+      "area": "Edinburgh",
+      "price": 70000,
+      "tenure": "Leasehold",
+      "rent": 19770,
+      "turnover": null,
+      "profit": null,
+      "status": "active",
+      "tags": [
+        "agent find"
+      ],
+      "notes": "Class 1 coffee shop with popular gifts section; 16 years trading; annual rent £19,770 plus VAT.",
+      "source": "agent discovery (2026-09-02)",
+      "url": "https://www.daltonsbusiness.com/listing/beautifully-presented-gift-and-coffee-shop-for-sale-DB2496125/",
+      "image": null,
+      "address": null,
+      "lat": null,
+      "lng": null,
+      "lastChecked": "2026-09-02",
+      "lastVerified": "2026-09-02",
+      "lastChanged": "2026-09-02",
+      "verification": {
+        "outcome": "live",
+        "note": "found by discovery scan",
+        "date": "2026-09-02"
+      }
     }
   ]
 }

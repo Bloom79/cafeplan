@@ -31,7 +31,7 @@ import { appendFileSync, readFileSync, writeFileSync } from 'fs'
 import { spawnSync as run } from 'child_process'
 import { fileURLToPath } from 'url'
 import { dirname, join } from 'path'
-import { extractJson, mergeDiscovery, mergeVerification, needsCheck } from './lib.mjs'
+import { extractJson, mergeDiscovery, mergeVerification, nameKey, needsCheck } from './lib.mjs'
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..')
 const DATA = join(ROOT, 'public', 'listings.json')
@@ -179,25 +179,42 @@ Reply with ONLY this JSON object:
 
 const TARGET_AREAS = 'Shandon, Polwarth, Merchiston, Bruntsfield, Morningside, Marchmont, Fountainbridge, Slateford, Haymarket, Stockbridge, Corstorphine, Edinburgh'
 
-const FIND_SHAPE = `Reply with ONLY a JSON array (empty if nothing new), max 6 items:
-[{"id":"kebab-case-id","name":"","area":"","price":<number|null>,"tenure":"","rent":<number|null>,"turnover":<number|null>,"profit":<number|null>,"url":<specific listing page url|null>,"image":<direct photo url|null>,"address":<street address|null>,"notes":"<=140 chars English — why it matters for a canal-side café plan"}]`
+const FIND_SHAPE = `Only include LEASEHOLD going concerns with an asking price at or under £90,000 (or price on application). Skip freeholds, franchises, anything outside Edinburgh, and anything marked sold / under offer.
+
+Reply with ONLY a JSON array (empty if nothing new), max 6 items:
+[{"id":"kebab-case-id","name":"","area":"<district or street, Edinburgh>","price":<number|null>,"tenure":"","rent":<number|null>,"turnover":<number|null>,"profit":<number|null>,"url":<the specific listing page url from the LINKS list or your sources, else null>,"image":<direct photo url|null>,"address":<street address|null>,"notes":"<=140 chars English — FACTS from the advert only (size, covers, lease length, why selling, what's included); no speculation about our concept"}]`
 
 // Portals that answer a plain fetch: their category pages become evidence
 // text the model reads instead of having to find them itself.
 const OPEN_SOURCES = [
-  ['Daltons — Edinburgh cafés', 'https://www.daltonsbusiness.com/businesses-for-sale/cafes-coffee-shops/edinburgh/'],
-  ['Daltons — Edinburgh restaurants', 'https://www.daltonsbusiness.com/businesses-for-sale/restaurants/edinburgh/'],
+  ['Daltons — Edinburgh cafés', 'https://www.daltonsbusiness.com/cafes-businesses-for-sale-in-edinburgh/'],
+  ['Daltons — Edinburgh coffee shops', 'https://www.daltonsbusiness.com/coffee-shops-businesses-for-sale-in-edinburgh/'],
+  ['Daltons — Edinburgh restaurants', 'https://www.daltonsbusiness.com/restaurants-businesses-for-sale-in-edinburgh/'],
   ['The Restaurant Agency — Edinburgh', 'https://therestaurantagency.com/properties/?location=edinburgh'],
 ]
 
+// Page → plain text plus a LINKS list (listing anchors with their text), so
+// the model can hand back the real listing URL rather than none at all.
 async function fetchText(url) {
   try {
     const res = await fetch(url, { headers: { 'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 Chrome/120 Safari/537.36' }, signal: AbortSignal.timeout(20000) })
     if (!res.ok) return null
     const html = await res.text()
-    return html.replace(/<script[\s\S]*?<\/script>|<style[\s\S]*?<\/style>/gi, ' ')
+    const origin = new URL(url).origin
+    const links = []
+    const seen = new Set()
+    for (const m of html.matchAll(/<a[^>]+href="([^"]*(?:\/listing\/|\/properties\/property\/)[^"]*)"[^>]*>([\s\S]*?)<\/a>/gi)) {
+      const href = m[1].startsWith('http') ? m[1] : origin + m[1]
+      const text = m[2].replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim()
+      if (!text || seen.has(href) || text.length < 6) continue
+      seen.add(href)
+      links.push(`- ${text.slice(0, 80)} → ${href}`)
+      if (links.length >= 40) break
+    }
+    const text = html.replace(/<script[\s\S]*?<\/script>|<style[\s\S]*?<\/style>/gi, ' ')
       .replace(/<[^>]+>/g, ' ').replace(/&amp;/g, '&').replace(/&#?\w+;/g, ' ')
-      .replace(/\s+/g, ' ').trim().slice(0, 6000)
+      .replace(/\s+/g, ' ').trim().slice(0, 12000)
+    return `${text}\n\nLINKS:\n${links.join('\n')}`
   } catch {
     return null
   }
@@ -212,7 +229,7 @@ async function discoverListings(known) {
   const seen = new Set()
   const take = (arr) => {
     for (const f of Array.isArray(arr) ? arr : []) {
-      const key = String(f?.name || '').toLowerCase().replace(/[^a-z0-9]+/g, '')
+      const key = nameKey(f?.name || '')
       if (!key || seen.has(key)) continue
       seen.add(key)
       found.push(f)
@@ -370,6 +387,21 @@ async function main() {
     ].join('\n')
     await commentAndClose(process.env.ISSUE_NUMBER, lines, process.env.GITHUB_TOKEN)
     out('status', 'ok'); out('summary', `${l.name}: ${res.outcome}`)
+    return
+  }
+
+  if (process.argv.includes('--discover-only')) {
+    if (dry) { console.log('[dry] would run discovery only'); out('status', 'ok'); return }
+    const db = readDb()
+    let added = 0
+    try {
+      added = mergeDiscovery(db, await discoverListings(db.listings), TODAY)
+    } catch (e) {
+      console.log('discovery failed — ' + e.message)
+    }
+    if (added > 0) { db.updated = TODAY; writeDb(db) }
+    out('status', 'ok')
+    out('summary', `${added} nuove`)
     return
   }
 

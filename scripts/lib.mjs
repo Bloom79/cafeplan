@@ -35,6 +35,15 @@ export const extractJson = (text, expectedKey) => {
 export const slug = (s) =>
   String(s).toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 50)
 
+// Same business, different wording: "Coffee Shop & Sandwich Bar (Recently
+// Renovated)" vs "Coffee Shop and Sandwich Bar". Strip parentheticals and
+// the "and/&" difference before comparing.
+export const nameKey = (s) =>
+  String(s).toLowerCase().replace(/\([^)]*\)/g, ' ').replace(/&/g, ' and ').replace(/[^a-z0-9]+/g, '')
+
+// Not what we are shopping for, whatever the portal's category says.
+export const OFF_CATEGORY = /fish\s*(and|&|n)?\s*chip|chippy|kebab|takeaway|hot food|pizza delivery|chinese|indian restaurant/i
+
 // Tags that duplicate (and outlive) the status badge.
 export const STATUS_TAG = /^(under offer|for sale|sold|withdrawn|gone|on the market)$/i
 
@@ -127,16 +136,21 @@ export function mergeVerification(db, id, res, today) {
 
 export function mergeDiscovery(db, found, today) {
   const ids = new Set(db.listings.map((l) => l.id))
-  const names = new Set(db.listings.map((l) => slug(l.name)))
+  const names = new Set(db.listings.map((l) => nameKey(l.name)))
   let added = 0
   for (const f of found) {
     if (!f || !f.name || !f.area) continue
-    if (names.has(slug(f.name))) continue // same business, different portal
+    if (names.has(nameKey(f.name))) continue // same business, different portal/wording
+    // Out of scope no matter what the model says: freeholds, takeaway
+    // categories, and anything priced beyond a small going-concern.
+    if (/freehold/i.test(String(f.tenure || '') + ' ' + String(f.name || ''))) continue
+    if (OFF_CATEGORY.test(String(f.name || ''))) continue
+    if (f.price != null && Number.isFinite(+f.price) && +f.price > 90000) continue
     let id = slug(f.id || f.name)
     while (ids.has(id)) id = id + '-2'
     if (!/^[a-z0-9-]{2,60}$/.test(id)) continue
     ids.add(id)
-    names.add(slug(f.name))
+    names.add(nameKey(f.name))
     const num = (v) => (f[v] != null && Number.isFinite(+f[v]) ? +f[v] : null)
     db.listings.push({
       id,

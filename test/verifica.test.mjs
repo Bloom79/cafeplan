@@ -97,11 +97,15 @@ test('mergeVerification: exact (geocoded) coordinates win over model guesses', (
   assert.equal(d.listings[0].lat, 55.9401, 'guess does not overwrite exact')
 })
 
-test('mergeDiscovery: adds new, skips same-name cross-posts, validates fields', () => {
+test('mergeDiscovery: adds new, skips same-name cross-posts, out-of-band and freeholds, validates fields', () => {
   const d = db()
   const added = mergeDiscovery(d, [
     { name: 'Cafe A', area: 'Polwarth', price: 1 }, // same business on another portal
     { name: 'New Deli', area: 'Bruntsfield', price: '30000', url: 'https://www.google.com/search?q=x', rent: 'n/a' },
+    { name: 'Big Bakery', area: 'Leith', price: 600000 },
+    { name: 'Very Successful Freehold Cafe', area: 'Edinburgh', price: 60000 },
+    { name: 'Very Profitable Fish and Chip Shop', area: 'Edinburgh', price: 65000 },
+    { name: 'New Deli (Recently Renovated)', area: 'Bruntsfield', price: 30000 }, // same as New Deli
     { name: '', area: 'x' },
   ], T)
   assert.equal(added, 1)
