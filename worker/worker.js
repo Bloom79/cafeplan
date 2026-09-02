@@ -117,9 +117,52 @@ async function runCheck(env) {
   return { events: events.length, sent, subs: subs.keys.length }
 }
 
+// Monday digest: what changed over the week, in one calm notification —
+// even when nothing did, so silence never means "broken". Diffs against a
+// weekly snapshot kept separately from runCheck's minute-to-minute one.
+async function weeklyDigest(env) {
+  const now = Date.now()
+  const db = await (await fetch(`${RAW_DATA}?t=${now}`)).json()
+  const cur = {}
+  for (const l of db.listings || []) cur[l.id] = { name: l.name, area: l.area, price: l.price, status: l.status }
+  const prevRaw = await env.ALERTS.get('weekly')
+  await env.ALERTS.put('weekly', JSON.stringify(cur))
+  const prev = prevRaw ? JSON.parse(prevRaw) : {}
+
+  const fresh = Object.entries(cur).filter(([id]) => !prev[id])
+  const drops = Object.entries(cur).filter(([id, l]) => prev[id] && l.price != null && prev[id].price != null && l.price < prev[id].price)
+  const gone = Object.entries(cur).filter(([id, l]) => prev[id] && (l.status === 'gone' || l.status === 'stale') && !['gone', 'stale'].includes(prev[id].status))
+  const live = Object.values(cur).filter((l) => l.status === 'active').length
+
+  const fmt = ([, l]) => `${l.name} (${l.area}${l.price != null ? ', £' + Math.round(l.price / 1000) + 'k' : ''})`
+  const parts = []
+  if (fresh.length) parts.push(`🏪 ${fresh.length} new: ${fresh.slice(0, 3).map(fmt).join(', ')}`)
+  if (drops.length) parts.push(`📉 ${drops.length} price drop${drops.length > 1 ? 's' : ''}: ${drops.slice(0, 3).map(fmt).join(', ')}`)
+  if (gone.length) parts.push(`🔴 ${gone.length} gone: ${gone.slice(0, 3).map(([, l]) => l.name).join(', ')}`)
+  const body = parts.length ? parts.join(' · ') : `Quiet week — ${live} listings still for sale, nothing new, no price moves.`
+
+  const vapid = { subject: 'mailto:dedalus79@gmail.com', publicKey: env.VAPID_PUBLIC_KEY, privateKey: env.VAPID_PRIVATE_KEY }
+  const msg = { data: JSON.stringify({ title: 'Canalside ☕ weekly digest', body, url: PORTAL + '#listings' }), options: { ttl: 172800 } }
+  const subs = await env.ALERTS.list({ prefix: 'sub:' })
+  let sent = 0
+  for (const k of subs.keys) {
+    const rec = JSON.parse((await env.ALERTS.get(k.name)) || 'null')
+    if (!rec?.subscription) continue
+    try {
+      const payload = await buildPushPayload(msg, rec.subscription, vapid)
+      const res = await fetch(rec.subscription.endpoint, payload)
+      if (res.status === 404 || res.status === 410) await env.ALERTS.delete(k.name)
+      else if (res.status < 300) sent++
+    } catch { /* transient */ }
+  }
+  return { digest: body, sent }
+}
+
 export default {
   async scheduled(event, env) {
-    await runCheck(env)
+    // Two crons: the half-hourly alert check, and Monday 07:30 UTC digest.
+    if (event.cron === '30 7 * * 1') await weeklyDigest(env)
+    else await runCheck(env)
   },
 
   async fetch(request, env) {

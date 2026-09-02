@@ -17,6 +17,7 @@ VAPID_PUBLIC_KEY = "BKGrZAooIZ-ZUx8_HqVbXapst2CpXFckF3ojNuV6LRLKdWNca6-rqLqbbpEe
 binding = "ALERTS"
 id = "06f6d17f2037453193badfb963b6ddcd"
 
-# Safety-net notification check; workflows also POST /check after data pushes.
+# Half-hourly safety-net alert check (workflows also POST /check after data
+# pushes), plus the Monday 07:30 UTC weekly digest.
 [triggers]
-crons = ["*/30 * * * *"]
+crons = ["*/30 * * * *", "30 7 * * 1"]

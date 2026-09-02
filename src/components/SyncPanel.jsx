@@ -6,7 +6,7 @@ import { WORKER_URL } from '../config.js'
 // (or your partner's phone) pulls it in and merges. No accounts.
 
 const KEYS = [
-  'cafeplan:favs', 'cafeplan:dismissed', 'cafeplan:listingNotes', 'cafeplan:sdeInputs',
+  'cafeplan:favs', 'cafeplan:dismissed', 'cafeplan:listingNotes', 'cafeplan:sdeInputs', 'cafeplan:deals',
   'cafeplan:savedScenarios', 'cafeplan:steps', 'cafeplan:model', 'cafeplan:scenario',
 ]
 
@@ -29,7 +29,7 @@ const merge = (incoming) => {
     const a = read(k) || [], b = incoming[k] || []
     write(k, [...new Set([...a, ...b])])
   }
-  for (const k of ['cafeplan:listingNotes', 'cafeplan:sdeInputs']) {
+  for (const k of ['cafeplan:listingNotes', 'cafeplan:sdeInputs', 'cafeplan:deals']) {
     const a = read(k) || {}, b = incoming[k] || {}
     write(k, { ...b, ...Object.fromEntries(Object.entries(a).filter(([, v]) => v && (typeof v !== 'object' || Object.keys(v).length))) })
   }

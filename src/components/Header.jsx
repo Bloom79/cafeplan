@@ -5,7 +5,7 @@ import SyncPanel from './SyncPanel.jsx'
 // the two that fell off the right edge of the tab strip on a phone.
 const SHORT = { model: 'Model', listings: 'Listings', map: 'Map', case: 'Case', steps: 'Steps' }
 
-export default function Header({ tab, setTab, tabs }) {
+export default function Header({ tab, setTab, tabs, onPrint }) {
   const navRef = useRef(null)
 
   // Arrow keys move between tabs, as a tablist is expected to.
@@ -27,6 +27,9 @@ export default function Header({ tab, setTab, tabs }) {
           <span className="eyebrow">Café business case — Edinburgh</span>
         </div>
         <div className="header-spacer" />
+        <button className="filter-chip" onClick={onPrint} title="The whole case with the live numbers, your shortlist and deals — as a PDF">
+          ⎙ Export PDF
+        </button>
         <SyncPanel />
         <div className="header-meta">
           SHANDON · POLWARTH · MERCHISTON<br />

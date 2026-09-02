@@ -21,3 +21,6 @@ jobs:
       - run: npm run lint
       - run: npm test
       - run: npm run build
+      # UI smoke: real browser against the built site (~1 min).
+      - run: npx playwright install --with-deps chromium
+      - run: npm run test:ui

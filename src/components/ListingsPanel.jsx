@@ -25,6 +25,8 @@ const COLUMNS = [
   ['rentPct', 'Rent / turnover', (l) => (l.rent != null && l.turnover ? l.rent / l.turnover : null)],
   ['startup', 'Budget if bought', (l) => l._startup ?? null],
   ['payback', 'Payback (your concept)', (l) => l._payback ?? null],
+  ['coversBE', 'Covers/day to break even', (l) => l._coversBE ?? null],
+  ['days', 'Days listed', (l) => l._days ?? null],
   ['fit', 'Fit', (l) => l._fit ?? null],
   ['rank', 'Verdict', (l) => l._rank ?? null],
   ['status', 'Status', (l) => l.status],
@@ -32,13 +34,15 @@ const COLUMNS = [
 
 // On a phone the table scrolls sideways; "essentials" keeps the decision
 // columns in the first screen instead of hiding them off to the right.
-const ESSENTIALS = new Set(['name', 'price', 'rent', 'payback', 'rank'])
+const ESSENTIALS = new Set(['name', 'price', 'rent', 'coversBE', 'payback', 'rank'])
 
 const cell = (key, v) => {
   if (v == null) return <span className="none">—</span>
   if (key === 'multiple') return `${v.toFixed(1)}×`
   if (key === 'rentPct') return `${Math.round(v * 100)}%`
   if (key === 'payback') return `${v.toFixed(1)} yr`
+  if (key === 'coversBE') return v.toFixed(0)
+  if (key === 'days') return `${v} d`
   if (key === 'fit') return <span className={`fit-chip ${scoreBand(v)}`}>{v}</span>
   if (key === 'rank') return <span className={`fit-chip ${v >= 75 ? 'good' : v >= 55 ? 'mid' : 'low'}`}>{v}</span>
   if (['price', 'rent', 'turnover', 'profit', 'startup'].includes(key)) return gbp(v)
@@ -101,6 +105,8 @@ function CompareTable({ rows, sort, setSort, essentials, setEssentials }) {
         ~12% is the number that quietly eats the year. <b>Budget if bought</b> is the asking price
         plus the rest of the mid-case startup budget; <b>Payback</b> divides it by the profit YOUR
         model makes with that listing's rent plugged in — the seller's trade doesn't enter it.
+        <b> Covers/day to break even</b> is the same idea as a daily target: your concept, their rent.
+        <b> Days listed</b> counts from when we first saw it — long-listed is leverage.
         <b> Verdict</b> folds fit, payback, the SDE band and market status into one 0–100 rank.
         Blanks are undisclosed: that is itself the first question for the agent.
       </p>
@@ -140,7 +146,9 @@ export default function ListingsPanel() {
   const [favsOnly, setFavsOnly] = useLocalStorage('cafeplan:favsOnly', false)
   const [favs, setFavs] = useLocalStorage('cafeplan:favs', [])
   const [dismissed, setDismissed] = useLocalStorage('cafeplan:dismissed', [])
+  const [deals, setDeals] = useLocalStorage('cafeplan:deals', {})
   const [showDismissed, setShowDismissed] = useState(false)
+  const [inProgress, setInProgress] = useState(false)
   const [notes, setNotes] = useLocalStorage('cafeplan:listingNotes', {})
   const [sdeInputs, setSdeInputs] = useLocalStorage('cafeplan:sdeInputs', {})
   const [view, setView] = useLocalStorage('cafeplan:listingsView', 'cards')
@@ -162,27 +170,34 @@ export default function ListingsPanel() {
       const raw = window.localStorage.getItem(MODEL_KEY)
       if (raw) base = { ...DEFAULTS, ...JSON.parse(raw) }
     } catch { /* private mode — plan defaults */ }
+    const today = new Date()
     return data.listings.map((l) => {
       const startup = startupFor(l)
+      // Your concept in their premises: what it needs to break even at THAT rent.
+      const r = compute({ ...base, rent: l.rent ?? base.rent })
+      const coversBE = l.rent != null && Number.isFinite(r.coversBE) ? r.coversBE : null
       let payback = null
-      if (startup != null) {
-        const r = compute({ ...base, rent: l.rent ?? base.rent })
-        if (r.profit > 0) payback = startup / r.profit
-      }
+      if (startup != null && r.profit > 0) payback = startup / r.profit
       const sde = sdeCheck(sdeInputs[l.id], l.price)
-      const v = rankListing(l, { payback, sde })
-      return { ...l, _startup: startup, _payback: payback, _fit: fitScore(l).score, _rank: v.rank, _verdict: v }
+      const v = rankListing(l, { payback, sde, stage: deals[l.id]?.stage })
+      const from = l.firstSeen || l.history?.[0]?.date || l.lastVerified
+      const days = from ? Math.max(0, Math.round((today - new Date(from)) / 86400000)) : null
+      return { ...l, _startup: startup, _payback: payback, _coversBE: coversBE, _days: days, _fit: fitScore(l).score, _rank: v.rank, _verdict: v }
     })
-  }, [data, sdeInputs])
+  }, [data, sdeInputs, deals])
 
   const counts = {}
   for (const l of enriched) if (!dismissed.includes(l.id)) counts[categoryOf(l)] = (counts[categoryOf(l)] || 0) + 1
+
+  const active = (id) => deals[id]?.stage && !['watching', 'passed'].includes(deals[id].stage)
+  const inProgressCount = Object.keys(deals).filter(active).length
 
   const shown = enriched.filter(
     (l) =>
       (area === 'All' || l.area === area)
       && (cat === 'all' || categoryOf(l) === cat)
       && (!favsOnly || favs.includes(l.id))
+      && (!inProgress || active(l.id))
       && (showDismissed ? dismissed.includes(l.id) : !dismissed.includes(l.id)),
   )
   const ranked = [...shown].sort((a, b) => b._rank - a._rank)
@@ -213,6 +228,16 @@ export default function ListingsPanel() {
         >
           ♥ Saved {favs.length > 0 && `(${favs.length})`}
         </button>
+        {inProgressCount > 0 && (
+          <button
+            className="filter-chip"
+            aria-pressed={inProgress}
+            onClick={() => setInProgress(!inProgress)}
+            title="Listings you have called, viewed or made an offer on"
+          >
+            ☎ In progress ({inProgressCount})
+          </button>
+        )}
         {dismissed.length > 0 && (
           <button
             className="filter-chip"
@@ -260,6 +285,8 @@ export default function ListingsPanel() {
               onNote={(v) => setNotes({ ...notes, [l.id]: v })}
               sdeInputs={sdeInputs[l.id]}
               onSdeInputs={(v) => setSdeInputs({ ...sdeInputs, [l.id]: v })}
+              deal={deals[l.id]}
+              onDeal={(v) => setDeals({ ...deals, [l.id]: v })}
               action={actions[l.id]}
               onRequest={request}
             />

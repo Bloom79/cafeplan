@@ -9,6 +9,7 @@ import { useListings } from './hooks/useListings.js'
 // Leaflet is a third of the bundle and only the Map tab needs it — load it
 // when that tab is opened, not on the first paint of the Model tab.
 const MapPanel = lazy(() => import('./components/MapPanel.jsx'))
+const PrintView = lazy(() => import('./components/PrintView.jsx'))
 
 const TABS = [
   ['model', 'Model'],
@@ -18,7 +19,7 @@ const TABS = [
   ['steps', 'Next steps'],
 ]
 
-const VALID = new Set(TABS.map(([id]) => id))
+const VALID = new Set([...TABS.map(([id]) => id), 'print'])
 
 const readHash = () => {
   const h = window.location.hash.replace(/^#case-\d$/, '#case').slice(1)
@@ -48,9 +49,18 @@ export default function App() {
     id === 'listings' ? [id, label, data.listings.length] : [id, label],
   )
 
+  // The document view stands alone: no tabs, no chrome, ready for paper.
+  if (tab === 'print') {
+    return (
+      <Suspense fallback={<div className="empty panel">preparing the document…</div>}>
+        <PrintView onClose={() => setTab('case')} />
+      </Suspense>
+    )
+  }
+
   return (
     <>
-      <Header tab={tab} setTab={setTab} tabs={tabs} />
+      <Header tab={tab} setTab={setTab} tabs={tabs} onPrint={() => setTab('print')} />
       <main className="page" id={`panel-${tab}`} role="tabpanel" aria-labelledby={`tab-${tab}`}>
         {tab === 'model' && <ModelPanel />}
         {tab === 'listings' && <ListingsPanel />}

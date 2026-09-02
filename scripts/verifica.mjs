@@ -31,7 +31,7 @@ import { appendFileSync, readFileSync, writeFileSync } from 'fs'
 import { spawnSync as run } from 'child_process'
 import { fileURLToPath } from 'url'
 import { dirname, join } from 'path'
-import { extractJson, mergeDiscovery, mergeVerification, nameKey, needsCheck } from './lib.mjs'
+import { districtOf, extractJson, mergeDiscovery, mergeVerification, metres, nameKey, needsCheck, normaliseArea } from './lib.mjs'
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..')
 const DATA = join(ROOT, 'public', 'listings.json')
@@ -138,6 +138,89 @@ async function geocode(address) {
   }
 }
 
+// ————— place facts from OpenStreetMap —————————————————
+//
+// What the fit score used to guess from the area name, measured: cafés and
+// restaurants within 300 m (competition), metres to the Union Canal, and
+// to the nearest bus/tram stop. Overpass is free and rate-limited: one
+// query per listing, mirrors tried in turn, ~1 s between calls.
+
+const OVERPASS = ['https://overpass-api.de/api/interpreter', 'https://overpass.kumi.systems/api/interpreter']
+
+async function overpass(q) {
+  for (const url of OVERPASS) {
+    try {
+      const res = await fetch(url, {
+        method: 'POST',
+        // Overpass wants a plain, identifying UA — browser strings get 406.
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded', 'User-Agent': 'cafeplan-verify-agent/1.0 (github.com/Bloom79/cafeplan)' },
+        body: 'data=' + encodeURIComponent(q),
+        signal: AbortSignal.timeout(25000),
+      })
+      if (res.ok) return (await res.json()).elements || []
+    } catch { /* try the next mirror */ }
+  }
+  return null
+}
+
+async function placeFacts(lat, lng) {
+  const q = `[out:json][timeout:20];
+(
+  nwr(around:300,${lat},${lng})["amenity"~"^(cafe|restaurant)$"];
+  nwr(around:2500,${lat},${lng})["waterway"="canal"];
+  nwr(around:600,${lat},${lng})["highway"="bus_stop"];
+  nwr(around:600,${lat},${lng})["railway"="tram_stop"];
+);
+out geom;`
+  const els = await overpass(q)
+  if (!els) return null
+  // Nodes carry lat/lon; ways carry their geometry — the canal is one long
+  // way, so its nearest vertex is the honest distance, not its midpoint.
+  const dist = (e) => {
+    if (Array.isArray(e.geometry) && e.geometry.length)
+      return Math.min(...e.geometry.map((g) => metres(lat, lng, g.lat, g.lon)))
+    const c = e.center || e
+    return Number.isFinite(c.lat) ? metres(lat, lng, c.lat, c.lon) : Infinity
+  }
+  const point = (e) => {
+    if (Number.isFinite(e.lat)) return [e.lat, e.lon]
+    if (e.center) return [e.center.lat, e.center.lon]
+    if (Array.isArray(e.geometry) && e.geometry.length) return [e.geometry[0].lat, e.geometry[0].lon]
+    return null
+  }
+  const cafes = els.filter((e) => /^(cafe|restaurant)$/.test(e.tags?.amenity || ''))
+  const canal = els.filter((e) => e.tags?.waterway === 'canal')
+  const stops = els.filter((e) => e.tags?.highway === 'bus_stop' || e.tags?.railway === 'tram_stop')
+  const near = (arr) => (arr.length ? Math.round(Math.min(...arr.map(dist))) : null)
+  return {
+    cafes300: cafes.length,
+    // A handful of competitor points for the map (position + name).
+    cafes: cafes.slice(0, 12).map((e) => {
+      const p = point(e)
+      return p && [+p[0].toFixed(5), +p[1].toFixed(5), (e.tags?.name || '').slice(0, 40)]
+    }).filter(Boolean),
+    canalM: near(canal),
+    stopM: near(stops),
+  }
+}
+
+// og:image from a listing page that answers a plain fetch (Rightmove
+// Commercial, Daltons, agents). Rightbiz never does; nothing lost there.
+async function ogImage(url) {
+  try {
+    const res = await fetch(url, {
+      headers: { 'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 Chrome/120 Safari/537.36' },
+      signal: AbortSignal.timeout(15000),
+    })
+    if (!res.ok) return null
+    const html = (await res.text()).slice(0, 200000)
+    const m = /property="og:image"\s+content="([^"]+)"/.exec(html) || /content="([^"]+)"\s+property="og:image"/.exec(html)
+    return m && /^https:\/\//.test(m[1]) && !/logo|placeholder|default/i.test(m[1]) ? m[1] : null
+  } catch {
+    return null
+  }
+}
+
 // ————— verify one listing ————————————————————————
 
 const OUTCOME_IT = { live: 'ancora in vendita', changed: 'cambiato', gone: 'non più in vendita', unclear: 'incerto' }
@@ -167,6 +250,22 @@ Reply with ONLY this JSON object:
     if (address && !l.coordsExact) {
       const g = await geocode(address)
       if (g) { res.lat = g.lat; res.lng = g.lng; res.coordsExact = true }
+    }
+    // Place facts: once we know where it is (exactly), measure the street.
+    // Refreshed monthly — cafés open and close, the canal does not move.
+    const lat = res.coordsExact ? res.lat : l.coordsExact ? l.lat : null
+    const lng = res.coordsExact ? res.lng : l.coordsExact ? l.lng : null
+    const stale = !l.place || !l.place.at || (new Date(TODAY) - new Date(l.place.at)) / 86400000 > 30
+    if (lat != null && stale) {
+      const p = await placeFacts(lat, lng)
+      if (p) res.place = p
+      await sleep(1000)
+    }
+    // A photo, if the listing page will give us one.
+    const imgUrl = res.url || l.url
+    if (!l.image && !res.image && imgUrl && !/rightbiz\.co\.uk/.test(imgUrl)) {
+      const img = await ogImage(imgUrl)
+      if (img) res.image = img
     }
     return res
   } catch (e) {
@@ -394,6 +493,36 @@ async function main() {
     ].join('\n')
     await commentAndClose(process.env.ISSUE_NUMBER, lines, process.env.GITHUB_TOKEN)
     out('status', 'ok'); out('summary', `${l.name}: ${res.outcome}`)
+    return
+  }
+
+  // --enrich: no model calls. Place facts (OSM), district from exact
+  // coordinates, firstSeen backfill, and a photo where the page gives one.
+  if (process.argv.includes('--enrich')) {
+    const db = readDb()
+    let placed = 0, photos = 0
+    for (const l of db.listings) {
+      if (!l.firstSeen) l.firstSeen = (l.history && l.history[0] && l.history[0].date) || l.lastVerified || TODAY
+      l.area = normaliseArea(l.area)
+      if (l.coordsExact) {
+        const d = districtOf(l.lat, l.lng)
+        if (d) l.area = d
+        const stale = !l.place || !l.place.at || (new Date(TODAY) - new Date(l.place.at)) / 86400000 > 30
+        if (stale) {
+          const p = await placeFacts(l.lat, l.lng)
+          if (p) { l.place = { ...p, at: TODAY }; placed++ }
+          await sleep(1200)
+        }
+      }
+      if (!l.image && l.url && !/rightbiz\.co\.uk/.test(l.url)) {
+        const img = await ogImage(l.url)
+        if (img) { l.image = img; photos++ }
+      }
+      console.log(`${l.name.slice(0, 40).padEnd(40)} ${l.area.padEnd(14)} ${l.place ? `cafés300=${l.place.cafes300} canal=${l.place.canalM ?? '—'}m stop=${l.place.stopM ?? '—'}m` : '(no exact coords)'}${l.image ? ' 📷' : ''}`)
+    }
+    writeDb(db)
+    out('status', 'ok')
+    out('summary', `${placed} luoghi misurati · ${photos} foto`)
     return
   }
 

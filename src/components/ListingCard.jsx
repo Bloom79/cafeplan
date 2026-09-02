@@ -8,6 +8,7 @@ import { useInView } from '../hooks/useInView.js'
 import Markdown from './Markdown.jsx'
 import FairPrice from './FairPrice.jsx'
 import Sparkline from './Sparkline.jsx'
+import CallSheet, { STAGES } from './CallSheet.jsx'
 
 const OUTCOME_LABEL = {
   live: { text: '✓ verified for sale', cls: 'live' },
@@ -59,8 +60,9 @@ const freshness = (l) => {
 
 export default function ListingCard({
   listing: l, fav, onFav, dismissed, onDismiss, note, onNote,
-  sdeInputs, onSdeInputs, action, onRequest, verdict,
+  sdeInputs, onSdeInputs, action, onRequest, verdict, deal, onDeal,
 }) {
+  const stage = deal?.stage && deal.stage !== 'watching' ? STAGES.find(([k]) => k === deal.stage) : null
   const v = l.verification
   const vLabel = v ? OUTCOME_LABEL[v.outcome] || OUTCOME_LABEL.unclear : null
   const fit = fitScore(l)
@@ -119,6 +121,7 @@ export default function ListingCard({
 
       <div className="badge-row">
         <span className={`status-badge ${STATUS_CLS[l.status] || 'active'}`}>{l.status}</span>
+        {stage && <span className={`stage-badge ${deal.stage}`}>{stage[1]}</span>}
         {vLabel && (
           <span className={`vbadge ${vLabel.cls}`} title={v.note || ''}>
             {vLabel.text}
@@ -133,7 +136,24 @@ export default function ListingCard({
           fit {fit.score}
         </button>
       </div>
-      {freshness(l) && <div className="freshness mono">{freshness(l)}</div>}
+      {(freshness(l) || l._days != null) && (
+        <div className="freshness mono">
+          {freshness(l)}{l._days != null ? ` · listed ${l._days} d` : ''}
+        </div>
+      )}
+      {(l._coversBE != null || l.place) && (
+        <div className="facts">
+          {l._coversBE != null && (
+            <span title="Daytime covers a day your concept needs to break even at this rent">
+              <b className="mono">{l._coversBE.toFixed(0)}</b> covers/day to break even
+            </span>
+          )}
+          {l.place && l.place.canalM != null && <span><b className="mono">{l.place.canalM} m</b> to the canal</span>}
+          {l.place && l.place.canalM == null && <span>no canal within 2.5 km</span>}
+          {l.place && l.place.cafes300 != null && <span><b className="mono">{l.place.cafes300}</b> cafés within 300 m</span>}
+          {l.place && l.place.stopM != null && <span>stop <b className="mono">{l.place.stopM} m</b></span>}
+        </div>
+      )}
       {showFit && (
         <ul className="fit-breakdown">
           {fit.parts.map((p) => (
@@ -212,6 +232,8 @@ export default function ListingCard({
           {dismissed ? 'Reconsider' : 'Not for me'}
         </button>
       </div>
+
+      <CallSheet deal={deal} setDeal={onDeal} />
 
       <FairPrice listing={l} inputs={sdeInputs} setInputs={onSdeInputs} />
 

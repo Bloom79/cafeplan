@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react'
-import { Circle, MapContainer, TileLayer, Marker, Popup, Tooltip, useMap } from 'react-leaflet'
+import { Circle, CircleMarker, MapContainer, TileLayer, Marker, Popup, Tooltip, useMap } from 'react-leaflet'
 import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
 import { gbp } from '../data/model.js'
@@ -73,6 +73,7 @@ export default function MapPanel() {
   const [cat, setCat] = useLocalStorage('cafeplan:category', 'all')
   const [favsOnly, setFavsOnly] = useState(false)
   const [showCatchment, setShowCatchment] = useLocalStorage('cafeplan:catchment', true)
+  const [showRivals, setShowRivals] = useLocalStorage('cafeplan:rivals', true)
 
   const shown = useMemo(
     () =>
@@ -156,6 +157,14 @@ export default function MapPanel() {
         >
           ◎ Target corridor
         </button>
+        <button
+          className="filter-chip"
+          aria-pressed={showRivals}
+          onClick={() => setShowRivals(!showRivals)}
+          title="Cafés and restaurants OpenStreetMap knows within 300 m of each exact-address listing"
+        >
+          ● Competitors
+        </button>
         <span className="updated-line mono">
           {shown.length} of {data.listings.length} on map · data {data.updated}
         </span>
@@ -191,6 +200,20 @@ export default function MapPanel() {
             </>
           )}
           <FitBounds points={shown} />
+          {/* Competitors: the cafés OSM knows within 300 m of each listing
+              with an exact address. Small, muted, behind the pins. */}
+          {showRivals && shown.flatMap((l) =>
+            (l.place?.cafes || []).map(([lat, lng, name], i) => (
+              <CircleMarker
+                key={`${l.id}-c${i}`}
+                center={[lat, lng]}
+                radius={4}
+                pathOptions={{ color: '#0c2321', weight: 1, fillColor: '#8fa9a0', fillOpacity: 0.85 }}
+              >
+                <Tooltip>{name || 'café'} · near {l.name}</Tooltip>
+              </CircleMarker>
+            )),
+          )}
           {shown.map((l) => {
             const st = statusOf(l)
             return (

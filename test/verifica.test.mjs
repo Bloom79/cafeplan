@@ -1,8 +1,25 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import {
-  STALE_AFTER, categoryOf, extractJson, isFailedVerdict, mergeDiscovery, mergeVerification, needsCheck, okUrl, slug,
+  STALE_AFTER, categoryOf, daysListed, districtOf, extractJson, isFailedVerdict, mergeDiscovery, mergeVerification,
+  metres, needsCheck, normaliseArea, okUrl, slug,
 } from '../scripts/lib.mjs'
+
+test('places: metres, districtOf, normaliseArea, daysListed', () => {
+  assert.ok(Math.abs(metres(55.9429, -3.2861, 55.9429, -3.2861)) < 1)
+  assert.ok(Math.abs(metres(55.9312, -3.2210, 55.9382, -3.2095) - 1050) < 150, 'Shandon→Bruntsfield ≈ 1 km')
+  assert.equal(districtOf(55.9429, -3.2861), 'Corstorphine')
+  assert.equal(districtOf(55.9382, -3.2095), 'Bruntsfield')
+  assert.equal(districtOf(56.5, -3.0), null, 'far away → null')
+  assert.equal(normaliseArea('Morningside/Bruntsfield, Edinburgh'), 'Morningside')
+  assert.equal(normaliseArea('Elm Row, Edinburgh'), 'Leith Walk')
+  assert.equal(normaliseArea('Shandwick Place, Edinburgh City Centre'), 'West End')
+  assert.equal(normaliseArea('Edinburgh City Centre'), 'City Centre')
+  assert.equal(normaliseArea('Somewhere, Edinburgh'), 'Somewhere')
+  assert.equal(daysListed({ firstSeen: '2026-08-29' }, '2026-09-02'), 4)
+  assert.equal(daysListed({ history: [{ date: '2026-08-01' }] }, '2026-09-02'), 32)
+  assert.equal(daysListed({}, '2026-09-02'), null)
+})
 
 test('categoryOf: stored category wins; names classify sensibly', () => {
   assert.equal(categoryOf({ category: 'bar', name: 'Cafe X' }), 'bar')

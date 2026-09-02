@@ -14,9 +14,11 @@ const PRICE_BAND = [35000, 55000] // where comparable asks cluster
 // Walking distance to the Union Canal corridor, in spirit: the closer an
 // area sits to Shandon/Polwarth/Merchiston, the closer to the concept.
 const AREA_FIT = {
-  shandon: 1, polwarth: 1, merchiston: 1, fountainbridge: 0.9, slateford: 0.85,
-  bruntsfield: 0.8, morningside: 0.7, marchmont: 0.7, haymarket: 0.65,
-  stockbridge: 0.5, corstorphine: 0.4,
+  shandon: 1, polwarth: 1, merchiston: 1, fountainbridge: 0.9, slateford: 0.85, gorgie: 0.8, dalry: 0.8,
+  bruntsfield: 0.8, morningside: 0.7, marchmont: 0.7, haymarket: 0.65, tollcross: 0.7, 'west end': 0.55,
+  'city centre': 0.45, 'old town': 0.4, 'new town': 0.45, stockbridge: 0.5, 'comely bank': 0.45,
+  corstorphine: 0.4, southside: 0.5, newington: 0.5, leith: 0.3, 'leith walk': 0.35, broughton: 0.4,
+  portobello: 0.25,
 }
 
 export function fitScore(l) {
@@ -31,14 +33,38 @@ export function fitScore(l) {
     parts.push({ key: 'rent', label: 'rent undisclosed — ask', w: 35, s: 0.5 })
   }
 
-  // Area vs the canal corridor (weight 35) — the catchment IS the concept.
-  const areaKey = String(l.area || '').toLowerCase().trim()
-  const af = AREA_FIT[areaKey]
-  parts.push(
-    af != null
-      ? { key: 'area', label: `${l.area} · corridor fit`, w: 35, s: af }
-      : { key: 'area', label: `${l.area || 'area unknown'} — outside mapped areas`, w: 35, s: 0.3 },
-  )
+  // Location (weight 35) — measured when we have OSM place facts for an
+  // exact address: metres to the Union Canal is the catchment question
+  // itself, and cafés within 300 m says how crowded the street already is.
+  // Otherwise the area name stands in.
+  const p = l.place
+  if (p && (p.canalM != null || p.cafes300 != null)) {
+    let s
+    if (p.canalM == null) s = 0.3
+    else if (p.canalM <= 400) s = 1
+    else if (p.canalM <= 800) s = 0.9
+    else if (p.canalM <= 1500) s = 0.7
+    else if (p.canalM <= 2500) s = 0.5
+    else s = 0.3
+    // Crowding: a couple of neighbours is a scene, twenty is a fight.
+    const c = p.cafes300 ?? 0
+    const crowd = c <= 3 ? 0 : c <= 8 ? -0.1 : c <= 15 ? -0.2 : -0.3
+    s = Math.max(0.1, Math.min(1, s + crowd))
+    parts.push({
+      key: 'area',
+      label: `${p.canalM != null ? `${p.canalM} m to the canal` : 'no canal within 2.5 km'} · ${c} café${c === 1 ? '' : 's'} within 300 m`,
+      w: 35,
+      s,
+    })
+  } else {
+    const areaKey = String(l.area || '').toLowerCase().trim()
+    const af = AREA_FIT[areaKey]
+    parts.push(
+      af != null
+        ? { key: 'area', label: `${l.area} · corridor fit (by area)`, w: 35, s: af }
+        : { key: 'area', label: `${l.area || 'area unknown'} — outside mapped areas`, w: 35, s: 0.3 },
+    )
+  }
 
   // Ask vs the comparable band (weight 20) — cheap is good, suspicious-cheap
   // still scores well here because price risk shows up in the SDE check.
@@ -97,8 +123,9 @@ export function sdeCheck({ profit, ownerWage = 0, oneOffs = 0 } = {}, ask) {
 // figures, and the market status. Rank = 0–100; the shortlist is the top
 // of the ranking among listings still for sale.
 
-export function verdict(l, { payback = null, sde = null } = {}) {
+export function verdict(l, { payback = null, sde = null, stage = null } = {}) {
   if (l.status === 'gone' || l.status === 'stale') return { rank: 0, band: 'out', reasons: ['no longer on the market'] }
+  if (stage === 'passed') return { rank: 0, band: 'out', reasons: ['you passed on it'] }
   const fit = fitScore(l)
   let rank = fit.score
   const reasons = []
@@ -127,6 +154,7 @@ export function verdict(l, { payback = null, sde = null } = {}) {
   // A listing nobody can confirm is on the market is a listing you cannot
   // call about with confidence — and it drifts to "stale" after a few more.
   if (l.verification?.outcome === 'unclear') { rank -= 12; reasons.push('could not be verified') }
+  if (stage && stage !== 'watching') { rank += 8; reasons.push(`in progress: ${stage}`) }
 
   rank = Math.max(0, Math.min(100, Math.round(rank)))
   const band = rank >= 75 ? 'call' : rank >= 55 ? 'watch' : 'pass'

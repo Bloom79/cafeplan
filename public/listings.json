@@ -30,7 +30,9 @@
       "lng": -3.209,
       "lastChecked": "2026-09-02",
       "unclearStreak": 0,
-      "category": "cafe"
+      "category": "cafe",
+      "firstSeen": "2026-09-02",
+      "image": "https://cdn.daltonsbusiness.com/wp-content/uploads/2026/05/1778590333-sweet-paradise-6-scaled.webp"
     },
     {
       "id": "bruntsfield-coffee",
@@ -63,7 +65,76 @@
       "address": "80 Bruntsfield Place, Edinburgh, EH10 4HG",
       "coordsExact": true,
       "unclearStreak": 0,
-      "category": "cafe"
+      "category": "cafe",
+      "firstSeen": "2026-09-02",
+      "place": {
+        "cafes300": 20,
+        "cafes": [
+          [
+            55.93592,
+            -3.21001,
+            "Black Sheep Coffee"
+          ],
+          [
+            55.93955,
+            -3.20388,
+            "Left Field"
+          ],
+          [
+            55.93614,
+            -3.20944,
+            "Cafe Grande"
+          ],
+          [
+            55.93648,
+            -3.20852,
+            "Papillo"
+          ],
+          [
+            55.93828,
+            -3.20572,
+            "Cardoon"
+          ],
+          [
+            55.9396,
+            -3.20405,
+            "Margot"
+          ],
+          [
+            55.93668,
+            -3.20812,
+            "Artisan Roast"
+          ],
+          [
+            55.93597,
+            -3.20989,
+            "La Barantine"
+          ],
+          [
+            55.93605,
+            -3.20967,
+            "Project Coffee"
+          ],
+          [
+            55.93704,
+            -3.20752,
+            "Matcha Sando"
+          ],
+          [
+            55.9372,
+            -3.20722,
+            "Toasted"
+          ],
+          [
+            55.93682,
+            -3.20808,
+            "Three Birds"
+          ]
+        ],
+        "canalM": 503,
+        "stopM": 83,
+        "at": "2026-09-02"
+      }
     },
     {
       "id": "marchmont-20seat",
@@ -92,7 +163,8 @@
       "lng": -3.1878,
       "lastChecked": "2026-09-02",
       "unclearStreak": 0,
-      "category": "restaurant"
+      "category": "restaurant",
+      "firstSeen": "2026-09-02"
     },
     {
       "id": "bennitos",
@@ -124,7 +196,66 @@
       "address": "199 St John’s Road, Corstorphine, Edinburgh EH12 7UU",
       "coordsExact": true,
       "unclearStreak": 0,
-      "category": "cafe"
+      "category": "cafe",
+      "firstSeen": "2026-09-02",
+      "place": {
+        "cafes300": 10,
+        "cafes": [
+          [
+            55.94263,
+            -3.28216,
+            "Costa"
+          ],
+          [
+            55.94302,
+            -3.28391,
+            "Toby Carvery"
+          ],
+          [
+            55.94295,
+            -3.28663,
+            "Dangal"
+          ],
+          [
+            55.94303,
+            -3.28787,
+            "The Village Café"
+          ],
+          [
+            55.94291,
+            -3.28277,
+            "St John's Curry Club"
+          ],
+          [
+            55.94296,
+            -3.28684,
+            "Wong's"
+          ],
+          [
+            55.94289,
+            -3.2903,
+            "Mimi's Bakehouse"
+          ],
+          [
+            55.94284,
+            -3.29061,
+            "Bon"
+          ],
+          [
+            55.94287,
+            -3.28206,
+            "Cafe Cor’stone"
+          ],
+          [
+            55.94288,
+            -3.28218,
+            "Vigo"
+          ]
+        ],
+        "canalM": null,
+        "stopM": 53,
+        "at": "2026-09-02"
+      }
     },
     {
       "id": "dower-house",
@@ -156,7 +287,27 @@
       "address": "1A Orchardfield Avenue, Corstorphine, Edinburgh EH12 7SX",
       "coordsExact": true,
       "unclearStreak": 0,
-      "category": "cafe"
+      "category": "cafe",
+      "firstSeen": "2026-09-02",
+      "image": "https://media.onthemarket.com/properties/17268474/1574070243/image-0-1024x1024.jpg",
+      "place": {
+        "cafes300": 2,
+        "cafes": [
+          [
+            55.94263,
+            -3.28216,
+            "Costa"
+          ],
+          [
+            55.9402,
+            -3.28386,
+            "Dower House Cafe"
+          ]
+        ],
+        "canalM": 2348,
+        "stopM": 42,
+        "at": "2026-09-02"
+      }
     },
     {
       "id": "mirth-zest",
@@ -188,7 +339,76 @@
       "address": "24 Marchmont Crescent, Edinburgh EH9 1HG",
       "coordsExact": true,
       "unclearStreak": 0,
-      "category": "cafe"
+      "category": "cafe",
+      "firstSeen": "2026-09-02",
+      "place": {
+        "cafes300": 15,
+        "cafes": [
+          [
+            55.93627,
+            -3.19403,
+            "Cafe Artista"
+          ],
+          [
+            55.93932,
+            -3.19169,
+            "Detour Espresso"
+          ],
+          [
+            55.93863,
+            -3.19166,
+            "Argyle Place"
+          ],
+          [
+            55.93842,
+            -3.19462,
+            "Toast"
+          ],
+          [
+            55.93826,
+            -3.1925,
+            "The Rabbit Hole"
+          ],
+          [
+            55.93643,
+            -3.19486,
+            "Cuthbert’s"
+          ],
+          [
+            55.93623,
+            -3.19405,
+            "The Sausage Maker"
+          ],
+          [
+            55.93859,
+            -3.19519,
+            "Locale"
+          ],
+          [
+            55.93945,
+            -3.19482,
+            "Leaf & Bean Deli Café"
+          ],
+          [
+            55.93847,
+            -3.19165,
+            "Argile Restaurant"
+          ],
+          [
+            55.93826,
+            -3.19275,
+            "Nadair"
+          ],
+          [
+            55.93799,
+            -3.1928,
+            "HollowStone Pizzeria"
+          ]
+        ],
+        "canalM": 1065,
+        "stopM": 48,
+        "at": "2026-09-02"
+      }
     },
     {
       "id": "dessert-parlour-morningside",
@@ -219,7 +439,8 @@
       "lastChecked": "2026-09-02",
       "address": "45 Comiston Road, Morningside, Edinburgh, EH10 6AB",
       "unclearStreak": 0,
-      "category": "dessert"
+      "category": "dessert",
+      "firstSeen": "2026-09-02"
     },
     {
       "id": "charming-dessert-bruntsfield",
@@ -248,7 +469,8 @@
       "lastChecked": "2026-09-02",
       "address": "45 Comiston Road, EH10 6AB (near Bruntsfield)",
       "unclearStreak": 1,
-      "category": "dessert"
+      "category": "dessert",
+      "firstSeen": "2026-09-02"
     },
     {
       "id": "tearoom-brasserie-marchmont",
@@ -279,12 +501,81 @@
       "address": "92 Marchmont Crescent, Edinburgh EH9 1HD",
       "coordsExact": true,
       "unclearStreak": 0,
-      "category": "restaurant"
+      "category": "restaurant",
+      "firstSeen": "2026-09-02",
+      "place": {
+        "cafes300": 16,
+        "cafes": [
+          [
+            55.93627,
+            -3.19403,
+            "Cafe Artista"
+          ],
+          [
+            55.9349,
+            -3.19431,
+            "The Birchwood"
+          ],
+          [
+            55.93842,
+            -3.19462,
+            "Toast"
+          ],
+          [
+            55.93826,
+            -3.1925,
+            "The Rabbit Hole"
+          ],
+          [
+            55.93643,
+            -3.19486,
+            "Cuthbert’s"
+          ],
+          [
+            55.93418,
+            -3.19275,
+            "Butterflies Cafe"
+          ],
+          [
+            55.93623,
+            -3.19405,
+            "The Sausage Maker"
+          ],
+          [
+            55.93483,
+            -3.19437,
+            "Mara’s Picklery"
+          ],
+          [
+            55.93485,
+            -3.19429,
+            "Empire Cafe"
+          ],
+          [
+            55.93859,
+            -3.19519,
+            "Locale"
+          ],
+          [
+            55.93847,
+            -3.19165,
+            "Argile Restaurant"
+          ],
+          [
+            55.93826,
+            -3.19275,
+            "Nadair"
+          ]
+        ],
+        "canalM": 1110,
+        "stopM": 37,
+        "at": "2026-09-02"
+      }
     },
     {
       "id": "contemporary-matcha-stockbridge",
       "name": "Contemporary Matcha Tea Shop",
-      "area": "Stockbridge, Edinburgh",
+      "area": "Comely Bank",
       "price": 49000,
       "tenure": "Leasehold",
       "rent": null,
@@ -297,7 +588,7 @@
       "notes": "Recently refurbished matcha tea house in Stockbridge; turn-key takeaway-focused with scope to expand cafe/takeaway offerings.",
       "source": "agent discovery (2026-09-02)",
       "url": "https://www.daltonsbusiness.com/listing/contemporary-matcha-tea-shop-stockbridge-for-sale-DB2597314/",
-      "image": null,
+      "image": "https://cdn.daltonsbusiness.com/wp-content/uploads/2026/09/1788263302-Bon-AppeTea_SMALL-FILE-SIZE-1-copy.webp",
       "address": "Stockbridge",
       "lat": 55.9591715,
       "lng": -3.2215984,
@@ -311,12 +602,31 @@
       },
       "coordsExact": true,
       "unclearStreak": 0,
-      "category": "dessert"
+      "category": "dessert",
+      "firstSeen": "2026-09-02",
+      "place": {
+        "cafes300": 2,
+        "cafes": [
+          [
+            55.95884,
+            -3.22304,
+            "Mimi's Bakehouse"
+          ],
+          [
+            55.95943,
+            -3.21897,
+            "Bon AppeTea"
+          ]
+        ],
+        "canalM": 2017,
+        "stopM": 13,
+        "at": "2026-09-02"
+      }
     },
     {
       "id": "bubble-tea-shandwick-place",
       "name": "Edinburgh City Centre Bubble Tea Business",
-      "area": "Shandwick Place, Edinburgh City Centre",
+      "area": "West End",
       "price": 50000,
       "tenure": "Leasehold",
       "rent": null,
@@ -329,7 +639,7 @@
       "notes": "Stylish, fully refurbished bubble tea business in Edinburgh city centre on Shandwick Place; presented in excellent condition.",
       "source": "agent discovery (2026-09-02)",
       "url": "https://www.daltonsbusiness.com/listing/edinburgh-city-centre-cafe-in-excellent-condition-for-sale-DB2540136/",
-      "image": null,
+      "image": "https://cdn.daltonsbusiness.com/wp-content/uploads/2026/05/1778236849-shandwick-place-outside-scaled.webp",
       "address": "Shandwick Place",
       "lat": null,
       "lng": null,
@@ -342,12 +652,13 @@
         "date": "2026-09-02"
       },
       "unclearStreak": 0,
-      "category": "dessert"
+      "category": "dessert",
+      "firstSeen": "2026-09-02"
     },
     {
       "id": "gorgie-road-coffee-shop-sandwich-bar",
       "name": "City Centre Coffee Shop and Sandwich Bar (Ref 1874)",
-      "area": "Gorgie Road, Edinburgh",
+      "area": "Gorgie",
       "price": 29995,
       "tenure": "Leasehold",
       "rent": null,
@@ -360,7 +671,7 @@
       "notes": "Recently fully renovated coffee shop on Gorgie Road; high footfall location near a local high school and nearby amenities.",
       "source": "agent discovery (2026-09-02)",
       "url": "https://www.daltonsbusiness.com/listing/city-centre-coffee-shop-and-sandwich-bar-for-sale-DB2355387/",
-      "image": null,
+      "image": "https://cdn.daltonsbusiness.com/wp-content/uploads/2025/05/1746718920-gorgie-new-2.webp",
       "address": "Gorgie Road",
       "lat": null,
       "lng": null,
@@ -372,12 +683,13 @@
         "note": "found by discovery scan",
         "date": "2026-09-02"
       },
-      "category": "cafe"
+      "category": "cafe",
+      "firstSeen": "2026-09-02"
     },
     {
       "id": "class-1-cafe-central-edinburgh-ref-1690",
       "name": "Class 1 Cafe and Coffee Shop Opportunity (Ref 1690)",
-      "area": "Central Edinburgh",
+      "area": "New Town",
       "price": 35500,
       "tenure": "Leasehold",
       "rent": null,
@@ -404,12 +716,81 @@
       },
       "coordsExact": true,
       "unclearStreak": 0,
-      "category": "cafe"
+      "category": "cafe",
+      "firstSeen": "2026-09-02",
+      "place": {
+        "cafes300": 49,
+        "cafes": [
+          [
+            55.95252,
+            -3.19908,
+            "Mussel Inn"
+          ],
+          [
+            55.95276,
+            -3.20301,
+            "Contini"
+          ],
+          [
+            55.94897,
+            -3.20106,
+            "Redcoat Café"
+          ],
+          [
+            55.9511,
+            -3.20314,
+            "Starbucks"
+          ],
+          [
+            55.95093,
+            -3.20408,
+            "Bar + Block"
+          ],
+          [
+            55.9512,
+            -3.20245,
+            "Mòr Bakery"
+          ],
+          [
+            55.95342,
+            -3.20035,
+            "Fortuna Coffee"
+          ],
+          [
+            55.95308,
+            -3.20353,
+            "Time 4 Thai"
+          ],
+          [
+            55.95302,
+            -3.20139,
+            "Cafe Andaluz"
+          ],
+          [
+            55.9524,
+            -3.20522,
+            "Tigerlily"
+          ],
+          [
+            55.95227,
+            -3.20601,
+            "Prezzo"
+          ],
+          [
+            55.95224,
+            -3.20615,
+            "Butta Burger"
+          ]
+        ],
+        "canalM": 1015,
+        "stopM": 51,
+        "at": "2026-09-02"
+      }
     },
     {
       "id": "edinburgh-city-centre-cafe-50k",
       "name": "Edinburgh City Centre Cafe (Turn-key)",
-      "area": "Edinburgh City Centre",
+      "area": "City Centre",
       "price": 50000,
       "tenure": "Leasehold",
       "rent": null,
@@ -422,7 +803,7 @@
       "notes": "Turn-key city-centre cafe in excellent condition; leasehold £50,000; advert states Edinburgh City Centre.",
       "source": "agent discovery (2026-09-02)",
       "url": "https://www.daltonsbusiness.com/listing/edinburgh-city-centre-cafe-in-excellent-condition-for-sale-DB2540136/",
-      "image": null,
+      "image": "https://cdn.daltonsbusiness.com/wp-content/uploads/2026/05/1778236849-shandwick-place-outside-scaled.webp",
       "address": "Shandwick Place, Edinburgh (EH2)",
       "lat": null,
       "lng": null,
@@ -435,7 +816,8 @@
         "date": "2026-09-02"
       },
       "unclearStreak": 0,
-      "category": "cafe"
+      "category": "cafe",
+      "firstSeen": "2026-09-02"
     },
     {
       "id": "beautifully-presented-gift-and-coffee-shop-70k",
@@ -453,7 +835,7 @@
       "notes": "Class 1 coffee shop with popular gifts section; 16 years trading; annual rent £19,770 plus VAT.",
       "source": "agent discovery (2026-09-02)",
       "url": "https://www.daltonsbusiness.com/listing/beautifully-presented-gift-and-coffee-shop-for-sale-DB2496125/",
-      "image": null,
+      "image": "https://cdn.daltonsbusiness.com/wp-content/uploads/2026/02/1771337329-Cloud1.webp",
       "address": "Whitehouse Road, Barnton, Edinburgh",
       "lat": 55.9608628,
       "lng": -3.3061529,
@@ -467,12 +849,36 @@
       },
       "coordsExact": true,
       "unclearStreak": 0,
-      "category": "cafe"
+      "category": "cafe",
+      "firstSeen": "2026-09-02",
+      "place": {
+        "cafes300": 3,
+        "cafes": [
+          [
+            55.96169,
+            -3.306,
+            "Cloudberry"
+          ],
+          [
+            55.9614,
+            -3.3058,
+            "Herringbone"
+          ],
+          [
+            55.96101,
+            -3.30628,
+            "Starbucks"
+          ]
+        ],
+        "canalM": null,
+        "stopM": 68,
+        "at": "2026-09-02"
+      }
     },
     {
       "id": "unique-bike-cafe-palmerston-place",
       "name": "Unique Bike Café",
-      "area": "Palmerston Place Lane, West End, Edinbur",
+      "area": "West End",
       "category": "cafe",
       "price": 16000,
       "tenure": "Leasehold (transfer of lease possible)",
@@ -486,7 +892,7 @@
       "notes": "Previously traded in West End; currently stored at Palmerston Place Lane; transfer of lease on storage premises possible.",
       "source": "agent discovery (2026-09-02)",
       "url": "https://www.daltonsbusiness.com/listing/unique-bike-cafe-previously-operated-in-for-sale-DB2349728/",
-      "image": null,
+      "image": "https://cdn.daltonsbusiness.com/wp-content/uploads/2025/04/1745920354-Coffee-Bike1.webp",
       "address": "Palmerston Place Lane, Edinburgh",
       "lat": null,
       "lng": null,
@@ -497,12 +903,13 @@
         "outcome": "live",
         "note": "found by discovery scan",
         "date": "2026-09-02"
-      }
+      },
+      "firstSeen": "2026-09-02"
     },
     {
       "id": "very-busy-cafe-elm-row",
       "name": "Very Busy Cafe",
-      "area": "Elm Row, Edinburgh",
+      "area": "Leith Walk",
       "category": "cafe",
       "price": 32000,
       "tenure": "Leasehold",
@@ -516,7 +923,7 @@
       "notes": "Well-established café in Elm Row area; prime location benefiting from consistently high footfall and strong passing trade.",
       "source": "agent discovery (2026-09-02)",
       "url": "https://www.daltonsbusiness.com/listing/very-busy-cafe-in-very-sought-after-city-for-sale-DB2500245/",
-      "image": null,
+      "image": "https://cdn.daltonsbusiness.com/wp-content/uploads/2026/02/1772021343-elm-row-1-scaled.webp",
       "address": "Elm Row, Edinburgh",
       "lat": null,
       "lng": null,
@@ -527,12 +934,13 @@
         "outcome": "live",
         "note": "found by discovery scan",
         "date": "2026-09-02"
-      }
+      },
+      "firstSeen": "2026-09-02"
     },
     {
       "id": "prominent-corner-restaurant-morningside-bruntsfiel",
       "name": "A Prominent Corner Sited Restaurant In Sought After Local",
-      "area": "Morningside/Bruntsfield, Edinburgh",
+      "area": "Bruntsfield",
       "category": "restaurant",
       "price": 75000,
       "tenure": "Leasehold",
@@ -546,7 +954,7 @@
       "notes": "c.40 covers; Full Class 3 and premises licence; current rent £35,473 p.a.",
       "source": "agent discovery (2026-09-02)",
       "url": "https://www.daltonsbusiness.com/listing/a-prominent-corner-sited-restaurant-in-sought-for-sale-DB2597222/",
-      "image": null,
+      "image": "https://cdn.daltonsbusiness.com/wp-content/uploads/2026/09/1788258574-Gratitude-0.webp",
       "address": null,
       "lat": null,
       "lng": null,
@@ -557,7 +965,8 @@
         "outcome": "live",
         "note": "found by discovery scan",
         "date": "2026-09-02"
-      }
+      },
+      "firstSeen": "2026-09-02"
     },
     {
       "id": "immaculate-outstanding-restaurant-ref-1836",
@@ -576,7 +985,7 @@
       "notes": "70+ covers; £160,000 fit-out in 2025; residue of 15-year lease signed in 2025.",
       "source": "agent discovery (2026-09-02)",
       "url": "https://www.daltonsbusiness.com/listing/an-immaculate-and-outstanding-restaurant-for-sale-DB2592192/",
-      "image": null,
+      "image": "https://cdn.daltonsbusiness.com/wp-content/uploads/2026/08/1787136998-Celestia1.webp",
       "address": null,
       "lat": null,
       "lng": null,
@@ -587,7 +996,8 @@
         "outcome": "live",
         "note": "found by discovery scan",
         "date": "2026-09-02"
-      }
+      },
+      "firstSeen": "2026-09-02"
     },
     {
       "id": "outstanding-events-business-restaurant-bar",
@@ -606,7 +1016,7 @@
       "notes": "Walk-in condition; significant high-level investment; currently run as events venue for weddings/private hire.",
       "source": "agent discovery (2026-09-02)",
       "url": "https://www.daltonsbusiness.com/listing/an-outstanding-events-business-restaurant-bar-for-sale-DB2588185/",
-      "image": null,
+      "image": "https://cdn.daltonsbusiness.com/wp-content/uploads/2026/08/1786454264-restaurant-fine-dining.webp",
       "address": null,
       "lat": null,
       "lng": null,
@@ -617,12 +1027,13 @@
         "outcome": "live",
         "note": "found by discovery scan",
         "date": "2026-09-02"
-      }
+      },
+      "firstSeen": "2026-09-02"
     },
     {
       "id": "tapa-restaurant-and-bar-leith",
       "name": "Long Established Leith Restaurant + Bar",
-      "area": "Leith, Edinburgh",
+      "area": "Leith",
       "category": "restaurant",
       "price": 125000,
       "tenure": "Leasehold",
@@ -636,7 +1047,7 @@
       "notes": "Multi-award winning tapas restaurant; on market for first time in over 16 years.",
       "source": "agent discovery (2026-09-02)",
       "url": "https://www.daltonsbusiness.com/listing/long-established-leith-restaurant-bar-for-sale-DB2526737/",
-      "image": null,
+      "image": "https://cdn.daltonsbusiness.com/wp-content/uploads/2026/09/1788260796-Tapa_2.IMG_9352.webp",
       "address": null,
       "lat": null,
       "lng": null,
@@ -647,12 +1058,13 @@
         "outcome": "live",
         "note": "found by discovery scan",
         "date": "2026-09-02"
-      }
+      },
+      "firstSeen": "2026-09-02"
     },
     {
       "id": "chef-bako-seafood-restaurant-royal-mile",
       "name": "Catch of the Day! Established Seafood Restaurant with Stellar Reviews",
-      "area": "Royal Mile/Old Town, Edinburgh",
+      "area": "Old Town",
       "category": "restaurant",
       "price": 115000,
       "tenure": "Leasehold",
@@ -666,7 +1078,7 @@
       "notes": "Well-established, highly rated seafood restaurant located on the Royal Mile/Old Town.",
       "source": "agent discovery (2026-09-02)",
       "url": "https://www.daltonsbusiness.com/listing/catch-of-the-day-established-seafood-restaurant-for-sale-DB2438577/",
-      "image": null,
+      "image": "https://cdn.daltonsbusiness.com/wp-content/uploads/2025/10/1761035751QoJsv78VPk.webp",
       "address": null,
       "lat": null,
       "lng": null,
@@ -677,7 +1089,8 @@
         "outcome": "live",
         "note": "found by discovery scan",
         "date": "2026-09-02"
-      }
+      },
+      "firstSeen": "2026-09-02"
     },
     {
       "id": "deceptively-spacious-bar-high-footfall",
@@ -696,7 +1109,7 @@
       "notes": "Basement function room (70); commercial kitchen; Class 3 & premises licence; residue of 10-year lease; current rent £37,759 p.a.",
       "source": "agent discovery (2026-09-02)",
       "url": "https://www.daltonsbusiness.com/listing/a-deceptively-spacious-bar-in-a-high-footfall-for-sale-DB2251308/",
-      "image": null,
+      "image": "https://cdn.daltonsbusiness.com/wp-content/uploads/2024/11/1731408915-1Home-Bar.jpg",
       "address": null,
       "lat": null,
       "lng": null,
@@ -707,7 +1120,8 @@
         "outcome": "live",
         "note": "found by discovery scan",
         "date": "2026-09-02"
-      }
+      },
+      "firstSeen": "2026-09-02"
     }
   ]
 }

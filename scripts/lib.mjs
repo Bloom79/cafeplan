@@ -65,6 +65,75 @@ export const categoryOf = (l) => {
 // more kit and covers than a café, so its band sits higher.
 export const PRICE_CAP = { cafe: 90000, dessert: 90000, bar: 120000, restaurant: 150000, premises: 60000 }
 
+// ————— places ——————————————————————————————————
+
+// Edinburgh districts with a centre point — the fixed vocabulary the area
+// filter uses, so discovery's "Central Edinburgh" / "Morningside/Bruntsfi…"
+// collapse onto one chip each. Nearest centre within 1.4 km wins.
+export const DISTRICTS = [
+  ['Shandon', 55.9312, -3.2210], ['Polwarth', 55.9345, -3.2160], ['Merchiston', 55.9330, -3.2100],
+  ['Bruntsfield', 55.9382, -3.2095], ['Morningside', 55.9269, -3.2090], ['Marchmont', 55.9363, -3.1878],
+  ['Fountainbridge', 55.9420, -3.2115], ['Slateford', 55.9295, -3.2380], ['Gorgie', 55.9375, -3.2330],
+  ['Dalry', 55.9420, -3.2230], ['Haymarket', 55.9455, -3.2185], ['West End', 55.9490, -3.2090],
+  ['Old Town', 55.9490, -3.1900], ['New Town', 55.9545, -3.1985], ['Stockbridge', 55.9585, -3.2085],
+  ['Tollcross', 55.9435, -3.2035], ['Southside', 55.9430, -3.1830], ['Newington', 55.9375, -3.1780],
+  ['Leith', 55.9720, -3.1720], ['Leith Walk', 55.9620, -3.1780], ['Corstorphine', 55.9440, -3.2870],
+  ['Comely Bank', 55.9575, -3.2200], ['Portobello', 55.9530, -3.1140], ['Broughton', 55.9590, -3.1880],
+]
+
+const R = 6371000
+export const metres = (aLat, aLng, bLat, bLng) => {
+  const dLat = ((bLat - aLat) * Math.PI) / 180
+  const dLng = ((bLng - aLng) * Math.PI) / 180
+  const s = Math.sin(dLat / 2) ** 2 + Math.cos((aLat * Math.PI) / 180) * Math.cos((bLat * Math.PI) / 180) * Math.sin(dLng / 2) ** 2
+  return 2 * R * Math.asin(Math.sqrt(s))
+}
+
+export function districtOf(lat, lng) {
+  if (!Number.isFinite(lat) || !Number.isFinite(lng)) return null
+  let best = null
+  for (const [name, dlat, dlng] of DISTRICTS) {
+    const d = metres(lat, lng, dlat, dlng)
+    if (d <= 1400 && (!best || d < best.d)) best = { name, d }
+  }
+  return best ? best.name : null
+}
+
+// Free-text area from a portal → one of our districts, by keyword. Used
+// until exact coordinates settle it properly. Order matters: first hit wins,
+// so streets come before the generic "city centre".
+const AREA_WORDS = [
+  ['shandon', 'Shandon'], ['polwarth', 'Polwarth'], ['merchiston', 'Merchiston'], ['bruntsfield', 'Bruntsfield'],
+  ['morningside', 'Morningside'], ['comiston', 'Morningside'], ['marchmont', 'Marchmont'], ['fountainbridge', 'Fountainbridge'],
+  ['slateford', 'Slateford'], ['gorgie', 'Gorgie'], ['dalry', 'Dalry'], ['haymarket', 'Haymarket'],
+  ['shandwick', 'West End'], ['palmerston', 'West End'], ['west end', 'West End'], ['royal mile', 'Old Town'],
+  ['old town', 'Old Town'], ['grassmarket', 'Old Town'], ['new town', 'New Town'], ['george street', 'New Town'],
+  ['castle street', 'New Town'], ['stockbridge', 'Stockbridge'], ['tollcross', 'Tollcross'], ['southside', 'Southside'],
+  ['newington', 'Newington'], ['leith walk', 'Leith Walk'], ['elm row', 'Leith Walk'], ['leith', 'Leith'],
+  ['corstorphine', 'Corstorphine'], ['comely bank', 'Comely Bank'], ['portobello', 'Portobello'], ['broughton', 'Broughton'],
+  ['city centre', 'City Centre'], ['central', 'City Centre'],
+]
+
+export function normaliseArea(text) {
+  const s = String(text || '').toLowerCase()
+  // Earliest mention in the text wins ("Morningside/Bruntsfield" → Morningside).
+  let best = null
+  for (const [word, district] of AREA_WORDS) {
+    const i = s.indexOf(word)
+    if (i !== -1 && (best === null || i < best.i)) best = { i, district }
+  }
+  if (best) return best.district
+  return String(text || '').replace(/,?\s*edinburgh.*$/i, '').trim() || 'Edinburgh'
+}
+
+// Days since a listing was first seen by us (or, for seeds, first recorded).
+export const daysListed = (l, today) => {
+  const from = l.firstSeen || (l.history && l.history[0] && l.history[0].date) || l.lastVerified
+  if (!from) return null
+  const d = Math.round((new Date(today) - new Date(from)) / 86400000)
+  return Number.isFinite(d) && d >= 0 ? d : null
+}
+
 // Tags that duplicate (and outlive) the status badge.
 export const STATUS_TAG = /^(under offer|for sale|sold|withdrawn|gone|on the market)$/i
 
@@ -123,6 +192,11 @@ export function mergeVerification(db, id, res, today) {
     if (res.coordsExact) { l.lat = +res.lat; l.lng = +res.lng; l.coordsExact = true }
     else if (!l.coordsExact) { l.lat = +res.lat; l.lng = +res.lng }
   }
+  // Exact coordinates settle the district; the portal's free-text area
+  // ("Central Edinburgh", "Morningside/Bruntsfi…") only stands until then.
+  if (l.coordsExact) { const d = districtOf(l.lat, l.lng); if (d) l.area = d }
+  if (res.place && typeof res.place === 'object') l.place = { ...res.place, at: today }
+  if (!l.firstSeen) l.firstSeen = (l.history && l.history[0] && l.history[0].date) || l.lastVerified || today
   let changed = false
   if (res.price != null && l.price != null && res.price !== l.price) {
     l.history = [...(l.history || []), { date: today, price: l.price }]
@@ -177,7 +251,7 @@ export function mergeDiscovery(db, found, today) {
     db.listings.push({
       id,
       name: String(f.name).slice(0, 90),
-      area: String(f.area).slice(0, 40),
+      area: normaliseArea(f.area),
       category,
       price: num('price'),
       tenure: String(f.tenure || 'Leasehold').slice(0, 40),
@@ -193,6 +267,7 @@ export function mergeDiscovery(db, found, today) {
       address: f.address ? String(f.address).slice(0, 120) : null,
       lat: Number.isFinite(+f.lat) ? +f.lat : null,
       lng: Number.isFinite(+f.lng) ? +f.lng : null,
+      firstSeen: today,
       lastChecked: today,
       lastVerified: today,
       lastChanged: today,
