@@ -468,6 +468,246 @@
       "coordsExact": true,
       "unclearStreak": 0,
       "category": "cafe"
+    },
+    {
+      "id": "unique-bike-cafe-palmerston-place",
+      "name": "Unique Bike Café",
+      "area": "Palmerston Place Lane, West End, Edinbur",
+      "category": "cafe",
+      "price": 16000,
+      "tenure": "Leasehold (transfer of lease possible)",
+      "rent": null,
+      "turnover": null,
+      "profit": null,
+      "status": "active",
+      "tags": [
+        "agent find"
+      ],
+      "notes": "Previously traded in West End; currently stored at Palmerston Place Lane; transfer of lease on storage premises possible.",
+      "source": "agent discovery (2026-09-02)",
+      "url": "https://www.daltonsbusiness.com/listing/unique-bike-cafe-previously-operated-in-for-sale-DB2349728/",
+      "image": null,
+      "address": "Palmerston Place Lane, Edinburgh",
+      "lat": null,
+      "lng": null,
+      "lastChecked": "2026-09-02",
+      "lastVerified": "2026-09-02",
+      "lastChanged": "2026-09-02",
+      "verification": {
+        "outcome": "live",
+        "note": "found by discovery scan",
+        "date": "2026-09-02"
+      }
+    },
+    {
+      "id": "very-busy-cafe-elm-row",
+      "name": "Very Busy Cafe",
+      "area": "Elm Row, Edinburgh",
+      "category": "cafe",
+      "price": 32000,
+      "tenure": "Leasehold",
+      "rent": null,
+      "turnover": null,
+      "profit": null,
+      "status": "active",
+      "tags": [
+        "agent find"
+      ],
+      "notes": "Well-established café in Elm Row area; prime location benefiting from consistently high footfall and strong passing trade.",
+      "source": "agent discovery (2026-09-02)",
+      "url": "https://www.daltonsbusiness.com/listing/very-busy-cafe-in-very-sought-after-city-for-sale-DB2500245/",
+      "image": null,
+      "address": "Elm Row, Edinburgh",
+      "lat": null,
+      "lng": null,
+      "lastChecked": "2026-09-02",
+      "lastVerified": "2026-09-02",
+      "lastChanged": "2026-09-02",
+      "verification": {
+        "outcome": "live",
+        "note": "found by discovery scan",
+        "date": "2026-09-02"
+      }
+    },
+    {
+      "id": "prominent-corner-restaurant-morningside-bruntsfiel",
+      "name": "A Prominent Corner Sited Restaurant In Sought After Local",
+      "area": "Morningside/Bruntsfield, Edinburgh",
+      "category": "restaurant",
+      "price": 75000,
+      "tenure": "Leasehold",
+      "rent": 35473,
+      "turnover": null,
+      "profit": null,
+      "status": "active",
+      "tags": [
+        "agent find"
+      ],
+      "notes": "c.40 covers; Full Class 3 and premises licence; current rent £35,473 p.a.",
+      "source": "agent discovery (2026-09-02)",
+      "url": "https://www.daltonsbusiness.com/listing/a-prominent-corner-sited-restaurant-in-sought-for-sale-DB2597222/",
+      "image": null,
+      "address": null,
+      "lat": null,
+      "lng": null,
+      "lastChecked": "2026-09-02",
+      "lastVerified": "2026-09-02",
+      "lastChanged": "2026-09-02",
+      "verification": {
+        "outcome": "live",
+        "note": "found by discovery scan",
+        "date": "2026-09-02"
+      }
+    },
+    {
+      "id": "immaculate-outstanding-restaurant-ref-1836",
+      "name": "An immaculate and outstanding restaurant (ref 1836)",
+      "area": "Edinburgh",
+      "category": "restaurant",
+      "price": 99000,
+      "tenure": "Leasehold",
+      "rent": null,
+      "turnover": null,
+      "profit": null,
+      "status": "active",
+      "tags": [
+        "agent find"
+      ],
+      "notes": "70+ covers; £160,000 fit-out in 2025; residue of 15-year lease signed in 2025.",
+      "source": "agent discovery (2026-09-02)",
+      "url": "https://www.daltonsbusiness.com/listing/an-immaculate-and-outstanding-restaurant-for-sale-DB2592192/",
+      "image": null,
+      "address": null,
+      "lat": null,
+      "lng": null,
+      "lastChecked": "2026-09-02",
+      "lastVerified": "2026-09-02",
+      "lastChanged": "2026-09-02",
+      "verification": {
+        "outcome": "live",
+        "note": "found by discovery scan",
+        "date": "2026-09-02"
+      }
+    },
+    {
+      "id": "outstanding-events-business-restaurant-bar",
+      "name": "An Outstanding Events Business/Restaurant/Bar Opportunity",
+      "area": "Edinburgh",
+      "category": "restaurant",
+      "price": 110000,
+      "tenure": "Leasehold",
+      "rent": null,
+      "turnover": null,
+      "profit": null,
+      "status": "active",
+      "tags": [
+        "agent find"
+      ],
+      "notes": "Walk-in condition; significant high-level investment; currently run as events venue for weddings/private hire.",
+      "source": "agent discovery (2026-09-02)",
+      "url": "https://www.daltonsbusiness.com/listing/an-outstanding-events-business-restaurant-bar-for-sale-DB2588185/",
+      "image": null,
+      "address": null,
+      "lat": null,
+      "lng": null,
+      "lastChecked": "2026-09-02",
+      "lastVerified": "2026-09-02",
+      "lastChanged": "2026-09-02",
+      "verification": {
+        "outcome": "live",
+        "note": "found by discovery scan",
+        "date": "2026-09-02"
+      }
+    },
+    {
+      "id": "tapa-restaurant-and-bar-leith",
+      "name": "Long Established Leith Restaurant + Bar",
+      "area": "Leith, Edinburgh",
+      "category": "restaurant",
+      "price": 125000,
+      "tenure": "Leasehold",
+      "rent": null,
+      "turnover": null,
+      "profit": null,
+      "status": "active",
+      "tags": [
+        "agent find"
+      ],
+      "notes": "Multi-award winning tapas restaurant; on market for first time in over 16 years.",
+      "source": "agent discovery (2026-09-02)",
+      "url": "https://www.daltonsbusiness.com/listing/long-established-leith-restaurant-bar-for-sale-DB2526737/",
+      "image": null,
+      "address": null,
+      "lat": null,
+      "lng": null,
+      "lastChecked": "2026-09-02",
+      "lastVerified": "2026-09-02",
+      "lastChanged": "2026-09-02",
+      "verification": {
+        "outcome": "live",
+        "note": "found by discovery scan",
+        "date": "2026-09-02"
+      }
+    },
+    {
+      "id": "chef-bako-seafood-restaurant-royal-mile",
+      "name": "Catch of the Day! Established Seafood Restaurant with Stellar Reviews",
+      "area": "Royal Mile/Old Town, Edinburgh",
+      "category": "restaurant",
+      "price": 115000,
+      "tenure": "Leasehold",
+      "rent": null,
+      "turnover": null,
+      "profit": null,
+      "status": "active",
+      "tags": [
+        "agent find"
+      ],
+      "notes": "Well-established, highly rated seafood restaurant located on the Royal Mile/Old Town.",
+      "source": "agent discovery (2026-09-02)",
+      "url": "https://www.daltonsbusiness.com/listing/catch-of-the-day-established-seafood-restaurant-for-sale-DB2438577/",
+      "image": null,
+      "address": null,
+      "lat": null,
+      "lng": null,
+      "lastChecked": "2026-09-02",
+      "lastVerified": "2026-09-02",
+      "lastChanged": "2026-09-02",
+      "verification": {
+        "outcome": "live",
+        "note": "found by discovery scan",
+        "date": "2026-09-02"
+      }
+    },
+    {
+      "id": "deceptively-spacious-bar-high-footfall",
+      "name": "A deceptively spacious bar in a high footfall trading area of Edinburgh",
+      "area": "Edinburgh",
+      "category": "bar",
+      "price": 50000,
+      "tenure": "Leasehold",
+      "rent": 37759,
+      "turnover": null,
+      "profit": null,
+      "status": "active",
+      "tags": [
+        "agent find"
+      ],
+      "notes": "Basement function room (70); commercial kitchen; Class 3 & premises licence; residue of 10-year lease; current rent £37,759 p.a.",
+      "source": "agent discovery (2026-09-02)",
+      "url": "https://www.daltonsbusiness.com/listing/a-deceptively-spacious-bar-in-a-high-footfall-for-sale-DB2251308/",
+      "image": null,
+      "address": null,
+      "lat": null,
+      "lng": null,
+      "lastChecked": "2026-09-02",
+      "lastVerified": "2026-09-02",
+      "lastChanged": "2026-09-02",
+      "verification": {
+        "outcome": "live",
+        "note": "found by discovery scan",
+        "date": "2026-09-02"
+      }
     }
   ]
 }
