@@ -13,6 +13,10 @@ on:
         description: 'Also search for new listings (beyond the Monday default)'
         type: boolean
         default: false
+      force:
+        description: 'Re-check every listing now, ignoring the cadence'
+        type: boolean
+        default: false
 
 permissions:
   contents: write
@@ -43,6 +47,7 @@ jobs:
           FLAGS=""
           [ "$(date +%u)" = "1" ] && FLAGS="--discover"
           [ "${{ inputs.discover }}" = "true" ] && FLAGS="--discover"
+          [ "${{ inputs.force }}" = "true" ] && FLAGS="$FLAGS --force"
           node scripts/verifica.mjs --all $FLAGS
 
       - name: Commit updated listings
