@@ -1,8 +1,28 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import {
-  STALE_AFTER, extractJson, isFailedVerdict, mergeDiscovery, mergeVerification, needsCheck, okUrl, slug,
+  STALE_AFTER, categoryOf, extractJson, isFailedVerdict, mergeDiscovery, mergeVerification, needsCheck, okUrl, slug,
 } from '../scripts/lib.mjs'
+
+test('categoryOf: stored category wins; names classify sensibly', () => {
+  assert.equal(categoryOf({ category: 'bar', name: 'Cafe X' }), 'bar')
+  assert.equal(categoryOf({ name: 'City Centre Coffee Shop and Sandwich Bar' }), 'cafe')
+  assert.equal(categoryOf({ name: 'Cafe and Ice Cream Shop' }), 'cafe')
+  assert.equal(categoryOf({ name: 'Dessert & Ice Cream Parlour' }), 'dessert')
+  assert.equal(categoryOf({ name: 'Charming 20-Seat Restaurant' }), 'restaurant')
+  assert.equal(categoryOf({ name: 'The Canal Tavern' }), 'bar')
+  assert.equal(categoryOf({ name: 'Fitted unit, Polwarth', tenure: 'To let' }), 'premises')
+})
+
+test('mergeDiscovery: per-category price caps (restaurants higher than cafés)', () => {
+  const d = { listings: [] }
+  const added = mergeDiscovery(d, [
+    { name: 'Corner Cafe', area: 'Polwarth', price: 95000 }, // over the café cap
+    { name: 'Canal Bistro', area: 'Polwarth', price: 120000, category: 'restaurant' }, // under the restaurant cap
+  ], T)
+  assert.equal(added, 1)
+  assert.equal(d.listings[0].category, 'restaurant')
+})
 
 const T = '2026-09-02'
 const db = () => ({

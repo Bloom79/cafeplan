@@ -29,7 +29,8 @@
       "lat": 55.9269,
       "lng": -3.209,
       "lastChecked": "2026-09-02",
-      "unclearStreak": 0
+      "unclearStreak": 0,
+      "category": "cafe"
     },
     {
       "id": "bruntsfield-coffee",
@@ -61,7 +62,8 @@
       "lastChecked": "2026-09-02",
       "address": "80 Bruntsfield Place, Edinburgh, EH10 4HG",
       "coordsExact": true,
-      "unclearStreak": 0
+      "unclearStreak": 0,
+      "category": "cafe"
     },
     {
       "id": "marchmont-20seat",
@@ -89,7 +91,8 @@
       "lat": 55.9363,
       "lng": -3.1878,
       "lastChecked": "2026-09-02",
-      "unclearStreak": 0
+      "unclearStreak": 0,
+      "category": "restaurant"
     },
     {
       "id": "bennitos",
@@ -120,7 +123,8 @@
       "lastChecked": "2026-09-02",
       "address": "199 St John’s Road, Corstorphine, Edinburgh EH12 7UU",
       "coordsExact": true,
-      "unclearStreak": 0
+      "unclearStreak": 0,
+      "category": "cafe"
     },
     {
       "id": "dower-house",
@@ -151,7 +155,8 @@
       "lastChecked": "2026-09-02",
       "address": "1A Orchardfield Avenue, Corstorphine, Edinburgh EH12 7SX",
       "coordsExact": true,
-      "unclearStreak": 0
+      "unclearStreak": 0,
+      "category": "cafe"
     },
     {
       "id": "mirth-zest",
@@ -182,7 +187,8 @@
       "lastChecked": "2026-09-02",
       "address": "24 Marchmont Crescent, Edinburgh EH9 1HG",
       "coordsExact": true,
-      "unclearStreak": 0
+      "unclearStreak": 0,
+      "category": "cafe"
     },
     {
       "id": "dessert-parlour-morningside",
@@ -212,7 +218,8 @@
       "image": "https://cdn.daltonsbusiness.com/wp-content/uploads/2026/05/1778590333-sweet-paradise-6-scaled.webp",
       "lastChecked": "2026-09-02",
       "address": "45 Comiston Road, Morningside, Edinburgh, EH10 6AB",
-      "unclearStreak": 0
+      "unclearStreak": 0,
+      "category": "dessert"
     },
     {
       "id": "charming-dessert-bruntsfield",
@@ -240,7 +247,8 @@
       "lng": -3.2095,
       "lastChecked": "2026-09-02",
       "address": "45 Comiston Road, EH10 6AB (near Bruntsfield)",
-      "unclearStreak": 1
+      "unclearStreak": 1,
+      "category": "dessert"
     },
     {
       "id": "tearoom-brasserie-marchmont",
@@ -270,7 +278,8 @@
       "lastChecked": "2026-09-02",
       "address": "92 Marchmont Crescent, Edinburgh EH9 1HD",
       "coordsExact": true,
-      "unclearStreak": 0
+      "unclearStreak": 0,
+      "category": "restaurant"
     },
     {
       "id": "contemporary-matcha-stockbridge",
@@ -301,7 +310,8 @@
         "date": "2026-09-02"
       },
       "coordsExact": true,
-      "unclearStreak": 0
+      "unclearStreak": 0,
+      "category": "dessert"
     },
     {
       "id": "bubble-tea-shandwick-place",
@@ -331,7 +341,8 @@
         "note": "Listing appears active on Daltons and mirrored on property portals; no evidence of sale/withdrawal found.",
         "date": "2026-09-02"
       },
-      "unclearStreak": 0
+      "unclearStreak": 0,
+      "category": "dessert"
     },
     {
       "id": "gorgie-road-coffee-shop-sandwich-bar",
@@ -360,7 +371,8 @@
         "outcome": "live",
         "note": "found by discovery scan",
         "date": "2026-09-02"
-      }
+      },
+      "category": "cafe"
     },
     {
       "id": "class-1-cafe-central-edinburgh-ref-1690",
@@ -391,7 +403,8 @@
         "date": "2026-09-02"
       },
       "coordsExact": true,
-      "unclearStreak": 0
+      "unclearStreak": 0,
+      "category": "cafe"
     },
     {
       "id": "edinburgh-city-centre-cafe-50k",
@@ -421,7 +434,8 @@
         "note": "Listing still appears active at £50,000 (Daltons/Zoopla); located on Shandwick Place, Edinburgh. No sold/withdrawn notices found.",
         "date": "2026-09-02"
       },
-      "unclearStreak": 0
+      "unclearStreak": 0,
+      "category": "cafe"
     },
     {
       "id": "beautifully-presented-gift-and-coffee-shop-70k",
@@ -452,7 +466,8 @@
         "date": "2026-09-02"
       },
       "coordsExact": true,
-      "unclearStreak": 0
+      "unclearStreak": 0,
+      "category": "cafe"
     }
   ]
 }

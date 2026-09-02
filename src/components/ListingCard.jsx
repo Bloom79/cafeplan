@@ -3,6 +3,7 @@ import { gbp } from '../data/model.js'
 import { applyListingToModel } from '../lib/applyListing.js'
 import { gmapsHref, isWalled, listingHref, listingLabel, searchHref } from '../lib/links.js'
 import { fitScore, scoreBand } from '../lib/score.js'
+import { categoryLabel, categoryOf } from '../lib/category.js'
 import { useInView } from '../hooks/useInView.js'
 import Markdown from './Markdown.jsx'
 import FairPrice from './FairPrice.jsx'
@@ -108,7 +109,7 @@ export default function ListingCard({
         </div>
       )}
       <div className="meta">
-        <span>{l.area} · {l.tenure}</span>
+        <span><b className="cat-tag">{categoryLabel(categoryOf(l))}</b> · {l.area} · {l.tenure}</span>
         {l.address && <span className="addr">{l.address}</span>}
         {l.rent != null && <span>Rent {gbp(l.rent)}/yr</span>}
         {l.turnover != null && (

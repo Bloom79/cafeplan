@@ -3,6 +3,7 @@ import { DEFAULTS, compute, gbp } from '../data/model.js'
 import { MODEL_KEY, startupFor } from '../lib/applyListing.js'
 import { listingHref } from '../lib/links.js'
 import { fitScore, scoreBand, sdeCheck, verdict as rankListing } from '../lib/score.js'
+import { CATEGORIES, categoryOf } from '../lib/category.js'
 import { useLocalStorage } from '../hooks/useLocalStorage.js'
 import { useListings } from '../hooks/useListings.js'
 import { useAgentRequest } from '../hooks/useAgentRequest.js'
@@ -14,6 +15,7 @@ import AlertsBell from './AlertsBell.jsx'
 // what it earns against the 1.5×–2.5× SDE band we value on.
 const COLUMNS = [
   ['name', 'Listing', (l) => l.name],
+  ['cat', 'Type', (l) => categoryOf(l)],
   ['area', 'Area', (l) => l.area],
   ['price', 'Asking', (l) => l.price],
   ['rent', 'Rent / yr', (l) => l.rent],
@@ -134,6 +136,7 @@ function Shortlist({ rows }) {
 export default function ListingsPanel() {
   const [data, refetch] = useListings()
   const [area, setArea] = useLocalStorage('cafeplan:area', 'All')
+  const [cat, setCat] = useLocalStorage('cafeplan:category', 'all')
   const [favsOnly, setFavsOnly] = useLocalStorage('cafeplan:favsOnly', false)
   const [favs, setFavs] = useLocalStorage('cafeplan:favs', [])
   const [dismissed, setDismissed] = useLocalStorage('cafeplan:dismissed', [])
@@ -172,9 +175,13 @@ export default function ListingsPanel() {
     })
   }, [data, sdeInputs])
 
+  const counts = {}
+  for (const l of enriched) if (!dismissed.includes(l.id)) counts[categoryOf(l)] = (counts[categoryOf(l)] || 0) + 1
+
   const shown = enriched.filter(
     (l) =>
       (area === 'All' || l.area === area)
+      && (cat === 'all' || categoryOf(l) === cat)
       && (!favsOnly || favs.includes(l.id))
       && (showDismissed ? dismissed.includes(l.id) : !dismissed.includes(l.id)),
   )
@@ -182,6 +189,16 @@ export default function ListingsPanel() {
 
   return (
     <>
+      <div className="filters-row cat-row">
+        <button className="filter-chip" aria-pressed={cat === 'all'} onClick={() => setCat('all')}>
+          All types
+        </button>
+        {CATEGORIES.filter(([k]) => counts[k]).map(([k, label]) => (
+          <button key={k} className="filter-chip" aria-pressed={cat === k} onClick={() => setCat(k)}>
+            {label} <span className="count">{counts[k]}</span>
+          </button>
+        ))}
+      </div>
       <div className="filters-row">
         {areas.map((ar) => (
           <button key={ar} className="filter-chip" aria-pressed={area === ar} onClick={() => setArea(ar)}>
@@ -218,7 +235,7 @@ export default function ListingsPanel() {
         <span className="updated-line mono">data updated {data.updated}</span>
       </div>
 
-      {!showDismissed && !favsOnly && area === 'All' && <Shortlist rows={ranked} />}
+      {!showDismissed && !favsOnly && area === 'All' && cat === 'all' && <Shortlist rows={ranked} />}
 
       {view === 'table' && shown.length > 0 && (
         <CompareTable rows={shown} sort={sort} setSort={setSort} essentials={essentials} setEssentials={setEssentials} />

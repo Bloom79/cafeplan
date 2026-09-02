@@ -44,6 +44,27 @@ export const nameKey = (s) =>
 // Not what we are shopping for, whatever the portal's category says.
 export const OFF_CATEGORY = /fish\s*(and|&|n)?\s*chip|chippy|kebab|takeaway|hot food|pizza delivery|chinese|indian restaurant/i
 
+// What kind of business a listing is. Stored on the record when the agent
+// says so; inferred from the name otherwise (older records, seed data).
+export const CATEGORIES = ['cafe', 'restaurant', 'dessert', 'bar', 'premises']
+
+export const categoryOf = (l) => {
+  if (l.category && CATEGORIES.includes(l.category)) return l.category
+  const s = `${l.name || ''} ${l.tenure || ''}`.toLowerCase()
+  if (/to let|lease only|premises|vacant unit|fitted unit/.test(s)) return 'premises'
+  // "sandwich bar" / "coffee bar" / "snack bar" are cafés, not bars.
+  if (/pub|tavern|wine bar|cocktail|\bbar\b(?!.*(sandwich|coffee|snack|salad|juice))/.test(s)
+    && !/(sandwich|coffee|snack|salad|juice)\s+bar/.test(s)) return 'bar'
+  if (/restaurant|bistro|brasserie|trattoria|pizzeria|diner|eatery|grill/.test(s)) return 'restaurant'
+  if (/caf[eé]|coffee|tea ?room|sandwich|deli/.test(s)) return 'cafe'
+  if (/dessert|ice cream|gelat|bubble tea|matcha|cake|bakery|patisserie|chocolate/.test(s)) return 'dessert'
+  return 'cafe'
+}
+
+// Asking-price ceiling per category for discovery: a restaurant carries
+// more kit and covers than a café, so its band sits higher.
+export const PRICE_CAP = { cafe: 90000, dessert: 90000, bar: 120000, restaurant: 150000, premises: 60000 }
+
 // Tags that duplicate (and outlive) the status badge.
 export const STATUS_TAG = /^(under offer|for sale|sold|withdrawn|gone|on the market)$/i
 
@@ -145,7 +166,8 @@ export function mergeDiscovery(db, found, today) {
     // categories, and anything priced beyond a small going-concern.
     if (/freehold/i.test(String(f.tenure || '') + ' ' + String(f.name || ''))) continue
     if (OFF_CATEGORY.test(String(f.name || ''))) continue
-    if (f.price != null && Number.isFinite(+f.price) && +f.price > 90000) continue
+    const category = categoryOf(f)
+    if (f.price != null && Number.isFinite(+f.price) && +f.price > PRICE_CAP[category]) continue
     let id = slug(f.id || f.name)
     while (ids.has(id)) id = id + '-2'
     if (!/^[a-z0-9-]{2,60}$/.test(id)) continue
@@ -156,6 +178,7 @@ export function mergeDiscovery(db, found, today) {
       id,
       name: String(f.name).slice(0, 90),
       area: String(f.area).slice(0, 40),
+      category,
       price: num('price'),
       tenure: String(f.tenure || 'Leasehold').slice(0, 40),
       rent: num('rent'),

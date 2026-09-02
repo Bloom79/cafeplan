@@ -7,6 +7,7 @@ import { applyListingToModel } from '../lib/applyListing.js'
 import { gmapsHref, isWalled, listingHref, listingLabel, searchHref } from '../lib/links.js'
 import { useLocalStorage } from '../hooks/useLocalStorage.js'
 import { useListings } from '../hooks/useListings.js'
+import { CATEGORIES, categoryOf } from '../lib/category.js'
 
 const EDINBURGH = [55.9435, -3.2015]
 
@@ -69,6 +70,7 @@ export default function MapPanel() {
   })
   const [favs] = useLocalStorage('cafeplan:favs', [])
   const [dismissed] = useLocalStorage('cafeplan:dismissed', [])
+  const [cat, setCat] = useLocalStorage('cafeplan:category', 'all')
   const [favsOnly, setFavsOnly] = useState(false)
   const [showCatchment, setShowCatchment] = useLocalStorage('cafeplan:catchment', true)
 
@@ -79,11 +81,12 @@ export default function MapPanel() {
           l.lat != null &&
           l.lng != null &&
           !dismissed.includes(l.id) &&
+          (cat === 'all' || categoryOf(l) === cat) &&
           (band === 'all' || bandOf(l) === band) &&
           statuses[statusOf(l)] !== false &&
           (!favsOnly || favs.includes(l.id)),
       ),
-    [data, band, statuses, favsOnly, favs, dismissed],
+    [data, band, statuses, favsOnly, favs, dismissed, cat],
   )
 
   const areas = useMemo(
@@ -125,6 +128,17 @@ export default function MapPanel() {
         >
           {PRICE_BANDS.map(([v, label]) => (
             <option key={v} value={v}>{label}</option>
+          ))}
+        </select>
+        <select
+          className="status-select"
+          value={cat}
+          aria-label="Business type"
+          onChange={(e) => setCat(e.target.value)}
+        >
+          <option value="all">All types</option>
+          {CATEGORIES.map(([k, label]) => (
+            <option key={k} value={k}>{label}</option>
           ))}
         </select>
         <button

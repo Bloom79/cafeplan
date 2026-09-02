@@ -1602,3 +1602,9 @@ button.fit-chip { cursor: pointer; }
   padding: 1px 7px;
   vertical-align: middle;
 }
+
+/* ————— category ————— */
+
+.cat-row { margin-bottom: 8px; }
+.cat-row .filter-chip .count { font-family: var(--font-mono); font-size: 10.5px; opacity: 0.7; margin-left: 4px; }
+.cat-tag { color: var(--chalk); font-weight: 500; }

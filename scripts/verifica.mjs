@@ -179,10 +179,10 @@ Reply with ONLY this JSON object:
 
 const TARGET_AREAS = 'Shandon, Polwarth, Merchiston, Bruntsfield, Morningside, Marchmont, Fountainbridge, Slateford, Haymarket, Stockbridge, Corstorphine, Edinburgh'
 
-const FIND_SHAPE = `Only include LEASEHOLD going concerns with an asking price at or under £90,000 (or price on application). Skip freeholds, franchises, anything outside Edinburgh, and anything marked sold / under offer.
+const FIND_SHAPE = `Only include LEASEHOLD going concerns (or fitted café/restaurant premises offered on a lease) in Edinburgh: cafés and coffee shops up to £90,000, dessert/ice-cream/tea shops up to £90,000, restaurants and bistros up to £150,000, bars up to £120,000, premises-only leases with a premium up to £60,000 — or price on application. Skip freeholds, franchises, takeaways (fish & chips, kebab, hot-food units), anything outside Edinburgh, and anything marked sold / under offer.
 
-Reply with ONLY a JSON array (empty if nothing new), max 6 items:
-[{"id":"kebab-case-id","name":"","area":"<district or street, Edinburgh>","price":<number|null>,"tenure":"","rent":<number|null>,"turnover":<number|null>,"profit":<number|null>,"url":<the specific listing page url from the LINKS list or your sources, else null>,"image":<direct photo url|null>,"address":<street address|null>,"notes":"<=140 chars English — FACTS from the advert only (size, covers, lease length, why selling, what's included); no speculation about our concept"}]`
+Reply with ONLY a JSON array (empty if nothing new), max 8 items:
+[{"id":"kebab-case-id","name":"","category":"cafe|restaurant|dessert|bar|premises","area":"<district or street, Edinburgh>","price":<number|null>,"tenure":"","rent":<number|null>,"turnover":<number|null>,"profit":<number|null>,"url":<the specific listing page url from the LINKS list or your sources, else null>,"image":<direct photo url|null>,"address":<street address|null>,"notes":"<=140 chars English — FACTS from the advert only (size, covers, lease length, why selling, what's included); no speculation about our concept"}]`
 
 // Portals that answer a plain fetch: their category pages become evidence
 // text the model reads instead of having to find them itself.
@@ -190,7 +190,12 @@ const OPEN_SOURCES = [
   ['Daltons — Edinburgh cafés', 'https://www.daltonsbusiness.com/cafes-businesses-for-sale-in-edinburgh/'],
   ['Daltons — Edinburgh coffee shops', 'https://www.daltonsbusiness.com/coffee-shops-businesses-for-sale-in-edinburgh/'],
   ['Daltons — Edinburgh restaurants', 'https://www.daltonsbusiness.com/restaurants-businesses-for-sale-in-edinburgh/'],
+  ['Daltons — Edinburgh bistros', 'https://www.daltonsbusiness.com/bistros-businesses-for-sale-in-edinburgh/'],
   ['The Restaurant Agency — Edinburgh', 'https://therestaurantagency.com/properties/?location=edinburgh'],
+  // Rightmove Commercial: mostly premises with a lease premium, some going
+  // concerns — the "premises" category is what this pair mainly feeds.
+  ['Rightmove Commercial — Edinburgh & Lothian cafés', 'https://www.rightmove.co.uk/commercial-property-for-sale/Edinburgh-and-Lothian/cafes.html'],
+  ['Rightmove Commercial — Edinburgh & Lothian restaurants', 'https://www.rightmove.co.uk/commercial-property-for-sale/Edinburgh-and-Lothian/restaurants.html'],
 ]
 
 // Page → plain text plus a LINKS list (listing anchors with their text), so
@@ -203,7 +208,7 @@ async function fetchText(url) {
     const origin = new URL(url).origin
     const links = []
     const seen = new Set()
-    for (const m of html.matchAll(/<a[^>]+href="([^"]*(?:\/listing\/|\/properties\/property\/)[^"]*)"[^>]*>([\s\S]*?)<\/a>/gi)) {
+    for (const m of html.matchAll(/<a[^>]+href="([^"]*(?:\/listing\/|\/properties\/property\/|\/commercial-property-for-sale\/property-\d+)[^"]*)"[^>]*>([\s\S]*?)<\/a>/gi)) {
       const href = m[1].startsWith('http') ? m[1] : origin + m[1]
       const text = m[2].replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim()
       if (!text || seen.has(href) || text.length < 6) continue
@@ -252,9 +257,11 @@ ${FIND_SHAPE}`
 
   // Pass 2: the walled portals through search snippets.
   const passes = [
-    ['Rightbiz + BusinessesForSale via search', `Search the web for café / coffee shop / dessert / small restaurant businesses for sale in Edinburgh listed on rightbiz.co.uk or uk.businessesforsale.com (use site: searches; these portals block direct fetches — snippets and indexed pages are fine). Areas that matter most: ${TARGET_AREAS}.`],
-    ['Zoopla Commercial + agents', `Search zoopla.co.uk/for-sale/commercial hospitality listings in Edinburgh, and the Edinburgh café/restaurant stock of Christie & Co, Cornerstone Business Agents, Central Business Sales, DJK Group and Scottish Business Agency. Only going concerns in the £10k–£80k band; skip premises-only sales above that.`],
-    ['Local news', `Search Edinburgh Evening News, The Scotsman and Edinburgh Live for cafés / coffee shops put up for sale in the last 60 days (they run "café for sale" pieces). Extract the business, area and asking price when stated.`],
+    ['Rightbiz + BusinessesForSale via search', `Search the web for café / coffee shop / dessert businesses for sale in Edinburgh listed on rightbiz.co.uk or uk.businessesforsale.com (use site: searches; these portals block direct fetches — snippets and indexed pages are fine). Areas that matter most: ${TARGET_AREAS}.`],
+    ['Restaurants via search', `Search the web for small RESTAURANTS, bistros and brasseries for sale in Edinburgh as leasehold going concerns (rightbiz.co.uk, uk.businessesforsale.com, daltonsbusiness.com, zoopla commercial, Cornerstone, Christie & Co, The Restaurant Agency). Independent, 20–60 covers, asking up to £150,000. Areas that matter most: ${TARGET_AREAS}.`],
+    ['Zoopla Commercial + agents', `Search zoopla.co.uk/for-sale/commercial hospitality listings in Edinburgh, and the Edinburgh café/restaurant stock of Christie & Co, Cornerstone Business Agents, Central Business Sales, DJK Group and Scottish Business Agency. Going concerns only; respect the per-category price caps.`],
+    ['Fitted premises to lease', `Search NovaLoca, Rightmove Commercial (cafés / restaurants, Edinburgh & Lothian), Shepherd Chartered Surveyors, DM Hall and Ryden for FITTED café or restaurant premises in Edinburgh offered to let or with a lease premium (no goodwill). Report them with category "premises", the premium as price (or null) and the annual rent.`],
+    ['Local news', `Search Edinburgh Evening News, The Scotsman and Edinburgh Live for cafés, coffee shops and restaurants put up for sale in the last 60 days (they run "for sale" pieces). Extract the business, area and asking price when stated.`],
   ]
   for (const [label, brief] of passes) {
     const prompt = `Today is ${TODAY}. ${brief}
