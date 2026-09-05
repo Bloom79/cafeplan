@@ -1,7 +1,7 @@
 import React, { useMemo, useState } from 'react'
 import {
   DEFAULTS, GROUPS, NLW, SCENARIOS, STARTUP, STARTUP_TOTALS, TAX_YEAR, VAT_THRESHOLD,
-  compute, gbp, impliedCovers, monthly, paidHoursPerWeek, pct, sensitivity,
+  compute, coversToPay, gbp, impliedCovers, monthly, paidHoursPerWeek, pct, sensitivity,
 } from '../data/model.js'
 import { APPLIED_KEY } from '../lib/applyListing.js'
 import { useLocalStorage } from '../hooks/useLocalStorage.js'
@@ -66,6 +66,7 @@ export default function ModelPanel() {
   ]
   const maxCost = Math.max(...costRows.map(([, v]) => v), 1)
   const implied = applied?.turnover != null ? impliedCovers(applied.turnover, a) : null
+  const needCovers = useMemo(() => coversToPay(a), [a])
 
   const sens = useMemo(() => sensitivity(a), [a])
   const maxSwing = Math.max(...sens.map((s) => Math.max(Math.abs(s.down), Math.abs(s.up))), 1)
@@ -107,7 +108,16 @@ export default function ModelPanel() {
               {gbp(r.totalRev)} and {gbp(r.profit)} on your concept.
               {implied != null && (
                 <> Their turnover is <b className="mono">{implied.toFixed(0)}</b> covers a day at your {gbp(a.spendDay)} spend,
-                against the {a.coversDay} you plan on.</>
+                against the {a.coversDay} you plan on.
+                {Math.round(implied) !== a.coversDay && (
+                  <button
+                    className="reset-btn inline"
+                    onClick={() => { setDraft(null); setScenario('custom'); setA({ ...a, coversDay: Math.round(implied) }) }}
+                    title="Run your costs and concept on the trade the seller declares"
+                  >
+                    Model their trade →
+                  </button>
+                )}</>
               )}
             </div>
           )}
@@ -324,6 +334,17 @@ export default function ModelPanel() {
               <div className="k">After your draw</div>
               <div className={`v ${r.surplus >= 0 ? 'pos' : 'neg'}`}>{r.surplus >= 0 ? '+' : ''}{gbp(r.surplus)}</div>
               <div className="s">profit − loan − {gbp(a.ownerDraw)} you need to live on</div>
+            </div>
+            <div className="stat">
+              <div className="k">Covers/day to pay you</div>
+              <div className={`v ${Number.isFinite(needCovers) && needCovers <= a.coversDay ? 'pos' : ''}`}>
+                {Number.isFinite(needCovers) ? needCovers.toFixed(0) : '—'}
+              </div>
+              <div className="s">
+                {Number.isFinite(needCovers)
+                  ? `daytime covers for ${gbp(a.ownerDraw)} take-home · you plan on ${a.coversDay}`
+                  : 'not reachable on these assumptions — the cost base, not the covers, is the problem'}
+              </div>
             </div>
           </div>
           <p className="footnote">

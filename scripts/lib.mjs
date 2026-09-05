@@ -205,6 +205,13 @@ export function needsCheck(l, today, force = false) {
   return age >= 2
 }
 
+// Facts a verification may fill in, with a sanity ceiling each (a model
+// that reads "£1.2m" for a café's rent has read the wrong line).
+export const FACTS = [
+  ['rent', 200000], ['turnover', 3000000], ['profit', 1000000],
+  ['leaseYears', 99], ['rateableValue', 500000], ['covers', 300], ['sqft', 20000],
+]
+
 export function mergeVerification(db, id, res, today) {
   const l = db.listings.find((x) => x.id === id)
   if (!l) return null
@@ -227,6 +234,14 @@ export function mergeVerification(db, id, res, today) {
   // ("Central Edinburgh", "Morningside/Bruntsfi…") only stands until then.
   if (l.coordsExact) { const d = districtOf(l.lat, l.lng); if (d) l.area = d }
   if (res.place && typeof res.place === 'object') l.place = { ...res.place, at: today }
+  // Deal facts the advert states (rent, turnover, lease left, rateable
+  // value…): they fill blanks and never overwrite — an earlier figure may
+  // be the one you negotiated on, and a model reading a snippet is not a
+  // better source than a stored one.
+  for (const [k, max] of FACTS) {
+    const v = Number(res[k])
+    if (l[k] == null && Number.isFinite(v) && v > 0 && v <= max) l[k] = Math.round(v)
+  }
   if (!l.firstSeen) l.firstSeen = (l.history && l.history[0] && l.history[0].date) || l.lastVerified || today
   let changed = false
   if (res.price != null && l.price != null && res.price !== l.price) {

@@ -1,5 +1,30 @@
 import React from 'react'
-import { DD_ITEMS, ddProgress, dueState, isOpen } from '../lib/deals.js'
+import { CALL_QUESTIONS, DD_ITEMS, VIEWING_CHECKS, ddProgress, dueState, isOpen } from '../lib/deals.js'
+
+// A checklist inside the deal sheet: ticks live under `deal[field]`.
+function Checklist({ title, items, field, d, set, hint }) {
+  const done = items.filter(([id]) => d[field]?.[id]).length
+  return (
+    <details className="dd">
+      <summary>{title} · <b className="mono">{done}/{items.length}</b></summary>
+      <ul className="dd-list">
+        {items.map(([id, label]) => (
+          <li key={id}>
+            <label>
+              <input
+                type="checkbox"
+                checked={!!d[field]?.[id]}
+                onChange={(e) => set(field, { ...(d[field] || {}), [id]: e.target.checked })}
+              />
+              <span>{label}</span>
+            </label>
+          </li>
+        ))}
+      </ul>
+      {hint && <p className="fp-hint">{hint}</p>}
+    </details>
+  )
+}
 
 // The deal pipeline for one listing: where it stands, what happens next
 // and by when, the structured notes from the calls and viewings, and the
@@ -37,13 +62,14 @@ export default function CallSheet({ deal, setDeal }) {
   const filled = FIELDS.filter(([k]) => d[k]).length
   const dd = ddProgress(d)
   const due = dueState(d)
+  const ddSummary = dd.done > 0 ? <span className="mono"> · DD {dd.done}/{dd.total}</span> : null
 
   return (
     <details className="callsheet" open={isOpen(d) && filled === 0}>
       <summary>
         Deal · <b>{(STAGES.find(([k]) => k === d.stage) || STAGES[0])[1]}</b>
         {filled > 0 && <span className="mono"> · {filled}/{FIELDS.length} noted</span>}
-        {dd.done > 0 && <span className="mono"> · DD {dd.done}/{dd.total}</span>}
+        {ddSummary}
         {due && <span className={`due-badge ${due}`}>{DUE_LABEL[due]} {d.nextOn}</span>}
       </summary>
       <div className="cs-body">
@@ -80,27 +106,12 @@ export default function CallSheet({ deal, setDeal }) {
             </label>
           ))}
         </div>
-        <details className="dd">
-          <summary>Due diligence · <b className="mono">{dd.done}/{dd.total}</b> seen</summary>
-          <ul className="dd-list">
-            {DD_ITEMS.map(([id, label]) => (
-              <li key={id}>
-                <label>
-                  <input
-                    type="checkbox"
-                    checked={!!d.dd?.[id]}
-                    onChange={(e) => set('dd', { ...(d.dd || {}), [id]: e.target.checked })}
-                  />
-                  <span>{label}</span>
-                </label>
-              </li>
-            ))}
-          </ul>
-          <p className="fp-hint">
-            Tick what you have actually seen, not what the agent promised. An offer before the accounts
-            and the lease is a guess with a number on it.
-          </p>
-        </details>
+        <Checklist title="Ask on the call" items={CALL_QUESTIONS} field="asked" d={d} set={set}
+          hint="Ten questions; the answers go in the fields above. A seller who will not show figures before a viewing has told you something already." />
+        <Checklist title="Look for at the viewing" items={VIEWING_CHECKS} field="looked" d={d} set={set}
+          hint="Your eyes, not the brochure. Two visits at different times are worth more than one long one." />
+        <Checklist title={`Due diligence · ${dd.done}/${dd.total} seen`} items={DD_ITEMS} field="dd" d={d} set={set}
+          hint="Tick what you have actually seen, not what the agent promised. An offer before the accounts and the lease is a guess with a number on it." />
       </div>
     </details>
   )

@@ -1,27 +1,29 @@
 import React, { useEffect, useMemo, useState } from 'react'
 import { CASE_SECTIONS } from '../data/businessCase.js'
-import { DEFAULTS, compute, gbp } from '../data/model.js'
+import { DEFAULTS, compute, coversToPay, gbp } from '../data/model.js'
 import { APPLIED_KEY, MODEL_KEY } from '../lib/applyListing.js'
+import { readiness } from '../lib/gates.js'
 
 // Live paragraphs read the model the user last edited, so the written case
-// never contradicts the numbers on the Model tab.
+// never contradicts the numbers on the Model tab — and the gates, so the
+// decision section says where things actually stand.
+const readJson = (key, fallback) => {
+  try { const v = JSON.parse(window.localStorage.getItem(key)); return v ?? fallback } catch { return fallback }
+}
 const readLive = () => {
-  let a = DEFAULTS
-  let applied = null
-  try {
-    const raw = window.localStorage.getItem(MODEL_KEY)
-    if (raw) a = { ...DEFAULTS, ...JSON.parse(raw) }
-    applied = JSON.parse(window.localStorage.getItem(APPLIED_KEY))
-  } catch { /* private mode — defaults */ }
+  const a = { ...DEFAULTS, ...readJson(MODEL_KEY, {}) }
+  const applied = readJson(APPLIED_KEY, null)
   const r = compute(a)
   const k = (n) => `£${Math.round(n / 1000)}k`
-  return { r, a, k, gbp, applied }
+  const ready = readiness({ deals: readJson('cafeplan:deals', {}), steps: readJson('cafeplan:steps', {}), a })
+  return { r, a, k, gbp, applied, ready, needCovers: coversToPay(a) }
 }
 
 export default function CasePanel() {
   const [active, setActive] = useState(() => {
-    const hash = window.location.hash.match(/^#case-(\d)$/)
-    return hash ? parseInt(hash[1], 10) : 1
+    const hash = window.location.hash.match(/^#case-(\d+)$/)
+    const n = hash ? parseInt(hash[1], 10) : 1
+    return n >= 1 && n <= CASE_SECTIONS.length ? n : 1
   })
 
   const section = CASE_SECTIONS[active - 1]
@@ -55,7 +57,7 @@ export default function CasePanel() {
 
       <article className="case-article panel" style={{ padding: '26px clamp(18px, 3vw, 34px)' }}>
         <h2>{section.title}</h2>
-        <div className="sec-eyebrow">Section {String(section.n).padStart(2, '0')} / 09</div>
+        <div className="sec-eyebrow">Section {String(section.n).padStart(2, '0')} / {String(CASE_SECTIONS.length).padStart(2, '0')}</div>
         {section.blocks.map((b, i) => {
           if (b.live) return <p key={i} className="live-para">{b.live(live)} <span className="live-tag mono">live</span></p>
           if (b.p) return <p key={i}>{b.p}</p>

@@ -165,4 +165,25 @@ export const CASE_SECTIONS = [
       ] },
     ],
   },
+  {
+    n: 10,
+    id: 'decision',
+    title: 'Decision',
+    blocks: [
+      { live: ({ r, a, k, ready, needCovers }) => {
+        const closed = ready.gates.filter((g) => !g.ok).map((g) => g.title.toLowerCase())
+        const pays = r.surplus >= 0
+        return `Where it stands today: ${ready.open} of ${ready.total} gates open${closed.length ? ` — still closed: ${closed.join('; ')}` : ' — every gate is open'}. On the current assumptions the café makes ${k(r.profit)} pre-tax and leaves about ${k(r.takeHome)} after the loan and tax, against the ${k(a.ownerDraw)} you need: the plan ${pays ? `pays you, with ${k(r.surplus)} to spare` : `does not pay you yet, ${k(-r.surplus)} short`}. ${Number.isFinite(needCovers) ? `It would at ${needCovers.toFixed(0)} daytime covers a day (the plan assumes ${a.coversDay}).` : 'No number of covers gets there on this cost base — the fix is the rent, the loan or the draw, not the trade.'}`
+      } },
+      { p: 'The rule, so the decision is not made on a good day at a viewing: no offer while any of the four evidence gates (target seen, accounts verified, licensing route, rateable value) is closed; no signature while the model does not pay the draw at a trade you can evidence from the seller\'s till reports, not the advert. An asking price is an opening position; the SDE band and the three-year payback on your own concept set the ceiling.' },
+      { h: 'What would change the answer' },
+      { ul: [
+        'Rent under the £14k anchor, or a lease long enough to amortise the refit — the two things you cannot renegotiate after signing.',
+        'A site whose till proves 50+ covers a day already, so the ramp is a formality rather than a hope.',
+        'A price inside the SDE band, or a seller who will carry part of it (deferred consideration) against the accounts.',
+        'Less debt: every £10k not borrowed is about £2.3k a year of take-home while the loan runs.',
+        'A partner or keyholder who takes the second session, so the aperitivo is not the owner\'s twelfth hour.',
+      ] },
+    ],
+  },
 ]

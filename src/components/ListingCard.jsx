@@ -148,13 +148,26 @@ export default function ListingCard({
           {freshness(l)}{l._days != null ? ` · listed ${l._days} d` : ''}
         </div>
       )}
-      {(l._coversBE != null || l._implied != null || l.place) && (
+      {(l._coversBE != null || l._implied != null || l.place || l.leaseYears != null || l.rateableValue != null || l.covers != null || l.sqft != null) && (
         <div className="facts">
           {l._coversBE != null && (
             <span title="Daytime covers a day your concept needs to break even at this rent">
               <b className="mono">{l._coversBE.toFixed(0)}</b> covers/day to break even
             </span>
           )}
+          {l._coversPay != null && (
+            <span title="Daytime covers a day at which your take-home reaches what you need, after VAT, the loan and tax">
+              <b className="mono">{Number.isFinite(l._coversPay) ? l._coversPay.toFixed(0) : '∞'}</b> to pay you
+            </span>
+          )}
+          {l.leaseYears != null && <span><b className="mono">{l.leaseYears} yr</b> lease left</span>}
+          {l.rateableValue != null && (
+            <span title={l.rateableValue < 12000 ? 'Under the £12k Small Business Bonus threshold: rates about £0' : 'Over the £12k SBBS threshold: rates are a real cost'}>
+              RV <b className="mono">{gbp(l.rateableValue)}</b>{l.rateableValue < 12000 ? ' · SBBS' : ' · rates due'}
+            </span>
+          )}
+          {l.covers != null && <span><b className="mono">{l.covers}</b> covers</span>}
+          {l.sqft != null && <span><b className="mono">{l.sqft}</b> sq ft</span>}
           {l._implied != null && (
             <span title="The seller's declared turnover, converted at your average spend and trading days — how busy they say they are, in your units">
               seller's turnover = <b className="mono">{l._implied.toFixed(0)}</b> covers/day

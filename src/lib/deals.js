@@ -21,6 +21,35 @@ export const DD_ITEMS = [
   ['reason', 'Reason for sale cross-checked: neighbours, reviews, Companies House filings'],
 ]
 
+// The first phone call: what to ask before a viewing is worth your time.
+// Answers go in the call sheet fields; these are the prompts.
+export const CALL_QUESTIONS = [
+  ['why', 'Why are they selling, and since when has it been on the market?'],
+  ['figures', 'Turnover and net profit for the last two years — and will they show accounts before a viewing?'],
+  ['wage', 'Does the owner work in it, and is their wage in the figures or added back?'],
+  ['lease', 'Lease: years left, rent, next review, break clauses, will the landlord consent to assignment?'],
+  ['rates', 'Rateable value — and are they on Small Business Bonus relief today?'],
+  ['hours', 'Trading hours and days now; any evening trade or licence?'],
+  ['staff', 'How many staff, on what contracts and hours — who stays?'],
+  ['included', 'What exactly is in the price: fixtures, equipment (owned or leased), stock, goodwill, name?'],
+  ['works', 'Any known works: extraction, gas safety, EPC, roof, drains, EHO conditions?'],
+  ['offers', 'Have there been offers? What would they take for a quick, clean deal?'],
+]
+
+// The viewing: what to look at with your own eyes, and when to go.
+export const VIEWING_CHECKS = [
+  ['times', 'Go twice: a weekday mid-morning and a Saturday lunchtime. Count covers and the queue.'],
+  ['street', 'Walk the street: footfall, parking, the bus stop, the canal path, who the neighbours are.'],
+  ['kitchen', 'Kitchen: extraction, gas, fridges, the coffee machine (owned? age?), a dishwasher that works.'],
+  ['fabric', 'Fabric: damp, roof, floors, toilets, back door, bins — what a refit would really cost.'],
+  ['seats', 'Count the seats and measure the floor: does the aperitivo layout actually fit?'],
+  ['till', 'Ask to see the till or card terminal totals for last week, on the screen, not on paper.'],
+  ['reviews', 'Read the last 30 reviews before you go; ask about the ones that mention problems.'],
+  ['staff', 'Talk to the staff if you can: mood, hours, whether they know it is for sale.'],
+  ['licence', 'Look for the premises licence on the wall, the food hygiene certificate, the EPC.'],
+  ['gut', 'The feeling on leaving: would you want to be here at 7am every day?'],
+]
+
 export const ddProgress = (deal) => {
   const done = DD_ITEMS.filter(([id]) => deal?.dd?.[id]).length
   return { done, total: DD_ITEMS.length }

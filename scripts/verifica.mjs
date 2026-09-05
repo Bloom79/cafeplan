@@ -238,10 +238,10 @@ Search angles that work: the business name + area + "for sale"; site:rightbiz.co
 
 Judgement rules: still listed / clearly for sale = live; listed but price or terms differ from our snapshot = changed; sold / under offer / withdrawn / business closed = gone; evidence insufficient = unclear. Prefer the freshest asking price you actually saw.
 
-Also capture, if any source shows them: the street address of the premises (street + number, or at least the street/parade name), and a photo URL of the business — from the listing OR from news coverage / the business's own pages (og:image is fine).
+Also capture, if any source shows them: the street address of the premises (street + number, or at least the street/parade name), and a photo URL of the business — from the listing OR from news coverage / the business's own pages (og:image is fine). And the deal facts, ONLY where the advert states them explicitly (never estimate): annual rent, annual turnover, annual net profit, years left on the lease, rateable value, number of covers/seats, floor area in sq ft.
 
 Reply with ONLY this JSON object:
-{"outcome":"live|changed|gone|unclear","price":<current asking price as number, or null>,"url":<best canonical listing url you saw, or null>,"image":<direct photo url, or null>,"address":<street address string, or null>,"lat":<latitude number if a source states coordinates, else null>,"lng":<longitude number, else null>,"note":"<=160 chars English","sources":[<=3 urls you actually used]}`
+{"outcome":"live|changed|gone|unclear","price":<current asking price as number, or null>,"url":<best canonical listing url you saw, or null>,"image":<direct photo url, or null>,"address":<street address string, or null>,"lat":<latitude number if a source states coordinates, else null>,"lng":<longitude number, else null>,"rent":<annual rent number if stated, else null>,"turnover":<annual turnover number if stated, else null>,"profit":<annual net profit number if stated, else null>,"leaseYears":<years left on the lease if stated, else null>,"rateableValue":<rateable value number if stated, else null>,"covers":<number of covers/seats if stated, else null>,"sqft":<floor area in sq ft if stated, else null>,"note":"<=160 chars English","sources":[<=3 urls you actually used]}`
   try {
     const res = extractJson(await judge(prompt), 'outcome')
     if (!['live', 'changed', 'gone', 'unclear'].includes(res.outcome)) res.outcome = 'unclear'

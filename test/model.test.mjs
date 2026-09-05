@@ -2,8 +2,21 @@ import { strict as assert } from 'node:assert'
 import { test } from 'node:test'
 import {
   DEFAULTS, MONTHS, SCENARIOS, STARTUP_TOTALS, VAT_THRESHOLD, WORKING_CAPITAL,
-  compute, impliedCovers, loanPayment, monthly, paidHoursPerWeek, sensitivity, takeHome,
+  compute, coversToPay, impliedCovers, loanPayment, monthly, paidHoursPerWeek, sensitivity, takeHome,
 } from '../src/data/model.js'
+
+test('coversToPay: the covers a day at which take-home reaches the draw', () => {
+  const need = coversToPay(DEFAULTS)
+  assert.ok(Number.isFinite(need) && need > DEFAULTS.coversDay, `need=${need}`)
+  // At that volume the café pays the draw, and just under it it does not.
+  assert.ok(compute({ ...DEFAULTS, coversDay: need }).takeHome >= DEFAULTS.ownerDraw - 1)
+  assert.ok(compute({ ...DEFAULTS, coversDay: need - 1 }).takeHome < DEFAULTS.ownerDraw)
+  // Breakeven (profit = 0) is always below "pays you" (take-home = draw).
+  assert.ok(compute(DEFAULTS).coversBE < need)
+  assert.equal(coversToPay({ ...DEFAULTS, ownerDraw: 0, loan: 0, apCovers: 60 }), 0)
+  assert.equal(coversToPay({ ...DEFAULTS, spendDay: 0 }), Infinity)
+  assert.equal(coversToPay({ ...DEFAULTS, ownerDraw: 900000 }), Infinity)
+})
 
 // Every figure in the business case comes out of compute(). These pin the
 // base case so a refactor cannot quietly move the answer.

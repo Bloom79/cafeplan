@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react'
-import { DEFAULTS, compute, gbp, impliedCovers } from '../data/model.js'
+import { DEFAULTS, compute, coversToPay, gbp, impliedCovers } from '../data/model.js'
 import { MODEL_KEY, startupFor } from '../lib/applyListing.js'
 import { listingHref } from '../lib/links.js'
 import { fitScore, scoreBand, sdeCheck, verdict as rankListing } from '../lib/score.js'
@@ -27,7 +27,10 @@ const COLUMNS = [
   ['startup', 'Budget if bought', (l) => l._startup ?? null],
   ['payback', 'Payback (your concept)', (l) => l._payback ?? null],
   ['coversBE', 'Covers/day to break even', (l) => l._coversBE ?? null],
+  ['coversPay', 'Covers/day to pay you', (l) => l._coversPay ?? null],
   ['implied', "Seller's covers/day", (l) => l._implied ?? null],
+  ['lease', 'Lease left', (l) => l.leaseYears ?? null],
+  ['rv', 'Rateable value', (l) => l.rateableValue ?? null],
   ['days', 'Days listed', (l) => l._days ?? null],
   ['fit', 'Fit', (l) => l._fit ?? null],
   ['rank', 'Verdict', (l) => l._rank ?? null],
@@ -36,14 +39,34 @@ const COLUMNS = [
 
 // On a phone the table scrolls sideways; "essentials" keeps the decision
 // columns in the first screen instead of hiding them off to the right.
-const ESSENTIALS = new Set(['name', 'price', 'rent', 'coversBE', 'payback', 'rank'])
+const ESSENTIALS = new Set(['name', 'price', 'rent', 'coversBE', 'coversPay', 'payback', 'rank'])
+
+// The table as a file: every column, raw numbers, for the accountant or
+// the partner who lives in spreadsheets.
+const csvOf = (rows) => {
+  const esc = (v) => (v == null ? '' : typeof v === 'number' ? (Number.isFinite(v) ? String(Math.round(v * 100) / 100) : '') : `"${String(v).replace(/"/g, '""')}"`)
+  const head = COLUMNS.map(([, label]) => esc(label)).join(',')
+  const body = rows.map((l) => COLUMNS.map(([, , fn]) => esc(fn(l))).join(','))
+  return [head, ...body].join('\n')
+}
+
+const downloadCsv = (rows) => {
+  const url = URL.createObjectURL(new Blob([csvOf(rows)], { type: 'text/csv;charset=utf-8' }))
+  const a = document.createElement('a')
+  a.href = url
+  a.download = `canalside-listings-${new Date().toISOString().slice(0, 10)}.csv`
+  a.click()
+  setTimeout(() => URL.revokeObjectURL(url), 1000)
+}
 
 const cell = (key, v) => {
   if (v == null) return <span className="none">—</span>
   if (key === 'multiple') return `${v.toFixed(1)}×`
   if (key === 'rentPct') return `${Math.round(v * 100)}%`
   if (key === 'payback') return `${v.toFixed(1)} yr`
-  if (key === 'coversBE' || key === 'implied') return v.toFixed(0)
+  if (key === 'coversBE' || key === 'implied' || key === 'coversPay') return Number.isFinite(v) ? v.toFixed(0) : '∞'
+  if (key === 'lease') return `${v} yr`
+  if (key === 'rv') return gbp(v)
   if (key === 'days') return `${v} d`
   if (key === 'fit') return <span className={`fit-chip ${scoreBand(v)}`}>{v}</span>
   if (key === 'rank') return <span className={`fit-chip ${v >= 75 ? 'good' : v >= 55 ? 'mid' : 'low'}`}>{v}</span>
@@ -70,6 +93,7 @@ function CompareTable({ rows, sort, setSort, essentials, setEssentials }) {
       <div className="compare-tools">
         <button className="filter-chip" aria-pressed={essentials} onClick={() => setEssentials(true)}>Essentials</button>
         <button className="filter-chip" aria-pressed={!essentials} onClick={() => setEssentials(false)}>All columns</button>
+        <button className="filter-chip" onClick={() => downloadCsv(rows)} title="Every column, as a spreadsheet file">⤓ CSV</button>
         <span className="scroll-hint mono">scroll sideways for more →</span>
       </div>
       <div className="compare-scroll">
@@ -108,6 +132,7 @@ function CompareTable({ rows, sort, setSort, essentials, setEssentials }) {
         plus the rest of the mid-case startup budget; <b>Payback</b> divides it by the profit YOUR
         model makes with that listing's rent plugged in — the seller's trade doesn't enter it.
         <b> Covers/day to break even</b> is the same idea as a daily target: your concept, their rent.
+        <b> Covers/day to pay you</b> is the harder target: the trade at which take-home reaches what you need after VAT, the loan and tax.
         <b> Seller's covers/day</b> is their declared turnover at your average spend — how busy they claim to be, in your units.
         <b> Days listed</b> counts from when we first saw it — long-listed is leverage.
         <b> Verdict</b> folds fit, payback, the SDE band and market status into one 0–100 rank.
@@ -231,8 +256,10 @@ export default function ListingsPanel() {
     return data.listings.map((l) => {
       const startup = startupFor(l)
       // Your concept in their premises: what it needs to break even at THAT rent.
-      const r = compute({ ...base, rent: l.rent ?? base.rent })
+      const theirs = { ...base, rent: l.rent ?? base.rent }
+      const r = compute(theirs)
       const coversBE = l.rent != null && Number.isFinite(r.coversBE) ? r.coversBE : null
+      const coversPay = l.rent != null ? coversToPay(theirs) : null
       let payback = null
       if (startup != null && r.profit > 0) payback = startup / r.profit
       const sde = sdeCheck(sdeInputs[l.id], l.price)
@@ -241,7 +268,7 @@ export default function ListingsPanel() {
       const days = from ? Math.max(0, Math.round((today - new Date(from)) / 86400000)) : null
       return {
         ...l,
-        _startup: startup, _payback: payback, _coversBE: coversBE, _days: days,
+        _startup: startup, _payback: payback, _coversBE: coversBE, _coversPay: coversPay, _days: days,
         _profit: r.profit, _implied: impliedCovers(l.turnover, base), _due: dueState(deals[l.id], today),
         _fit: fitScore(l).score, _rank: v.rank, _verdict: v,
       }

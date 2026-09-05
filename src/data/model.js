@@ -225,6 +225,26 @@ export function takeHome(profit) {
   return { tax, ni, net: p - tax - ni }
 }
 
+// The daytime covers a day at which the café pays you: take-home (after
+// VAT, the loan, tax and NI) reaches what you said you need to live on.
+// Breakeven answers "when does it stop losing"; this answers "when does it
+// start being worth it". Solved numerically — take-home is not linear in
+// covers once the tax bands bite.
+export function coversToPay(a, target = a.ownerDraw) {
+  if (!(a.spendDay > 0) || !(a.tradingDays > 0)) return Infinity
+  const th = (x) => compute({ ...a, coversDay: x }).takeHome
+  let lo = 0
+  let hi = 400
+  if (th(hi) < target) return Infinity
+  if (th(lo) >= target) return 0
+  for (let i = 0; i < 40; i++) {
+    const mid = (lo + hi) / 2
+    if (th(mid) >= target) hi = mid
+    else lo = mid
+  }
+  return hi
+}
+
 // What a seller's declared turnover means in your units: covers a day at
 // your average spend. Their trade, your yardstick — the plausibility check
 // on both numbers at once.

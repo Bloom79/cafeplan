@@ -1,10 +1,10 @@
 import React, { useEffect, useMemo } from 'react'
 import { CASE_SECTIONS } from '../data/businessCase.js'
-import { DEFAULTS, STARTUP, STARTUP_TOTALS, compute, gbp, pct } from '../data/model.js'
-import { APPLIED_KEY, MODEL_KEY, startupFor } from '../lib/applyListing.js'
-import { fitScore, sdeCheck, verdict as rankListing } from '../lib/score.js'
+import { DEFAULTS, STARTUP, STARTUP_TOTALS, compute, coversToPay, gbp, pct } from '../data/model.js'
+import { APPLIED_KEY, MODEL_KEY, OTHER_COSTS, startupFor } from '../lib/applyListing.js'
+import { fitScore, offerPlan, sdeCheck, verdict as rankListing } from '../lib/score.js'
 import { categoryLabel, categoryOf } from '../lib/category.js'
-import { DD_ITEMS, ddProgress } from '../lib/deals.js'
+import { CALL_QUESTIONS, DD_ITEMS, ddProgress } from '../lib/deals.js'
 import { readiness } from '../lib/gates.js'
 import { useListings } from '../hooks/useListings.js'
 
@@ -23,31 +23,39 @@ export default function PrintView({ onClose }) {
     const a = { ...DEFAULTS, ...read(MODEL_KEY, {}) }
     const r = compute(a)
     const k = (n) => `£${Math.round(n / 1000)}k`
-    return { r, a, k, gbp, applied: read(APPLIED_KEY, null) }
+    const ready = readiness({ deals: read('cafeplan:deals', {}), steps: read('cafeplan:steps', {}), a })
+    return { r, a, k, gbp, applied: read(APPLIED_KEY, null), ready, needCovers: coversToPay(a) }
   }, [])
+  const ready = live.ready
   const saved = read('cafeplan:savedScenarios', [])
   const favs = read('cafeplan:favs', [])
   const dismissed = read('cafeplan:dismissed', [])
   const deals = read('cafeplan:deals', {})
   const sdeInputs = read('cafeplan:sdeInputs', {})
   const notes = read('cafeplan:listingNotes', {})
-  const steps = read('cafeplan:steps', {})
 
-  const { ranked, ready } = useMemo(() => {
+  const ranked = useMemo(() => {
     const base = live.a
-    const rows = data.listings
+    return data.listings
       .filter((l) => !dismissed.includes(l.id))
       .map((l) => {
         const startup = startupFor(l)
-        const r = compute({ ...base, rent: l.rent ?? base.rent })
+        const theirs = { ...base, rent: l.rent ?? base.rent }
+        const r = compute(theirs)
         const payback = startup != null && r.profit > 0 ? startup / r.profit : null
-        const v = rankListing(l, { payback, sde: sdeCheck(sdeInputs[l.id], l.price), stage: deals[l.id]?.stage })
-        return { ...l, _startup: startup, _payback: payback, _rank: v.rank, _verdict: v, _fit: fitScore(l).score }
+        const sde = sdeCheck(sdeInputs[l.id], l.price)
+        const v = rankListing(l, { payback, sde, stage: deals[l.id]?.stage })
+        return {
+          ...l,
+          _startup: startup, _payback: payback, _rank: v.rank, _verdict: v, _fit: fitScore(l).score,
+          _coversBE: l.rent != null && Number.isFinite(r.coversBE) ? r.coversBE : null,
+          _coversPay: l.rent != null ? coversToPay(theirs) : null,
+          _sde: sde, _offer: offerPlan(sde, { profit: r.profit, otherCosts: OTHER_COSTS }),
+        }
       })
       .filter((l) => l._verdict.band !== 'out')
       .sort((a, b) => b._rank - a._rank)
-    return { ranked: rows, ready: readiness({ deals, steps, a: base }) }
-  }, [data, live, dismissed, sdeInputs, deals, steps])
+  }, [data, live, dismissed, sdeInputs, deals])
 
   useEffect(() => { document.title = 'Canalside — business case' }, [])
 
@@ -78,7 +86,8 @@ export default function PrintView({ onClose }) {
       <p className="print-note">
         {live.r.vat > 0 ? <>VAT {gbp(live.r.vat)} net a year · </> : <>VAT not modelled · </>}
         {live.r.loanPayment > 0 ? <>loan {gbp(live.a.loan)} at {live.a.loanRate}% over {live.a.loanYears} yr = {gbp(live.r.loanPayment)} a year · </> : <>no borrowing · </>}
-        take-home ≈ <b>{gbp(live.r.takeHome)}</b> a year after tax, NI and the loan (indicative), against {gbp(live.a.ownerDraw)} needed.
+        take-home ≈ <b>{gbp(live.r.takeHome)}</b> a year after tax, NI and the loan (indicative), against {gbp(live.a.ownerDraw)} needed
+        {Number.isFinite(live.needCovers) && <> · <b>{live.needCovers.toFixed(0)}</b> covers/day would pay you (plan: {live.a.coversDay})</>}.
       </p>
       {live.applied && (
         <p className="print-note">Modelled on <b>{live.applied.name}</b> ({live.applied.area}) — rent {live.applied.rent != null ? gbp(live.applied.rent) : '—'}, asking {live.applied.price != null ? gbp(live.applied.price) : 'POA'}.</p>
@@ -124,9 +133,22 @@ export default function PrintView({ onClose }) {
             const d = deals[l.id]
             const dd = ddProgress(d)
             const missing = DD_ITEMS.filter(([id]) => !d.dd?.[id]).map(([, label]) => label.split(/[:—(]/)[0].trim())
+            const unasked = CALL_QUESTIONS.filter(([id]) => !d.asked?.[id])
+            const cov = (v) => (v == null ? '—' : Number.isFinite(v) ? v.toFixed(0) : '∞')
             return (
               <div key={l.id} className="print-deal">
                 <h3>{l.name} <span className="muted">· {l.area} · {d.stage}</span></h3>
+                <p className="print-deal-numbers">
+                  Asking {l.price != null ? gbp(l.price) : 'POA'} · rent {l.rent != null ? gbp(l.rent) : '—'}
+                  {l.leaseYears != null && <> · lease {l.leaseYears} yr</>}
+                  {l.rateableValue != null && <> · RV {gbp(l.rateableValue)}</>}
+                  {' '}· your concept here: {cov(l._coversBE)} covers/day to break even, {cov(l._coversPay)} to pay you
+                  {l._payback != null && <>, payback {l._payback.toFixed(1)} yr</>}.
+                  {l._sde && l._offer && (
+                    <> SDE {gbp(l._sde.sde)} → band {gbp(l._sde.low)}–{gbp(l._sde.high)}; open at {gbp(l._offer.open)}, walk away above {gbp(l._offer.ceiling)}
+                    {l._offer.askMultiple != null && <> (ask is {l._offer.askMultiple.toFixed(1)}× SDE)</>}.</>
+                  )}
+                </p>
                 <dl>
                   {[['Next', d.nextAction ? `${d.nextAction}${d.nextOn ? ` — by ${d.nextOn}` : ''}` : d.nextOn ? `by ${d.nextOn}` : null],
                     ['Agent', d.agent], ['Called', d.calledOn], ['Viewed', d.viewedOn], ['Lease left', d.leaseLeft], ['Rent review', d.rentReview],
@@ -134,6 +156,9 @@ export default function PrintView({ onClose }) {
                     ['Due diligence', `${dd.done}/${dd.total} seen${missing.length && missing.length <= 6 ? ` — still to see: ${missing.join(', ')}` : ''}`]]
                     .filter(([, v]) => v).map(([k, v]) => <React.Fragment key={k}><dt>{k}</dt><dd>{v}</dd></React.Fragment>)}
                 </dl>
+                {unasked.length > 0 && unasked.length < CALL_QUESTIONS.length && (
+                  <p className="print-notes"><b>Still to ask:</b> {unasked.map(([, q]) => q).join(' ')}</p>
+                )}
                 {notes[l.id] && <p className="print-notes">{notes[l.id]}</p>}
               </div>
             )

@@ -46,6 +46,19 @@ test('model tab renders the live figures and the trading-day ribbon', async () =
   assert.equal(await page.locator('#f-vatRegistered').isChecked(), true)
 })
 
+test('the first visit shows "Start here" once; the case ends on the Decision section', async () => {
+  await page.goto(BASE + '#model', { waitUntil: 'domcontentloaded' })
+  await page.waitForSelector('.start-here')
+  await page.locator('.start-here .filter-chip').click()
+  await page.reload({ waitUntil: 'domcontentloaded' })
+  await page.waitForSelector('.stat .v')
+  assert.equal(await page.locator('.start-here').count(), 0)
+  await page.goto(BASE + '#case-10', { waitUntil: 'domcontentloaded' })
+  await page.waitForSelector('.case-article h2')
+  assert.match(await page.locator('.case-article h2').textContent(), /Decision/)
+  assert.ok((await page.locator('.case-article .live-para').count()) >= 1)
+})
+
 test('steps tab opens with the six readiness gates', async () => {
   await page.goto(BASE + '#steps', { waitUntil: 'domcontentloaded' })
   await page.waitForSelector('.gates li')
@@ -88,7 +101,8 @@ test('print view renders the document with KPIs and case sections', async () => 
   await page.goto(BASE + '#print', { waitUntil: 'domcontentloaded' })
   await page.waitForSelector('.print-kpis')
   assert.equal(await page.locator('.print-kpis div').count(), 6)
-  assert.ok((await page.locator('.print-section.case').count()) >= 9)
+  assert.ok((await page.locator('.print-section.case').count()) >= 10)
+  assert.ok(await page.locator('.print-gates li').count() === 6)
 })
 
 test('no page errors across the tabs', () => {

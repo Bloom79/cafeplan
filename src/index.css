@@ -1779,6 +1779,20 @@ button.fit-chip { cursor: pointer; }
 .print-gates li .muted { color: var(--faint); }
 .print-gates li.ok { color: var(--muted); }
 
+/* first visit */
+.start-here { margin-bottom: 18px; display: flex; flex-wrap: wrap; align-items: center; gap: 8px 16px; font-size: 13.5px; color: var(--muted); border-left: 3px solid var(--brass); }
+.start-here > b { color: var(--chalk); font-family: var(--font-display); font-size: 17px; }
+.start-here ol { margin: 0; padding-left: 20px; flex: 1 1 100%; display: flex; flex-direction: column; gap: 4px; }
+.start-here li b { color: var(--chalk); }
+.start-here .muted { color: var(--faint); font-size: 12px; flex: 1 1 auto; }
+.start-here .muted b { color: var(--muted); }
+
+/* "model their trade" inside the applied bar */
+.reset-btn.inline { margin-left: 8px; }
+
+/* deal memo numbers in the PDF */
+.print-deal-numbers { font-size: 12.5px; color: var(--muted); margin: 0 0 8px; }
+
 /* backup / restore row in the sync popover */
 .sync-row.file { flex-wrap: wrap; border-top: 1px dashed var(--line); padding-top: 8px; margin-top: 2px; }
 

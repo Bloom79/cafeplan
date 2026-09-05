@@ -5,6 +5,24 @@ import {
   metres, needsCheck, normaliseArea, okUrl, slug,
 } from '../scripts/lib.mjs'
 
+test('mergeVerification: stated deal facts fill blanks, never overwrite, and absurd values are dropped', () => {
+  const db = { listings: [{ id: 'x', name: 'X', price: 40000, rent: 14000, status: 'active', tags: [] }] }
+  const l = mergeVerification(db, 'x', {
+    outcome: 'live', rent: 99000, turnover: 150000, profit: 25000, leaseYears: 8, rateableValue: 5600, covers: 24, sqft: 1200000, note: '',
+  }, '2026-09-05')
+  assert.equal(l.rent, 14000) // stored figure wins
+  assert.equal(l.turnover, 150000)
+  assert.equal(l.profit, 25000)
+  assert.equal(l.leaseYears, 8)
+  assert.equal(l.rateableValue, 5600)
+  assert.equal(l.covers, 24)
+  assert.equal(l.sqft, undefined) // over the ceiling: dropped
+  // Nulls and strings that are not numbers leave the record alone.
+  const again = mergeVerification(db, 'x', { outcome: 'live', leaseYears: null, covers: 'many', note: '' }, '2026-09-06')
+  assert.equal(again.leaseYears, 8)
+  assert.equal(again.covers, 24)
+})
+
 test('listingLinks: one anchor per listing, per portal; never contact forms, franchises or alerts', () => {
   const html = `
     <a href="/uk/search/cafes-for-sale-in-edinburgh?save=1&alert=1">Create alert</a>
