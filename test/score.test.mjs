@@ -1,7 +1,17 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import { fitScore, offerPlan, scoreBand, sdeCheck, verdict } from '../src/lib/score.js'
-import { DD_ITEMS, ddProgress, dueState, isOpen } from '../src/lib/deals.js'
+import { DD_ITEMS, ddProgress, dueState, isOpen, phoneOf } from '../src/lib/deals.js'
+
+test('phoneOf: a UK number inside the agent field, as something a phone can dial', () => {
+  assert.equal(phoneOf('Jo at Cornerstone, 0131 445 7222'), '01314457222')
+  assert.equal(phoneOf('07700 900123 (mobile)'), '07700900123')
+  assert.equal(phoneOf('+44 131 445 7222'), '+441314457222')
+  assert.equal(phoneOf('+44 (0)131 445-7222'), '+441314457222')
+  assert.equal(phoneOf('Ref 1690, ask for Sam'), null)
+  assert.equal(phoneOf(''), null)
+  assert.equal(phoneOf(undefined), null)
+})
 
 test('offerPlan: open at 1.5x SDE, stop at 2.5x or the 3-year payback, whichever is lower', () => {
   assert.equal(offerPlan(null), null)

@@ -51,10 +51,27 @@ const readHash = () => {
   return VALID.has(h) ? h : null
 }
 
+// iPhone Safari never offers to install a web app; it has to be told.
+const isIosBrowser = () =>
+  typeof navigator !== 'undefined'
+  && /iphone|ipad|ipod/i.test(navigator.userAgent)
+  && !window.navigator.standalone
+  && !(window.matchMedia && window.matchMedia('(display-mode: standalone)').matches)
+
+function IosHint({ onDone }) {
+  return (
+    <div className="panel ios-hint" role="note">
+      <span>Add Canalside to your Home Screen: tap <b>Share</b> <span aria-hidden="true">⎙</span> below, then <b>Add to Home Screen</b>. It opens full-screen and works without signal.</span>
+      <button className="filter-chip" onClick={onDone}>OK</button>
+    </div>
+  )
+}
+
 export default function App() {
   const [tab, setTabState] = useState(() => readHash() || 'listings')
   const [data] = useListings()
   const [started, setStarted] = useLocalStorage('cafeplan:started', false)
+  const [iosHinted, setIosHinted] = useLocalStorage('cafeplan:iosHint', false)
   const phone = usePhone()
 
   const setTab = (t) => {
@@ -90,6 +107,7 @@ export default function App() {
       <Header tab={tab} setTab={setTab} tabs={tabs} onPrint={() => setTab('print')} />
       <main className="page" id={`panel-${tab}`} role="tabpanel" aria-labelledby={`tab-${tab}`}>
         {!started && <StartHere onDone={() => setStarted(true)} phone={phone} />}
+        {started && !iosHinted && phone && isIosBrowser() && <IosHint onDone={() => setIosHinted(true)} />}
         {tab === 'model' && <ModelPanel />}
         {tab === 'listings' && <ListingsPanel />}
         {tab === 'map' && (

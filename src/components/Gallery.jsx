@@ -1,14 +1,21 @@
-import React, { useRef, useState } from 'react'
+import React, { useEffect, useRef, useState } from 'react'
 
 // The photos of a listing, one screen at a time: a scroll-snap strip you
 // swipe on a phone and scroll on a desk, with dots and a counter. No
 // library, no JavaScript in the swipe itself — the browser does the
 // snapping; we only read where it landed to light the right dot.
-export default function Gallery({ images = [], alt = '', className = '', height, onOpen }) {
+export default function Gallery({ images = [], alt = '', className = '', height, start = 0, onOpen }) {
   const ref = useRef(null)
-  const [i, setI] = useState(0)
+  const [i, setI] = useState(start)
   const [broken, setBroken] = useState(() => new Set())
   const pics = images.filter((u) => u && !broken.has(u))
+
+  // Open on the photo the reader was looking at (the lightbox case).
+  useEffect(() => {
+    const el = ref.current
+    if (el && start > 0) el.scrollTo({ left: start * el.clientWidth })
+  }, [start])
+
   if (!pics.length) return null
 
   const onScroll = () => {
@@ -33,7 +40,7 @@ export default function Gallery({ images = [], alt = '', className = '', height,
             alt={n === 0 ? alt : ''}
             loading={n === 0 ? 'eager' : 'lazy'}
             draggable={false}
-            onClick={onOpen}
+            onClick={onOpen ? () => onOpen(n) : undefined}
             onError={() => setBroken((s) => new Set([...s, u]))}
           />
         ))}

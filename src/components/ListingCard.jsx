@@ -4,12 +4,26 @@ import { OTHER_COSTS, applyListingToModel } from '../lib/applyListing.js'
 import { gmapsHref, isWalled, listingHref, listingLabel, searchHref } from '../lib/links.js'
 import { fitScore, scoreBand } from '../lib/score.js'
 import { categoryLabel, categoryOf } from '../lib/category.js'
-import { dueState } from '../lib/deals.js'
+import { dueState, phoneOf } from '../lib/deals.js'
 import { useInView } from '../hooks/useInView.js'
 import Markdown from './Markdown.jsx'
 import FairPrice from './FairPrice.jsx'
 import Gallery from './Gallery.jsx'
+import Lightbox from './Lightbox.jsx'
 import Sparkline from './Sparkline.jsx'
+
+// Share the advert with the partner: the phone's own share sheet where
+// there is one (WhatsApp, Messages…), the clipboard where there is not.
+async function shareListing(l, setNote) {
+  const text = `${l.name} · ${l.area} · ${l.price != null ? gbp(l.price) : 'POA'}${l.rent != null ? ` · rent ${gbp(l.rent)}/yr` : ''}`
+  const url = l.url || `${window.location.origin}${window.location.pathname}#listings`
+  try {
+    if (navigator.share) { await navigator.share({ title: l.name, text, url }); return }
+    await navigator.clipboard.writeText(`${text}\n${url}`)
+    setNote('copied — paste it anywhere')
+  } catch { /* the sheet was dismissed */ }
+  setTimeout(() => setNote(null), 2500)
+}
 import CallSheet, { DUE_LABEL, STAGES } from './CallSheet.jsx'
 
 const OUTCOME_LABEL = {
@@ -74,9 +88,12 @@ export default function ListingCard({
   const vLabel = v ? OUTCOME_LABEL[v.outcome] || OUTCOME_LABEL.unclear : null
   const fit = fitScore(l)
   const [showFit, setShowFit] = useState(false)
+  const [lightbox, setLightbox] = useState(null) // photo index, or null
+  const [shareNote, setShareNote] = useState(null)
   const [mapRef, mapSeen] = useInView()
   // The gallery: every photo we hold, the headline one first.
   const pics = l.images && l.images.length ? l.images : l.image ? [l.image] : []
+  const phone = phoneOf(deal?.agent)
 
   // The phone card: the photos at full width when there are any (a café is
   // a place; a thumbnail says nothing), then what decides whether to tap.
@@ -85,6 +102,7 @@ export default function ListingCard({
     const hasPhoto = pics.length > 0
     return (
       <article
+        id={`l-${l.id}`}
         className={`listing compact ${hasPhoto ? 'photo-card' : 'row'} ${fav ? 'fav' : ''} ${dismissed ? 'dismissed' : ''}`}
         role="button"
         tabIndex={0}
@@ -116,13 +134,16 @@ export default function ListingCard({
   }
 
   return (
-    <article className={`listing ${fav ? 'fav' : ''} ${dismissed ? 'dismissed' : ''}`}>
+    <article id={`l-${l.id}`} className={`listing ${fav ? 'fav' : ''} ${dismissed ? 'dismissed' : ''}`}>
       {onCollapse && (
         <button className="c-collapse filter-chip" onClick={onCollapse} aria-label="Back to the list">▴ Back to the list</button>
       )}
+      {lightbox != null && (
+        <Lightbox images={pics} start={lightbox} title={l.name} href={l.url} onClose={() => setLightbox(null)} />
+      )}
       {pics.length > 0 ? (
         <div className="photo">
-          <Gallery images={pics} alt={l.name} height={onCollapse ? 220 : 150} onOpen={() => l.url && window.open(l.url, '_blank', 'noopener')} />
+          <Gallery images={pics} alt={l.name} height={onCollapse ? 220 : 150} onOpen={(n) => setLightbox(n)} />
         </div>
       ) : (
         <div className="photo tile" aria-hidden="true">
@@ -295,6 +316,14 @@ export default function ListingCard({
         <a className="action-btn ghost gmaps" href={gmapsHref(l)} target="_blank" rel="noreferrer">
           Google Maps ↗
         </a>
+        {phone && (
+          <a className="action-btn call" href={`tel:${phone}`} title={deal.agent}>
+            ☎ Call the agent
+          </a>
+        )}
+        <button className="action-btn ghost" onClick={() => shareListing(l, setShareNote)} title="Send this listing to your partner">
+          {shareNote || '⇪ Share'}
+        </button>
         <button
           className="action-btn ghost dismiss"
           onClick={onDismiss}

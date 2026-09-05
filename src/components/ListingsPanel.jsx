@@ -9,6 +9,7 @@ import { useLocalStorage } from '../hooks/useLocalStorage.js'
 import { useListings } from '../hooks/useListings.js'
 import { useAgentRequest } from '../hooks/useAgentRequest.js'
 import { usePhone } from '../hooks/useMediaQuery.js'
+import { useOnline } from '../hooks/useOnline.js'
 import ListingCard from './ListingCard.jsx'
 import AlertsBell from './AlertsBell.jsx'
 
@@ -164,7 +165,7 @@ const within = (date, today) => {
   return Number.isFinite(d) && d >= -1 && d <= WEEK_DAYS
 }
 
-function ThisWeek({ rows, phone }) {
+function ThisWeek({ rows, phone, onJump }) {
   const today = new Date()
   const events = []
   // A first-seen date shared by more than half the watchlist is the day the
@@ -194,7 +195,7 @@ function ThisWeek({ rows, phone }) {
         {events.slice(0, 8).map((e) => (
           <li key={`${e.id}-${e.kind}`} className={e.kind}>
             <span className="mono when">{e.date}</span>
-            <span>{e.text}</span>
+            <button type="button" className="jump" onClick={() => onJump(e.id)}>{e.text}</button>
           </li>
         ))}
         {events.length > 8 && <li className="more"><span className="mono when" /><span>and {events.length - 8} more</span></li>}
@@ -203,7 +204,7 @@ function ThisWeek({ rows, phone }) {
   )
 }
 
-function Shortlist({ rows, phone }) {
+function Shortlist({ rows, phone, onJump }) {
   const top = rows.filter((l) => l._verdict && l._verdict.band !== 'out').slice(0, 3)
   if (!top.length) return null
   return (
@@ -212,7 +213,7 @@ function Shortlist({ rows, phone }) {
         {top.map((l) => (
           <li key={l.id}>
             <span className={`fit-chip ${l._rank >= 75 ? 'good' : l._rank >= 55 ? 'mid' : 'low'}`}>{l._rank}</span>
-            <b>{l.name}</b>
+            <button type="button" className="jump" onClick={() => onJump(l.id)}><b>{l.name}</b></button>
             <span className="muted"> · {l.area} · {l.price != null ? gbp(l.price) : 'POA'}</span>
             {l._verdict.reasons.length > 0 && <span className="why"> — {l._verdict.reasons.slice(0, 3).join(', ')}</span>}
           </li>
@@ -249,8 +250,14 @@ export default function ListingsPanel() {
   // one at a time from a compact row — the first listing is on the first
   // screen, not three scrolls down.
   const phone = usePhone()
+  const online = useOnline()
   const [filtersOpen, setFiltersOpen] = useState(false)
   const [expanded, setExpanded] = useState(null)
+  // A tap on "This week" or the shortlist lands on the listing itself.
+  const jump = (id) => {
+    if (phone) setExpanded(id)
+    setTimeout(() => document.getElementById(`l-${id}`)?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 50)
+  }
 
   const toggleIn = (list, setList, id) =>
     setList(list.includes(id) ? list.filter((x) => x !== id) : [...list, id])
@@ -352,7 +359,7 @@ export default function ListingsPanel() {
             {filtersOpen ? '▾' : '▸'} Filters{activeFilters.length ? ` · ${activeFilters.join(' · ')}` : ''}
           </button>
           {view !== 'table' && sortSelect}
-          <span className="updated-line mono">{shown.length} of {data.listings.length}</span>
+          <span className="updated-line mono">{shown.length} of {data.listings.length}{!online && ' · offline'}</span>
         </div>
       )}
       {showChips && (
@@ -426,12 +433,12 @@ export default function ListingsPanel() {
         </button>
         <AlertsBell />
         {!phone && view !== 'table' && sortSelect}
-        {!phone && <span className="updated-line mono">data updated {data.updated}</span>}
+        {!phone && <span className="updated-line mono">data updated {data.updated}{!online && ' · offline — saved copy'}</span>}
       </div>
       )}
 
-      {unfiltered && <ThisWeek rows={enriched.filter((l) => !dismissed.includes(l.id))} phone={phone} />}
-      {unfiltered && <Shortlist rows={ranked} phone={phone} />}
+      {unfiltered && <ThisWeek rows={enriched.filter((l) => !dismissed.includes(l.id))} phone={phone} onJump={jump} />}
+      {unfiltered && <Shortlist rows={ranked} phone={phone} onJump={jump} />}
 
       {view === 'table' && shown.length > 0 && (
         <CompareTable rows={shown} sort={sort} setSort={setSort} essentials={essentials} setEssentials={setEssentials} />
@@ -468,7 +475,7 @@ export default function ListingsPanel() {
         </div>
       )}
 
-      {phone && <p className="updated-line mono" style={{ marginTop: 12 }}>data updated {data.updated}</p>}
+      {phone && <p className="updated-line mono" style={{ marginTop: 12 }}>data updated {data.updated}{!online && ' · offline — saved copy'}</p>}
       <p className="footnote" style={{ marginTop: 18 }}>
         Verify re-checks a listing against the live web (Copilot agent) and updates the badge; Analyse runs a full
         due-diligence report against our valuation anchors. Active listings are re-checked every two days

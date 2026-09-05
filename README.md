@@ -21,7 +21,15 @@ Everything you edit (model assumptions, favourites, deals, step statuses and
 notes) persists in your browser's localStorage — the site itself stays a
 fully static deploy. **Sync** shares the workspace under a short code;
 **Backup to file / Restore from file** in the same popover keeps a copy you
-own. The app installs to a phone's home screen (web manifest).
+own. The app installs to a phone's home screen (web manifest; iPhone Safari
+gets a one-time hint) and **opens without signal**: the service worker keeps
+the shell, the last listings file and the photos already seen (`public/sw.js`,
+network-first for the page and the data, so a deploy or a refresh always
+wins when there is a connection).
+
+On a phone Listings is a list of photo cards you tap; each listing carries
+its **photo gallery** (swipe, or tap for full screen), **Call the agent** once
+a number is in the deal sheet, and **Share** through the phone's share sheet.
 
 ## Listings verification — how it works
 

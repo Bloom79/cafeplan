@@ -117,6 +117,11 @@ test('on a phone the app opens on Listings with the first listing on the first s
   assert.equal(await mobile.locator('.cat-row').count(), 0)
   await mobile.locator('.listing.compact').first().click()
   await mobile.waitForSelector('.listing:not(.compact) .card-actions')
+  // A tap on a photo opens it full screen; Close brings the card back.
+  await mobile.locator('.listing:not(.compact) .photo .gallery img').first().click()
+  await mobile.waitForSelector('.lightbox')
+  await mobile.locator('.lightbox-bar button').click()
+  assert.equal(await mobile.locator('.lightbox').count(), 0)
   await mobile.locator('.c-collapse').click()
   await mobile.waitForSelector('.listing.compact')
   await mobile.close()

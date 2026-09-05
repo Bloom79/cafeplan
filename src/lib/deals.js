@@ -50,6 +50,15 @@ export const VIEWING_CHECKS = [
   ['gut', 'The feeling on leaving: would you want to be here at 7am every day?'],
 ]
 
+// A UK phone number inside free text ("Jo at Cornerstone, 0131 445 7222")
+// as something a phone can dial, or null.
+export function phoneOf(text) {
+  const m = /(\+44\s?\(?0?\)?\s?\d[\d\s-]{7,12}\d|\(?0\d{2,4}\)?[\s-]?\d{3,4}[\s-]?\d{3,4})/.exec(String(text || ''))
+  if (!m) return null
+  const digits = m[1].replace(/[^\d+]/g, '').replace(/^\+440/, '+44')
+  return digits.replace(/^\+/, '').length >= 10 ? digits : null
+}
+
 export const ddProgress = (deal) => {
   const done = DD_ITEMS.filter(([id]) => deal?.dd?.[id]).length
   return { done, total: DD_ITEMS.length }
