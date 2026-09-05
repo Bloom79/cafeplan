@@ -1,9 +1,11 @@
-import React, { useState } from 'react'
+import React, { useRef, useState } from 'react'
 import { WORKER_URL } from '../config.js'
 
 // Workspace sync: everything you type into the app lives in this browser.
 // "Share" uploads a snapshot under a short code; "Load" on another device
-// (or your partner's phone) pulls it in and merges. No accounts.
+// (or your partner's phone) pulls it in and merges. No accounts. "Backup"
+// writes the same snapshot to a file you keep — the copy that survives the
+// worker, the browser and the 90-day code expiry.
 
 const KEYS = [
   'cafeplan:favs', 'cafeplan:dismissed', 'cafeplan:listingNotes', 'cafeplan:sdeInputs', 'cafeplan:deals',
@@ -60,12 +62,43 @@ export default function SyncPanel() {
   const [input, setInput] = useState('')
   const [msg, setMsg] = useState(null)
   const [busy, setBusy] = useState(false)
+  const fileRef = useRef(null)
+
+  const snapshot = () => Object.fromEntries(KEYS.map((k) => [k, read(k)]).filter(([, v]) => v != null))
+
+  const backup = () => {
+    const today = new Date().toISOString().slice(0, 10)
+    const body = JSON.stringify({ app: 'cafeplan', at: new Date().toISOString(), data: snapshot() }, null, 2)
+    const url = URL.createObjectURL(new Blob([body], { type: 'application/json' }))
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `canalside-backup-${today}.json`
+    a.click()
+    setTimeout(() => URL.revokeObjectURL(url), 1000)
+    setMsg(`backup saved as canalside-backup-${today}.json`)
+  }
+
+  const restore = async (file) => {
+    if (!file) return
+    try {
+      const parsed = JSON.parse(await file.text())
+      const data = parsed && parsed.app === 'cafeplan' ? parsed.data : parsed
+      if (!data || typeof data !== 'object' || !Object.keys(data).some((k) => KEYS.includes(k))) {
+        throw new Error('not a Canalside backup')
+      }
+      merge(data)
+      setMsg('restored and merged — reloading')
+      setTimeout(() => window.location.reload(), 900)
+    } catch (e) {
+      setMsg('could not restore: ' + String(e.message || e))
+    }
+  }
 
   const share = async () => {
     setBusy(true)
     try {
       const c = code || newCode()
-      const data = Object.fromEntries(KEYS.map((k) => [k, read(k)]).filter(([, v]) => v != null))
+      const data = snapshot()
       const res = await fetch(`${WORKER_URL}/sync`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -128,6 +161,21 @@ export default function SyncPanel() {
               onChange={(e) => setInput(e.target.value)}
             />
             <button className="action-btn ghost" disabled={busy} onClick={load}>Load</button>
+          </div>
+          <div className="sync-row file">
+            <button className="action-btn ghost" onClick={backup} title="Save everything in this workspace to a file">
+              ⤓ Backup to file
+            </button>
+            <button className="action-btn ghost" onClick={() => fileRef.current?.click()} title="Merge a backup file into this workspace">
+              ⤒ Restore from file
+            </button>
+            <input
+              ref={fileRef}
+              type="file"
+              accept="application/json,.json"
+              hidden
+              onChange={(e) => { restore(e.target.files?.[0]); e.target.value = '' }}
+            />
           </div>
           {msg && <p className="sync-msg">{msg}</p>}
         </div>

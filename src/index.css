@@ -1699,6 +1699,79 @@ button.fit-chip { cursor: pointer; }
 .print-notes { font-size: 12.5px; color: var(--muted); margin: 8px 0 0; white-space: pre-wrap; }
 .print-foot { margin-top: 30px; font-family: var(--font-mono); font-size: 10.5px; color: var(--faint); }
 
+/* ————— round three: the owner's line, deals that move, gates ————— */
+
+/* second stat row: smaller figures, the ones that answer "can I live on it" */
+.stat-row.secondary { margin-top: -6px; }
+.stat-row.secondary .stat .v { font-size: 19px; }
+
+/* checkbox assumptions (VAT registered) sit in the same row grid as numbers */
+.field-row.bool input[type='checkbox'] {
+  width: 18px; height: 18px; justify-self: end; accent-color: var(--brass-bright); cursor: pointer;
+}
+.group-note { font-size: 12px; color: var(--muted); margin: 4px 0 0; line-height: 1.45; }
+.group-note b { color: var(--clay); }
+
+/* the seller's own numbers, restated in the applied bar */
+.applied-bar .seller b { color: var(--chalk); }
+
+/* what moved this week */
+.thisweek { margin-bottom: 18px; }
+.thisweek ul { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+.thisweek li { display: flex; gap: 10px; align-items: baseline; font-size: 13px; color: var(--muted); border-left: 3px solid var(--line); padding-left: 10px; }
+.thisweek li .when { color: var(--faint); font-size: 11px; white-space: nowrap; }
+.thisweek li.new { border-left-color: var(--green); }
+.thisweek li.price { border-left-color: var(--brass-bright); }
+.thisweek li.gone { border-left-color: var(--clay); }
+.thisweek li.changed { border-left-color: var(--plum); }
+
+/* follow-ups: the badge on a card and in the deal summary, the chip in the filter row */
+.due-badge {
+  font-family: var(--font-mono); font-size: 10.5px; letter-spacing: 0.04em; padding: 2px 7px; border-radius: 999px;
+  border: 1px solid var(--line); color: var(--muted); white-space: nowrap; max-width: 100%; overflow: hidden; text-overflow: ellipsis;
+}
+.due-badge.soon { color: var(--brass-bright); border-color: rgba(217, 164, 65, 0.5); }
+.due-badge.overdue { color: var(--clay); border-color: rgba(201, 111, 74, 0.6); }
+.due-badge.later { color: var(--faint); }
+.callsheet summary .due-badge { margin-left: 8px; }
+.filter-chip.overdue { color: var(--clay); border-color: rgba(201, 111, 74, 0.6); }
+
+/* next action + date, above the call-sheet grid */
+.cs-next { display: grid; grid-template-columns: 2fr 1fr; gap: 8px; margin: 10px 0 8px; }
+@media (max-width: 420px) { .cs-next { grid-template-columns: 1fr; } }
+
+/* due-diligence checklist inside the deal sheet */
+.dd { margin-top: 10px; border-top: 1px dashed var(--line); padding-top: 8px; }
+.dd summary { cursor: pointer; font-size: 12.5px; color: var(--muted); list-style: none; }
+.dd summary::-webkit-details-marker { display: none; }
+.dd summary::before { content: '▸ '; color: var(--faint); }
+.dd[open] summary::before { content: '▾ '; }
+.dd summary b { color: var(--chalk); }
+.dd-list { list-style: none; margin: 8px 0 0; padding: 0; display: flex; flex-direction: column; gap: 5px; }
+.dd-list label { display: flex; gap: 8px; align-items: flex-start; font-size: 12.5px; color: var(--muted); cursor: pointer; line-height: 1.4; }
+.dd-list input[type='checkbox'] { margin-top: 2px; accent-color: var(--green); flex: 0 0 auto; }
+.dd-list input:checked + span { color: var(--chalk); }
+
+/* where to open and where to stop, under the SDE verdict */
+.fp-offer { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 8px; margin-top: 8px; padding-top: 8px; border-top: 1px dashed var(--line); }
+.fp-offer > div { display: flex; flex-direction: column; gap: 1px; }
+.fp-offer span { font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--faint); }
+.fp-offer b { font-size: 15px; color: var(--chalk); }
+.fp-offer i { font-style: normal; font-size: 11px; color: var(--muted); }
+
+/* readiness gates at the top of Next steps */
+.gates { max-width: 780px; margin-bottom: 18px; }
+.gates ul { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+.gates li { display: grid; grid-template-columns: 22px 1fr; gap: 2px 10px; align-items: baseline; font-size: 14px; color: var(--muted); }
+.gates li .mark { font-family: var(--font-mono); color: var(--faint); font-size: 15px; }
+.gates li.ok .mark { color: var(--green); }
+.gates li .t { color: var(--chalk); }
+.gates li.ok .t { color: var(--muted); text-decoration: line-through; text-decoration-color: rgba(76, 169, 126, 0.5); }
+.gates li .why { grid-column: 2; font-size: 12px; color: var(--faint); font-family: var(--font-mono); }
+
+/* backup / restore row in the sync popover */
+.sync-row.file { flex-wrap: wrap; border-top: 1px dashed var(--line); padding-top: 8px; margin-top: 2px; }
+
 @media print {
   body { background: #fff; color: #111; font-size: 11.5pt; }
   .no-print { display: none !important; }

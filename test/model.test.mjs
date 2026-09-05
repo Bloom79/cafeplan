@@ -1,25 +1,45 @@
 import { strict as assert } from 'node:assert'
 import { test } from 'node:test'
 import {
-  DEFAULTS, MONTHS, SCENARIOS, STARTUP_TOTALS, WORKING_CAPITAL,
-  compute, monthly, sensitivity,
+  DEFAULTS, MONTHS, SCENARIOS, STARTUP_TOTALS, VAT_THRESHOLD, WORKING_CAPITAL,
+  compute, impliedCovers, loanPayment, monthly, sensitivity, takeHome,
 } from '../src/data/model.js'
 
 // Every figure in the business case comes out of compute(). These pin the
 // base case so a refactor cannot quietly move the answer.
 
+// The Aug 2026 case was written before VAT entered the model; its figures
+// are the VAT-free ones.
+const CASE = { ...DEFAULTS, vatRegistered: 0 }
+
 test('base case matches the Aug 2026 business case', () => {
-  const r = compute(DEFAULTS)
+  const r = compute(CASE)
   assert.equal(r.dayRev, 119000) // 40 covers x £8.50 x 350 days
   assert.equal(r.apRev, 46800) // 4 nights x 52 weeks x 15 covers x £15
   assert.equal(r.wineRev, 3504) // 12 x 18 x £10 food + 12 x £112 fee
   assert.equal(r.totalRev, 169304)
   assert.equal(r.totalCosts, 126368)
   assert.equal(r.profit, 42936)
+  assert.equal(r.vat, 0)
+})
+
+test('VAT: over the threshold, a sixth of standard-rated takings goes to HMRC, less the reclaim', () => {
+  const r = compute(DEFAULTS)
+  assert.ok(r.overThreshold && r.totalRev > VAT_THRESHOLD)
+  assert.equal(Math.round(r.vatOut), Math.round(169304 * 0.85 / 6))
+  assert.equal(Math.round(r.vatIn), Math.round((r.cogs + DEFAULTS.overheads) * 0.2 / 6))
+  assert.equal(Math.round(r.profit), Math.round(42936 - r.vat))
+  // Registering is the honest default: the profit falls by the VAT and
+  // nothing else moves.
+  assert.equal(r.totalCosts, compute(CASE).totalCosts)
+  assert.ok(r.profit < compute(CASE).profit)
+  // Breakeven rises with VAT: every cover is worth a sixth less.
+  assert.ok(r.coversBE > compute(CASE).coversBE)
+  assert.equal(compute({ ...DEFAULTS, vatStdPct: 0, vatInputPct: 0 }).profit, compute(CASE).profit)
 })
 
 test('breakeven nets the evening trade against its own costs', () => {
-  const r = compute(DEFAULTS)
+  const r = compute(CASE)
   assert.equal(r.coversBE.toFixed(1), '18.8')
   // Without the evening the café has to carry the whole fixed base itself.
   assert.ok(r.coversBEStandalone > r.coversBE)
@@ -27,10 +47,45 @@ test('breakeven nets the evening trade against its own costs', () => {
 })
 
 test('payback runs on the startup budget', () => {
-  const r = compute(DEFAULTS)
+  const r = compute(CASE)
   assert.equal(r.paybackYears.toFixed(1), '2.5')
   // A loss-making plan never pays back rather than reporting a negative year.
   assert.equal(compute({ ...DEFAULTS, rent: 200000 }).paybackYears, Infinity)
+})
+
+test('loan: amortised repayment, equity is the rest of the budget, DSCR', () => {
+  // £25k at 6% over 5 years is £483.32 a month — the Start Up Loan quote.
+  assert.equal((loanPayment(25000, 6, 5) / 12).toFixed(2), '483.32')
+  assert.equal(loanPayment(0, 6, 5), 0)
+  assert.equal(loanPayment(12000, 0, 1), 12000)
+  const r = compute(DEFAULTS)
+  assert.equal(r.equity, DEFAULTS.startupTotal - 25000)
+  assert.equal(Math.round(r.afterDebt), Math.round(r.profit - r.loanPayment))
+  assert.ok(r.dscr > 1)
+  assert.equal(compute({ ...DEFAULTS, loan: 0 }).dscr, Infinity)
+})
+
+test('take-home: Scottish bands and Class 4 NI, indicative', () => {
+  assert.deepEqual(takeHome(0), { tax: 0, ni: 0, net: 0 })
+  assert.equal(takeHome(12570).tax, 0)
+  // £30k profit: 19% on the starter band, 20% basic, 21% on the rest; NI 6% over £12,570.
+  const t = takeHome(30000)
+  const tax = (15397 - 12570) * 0.19 + (27491 - 15397) * 0.20 + (30000 - 27491) * 0.21
+  assert.equal(t.tax.toFixed(2), tax.toFixed(2))
+  assert.equal(t.ni.toFixed(2), ((30000 - 12570) * 0.06).toFixed(2))
+  assert.equal(Math.round(t.net), Math.round(30000 - tax - t.ni))
+  // Above the NI upper limit the rate drops to 2%.
+  assert.ok(takeHome(60000).ni < (60000 - 12570) * 0.06)
+  const r = compute(DEFAULTS)
+  assert.equal(Math.round(r.takeHome), Math.round(takeHome(r.profit).net - r.loanPayment))
+  assert.equal(Math.round(r.surplus), Math.round(r.afterDebt - DEFAULTS.ownerDraw))
+})
+
+test('implied covers turn a seller turnover into your units', () => {
+  // Bennitos: £150k at £8.50 over 350 days is about 50 covers a day.
+  assert.equal(impliedCovers(150000, DEFAULTS).toFixed(1), '50.4')
+  assert.equal(impliedCovers(null, DEFAULTS), null)
+  assert.equal(impliedCovers(150000, { ...DEFAULTS, spendDay: 0 }), null)
 })
 
 test('zeroed trade degrades to — rather than NaN or Infinity in the UI', () => {
@@ -59,8 +114,10 @@ test('the startup budget adds up in all three columns', () => {
 })
 
 test('seasonality moves when the money arrives, not how much', () => {
-  const r = compute(DEFAULTS)
-  const { rows, trough } = monthly(DEFAULTS, r)
+  // Steady state: no ramp, so the twelve months add back up to the year.
+  const steady = { ...DEFAULTS, rampStartPct: 100, rampMonths: 0 }
+  const r = compute(steady)
+  const { rows, trough } = monthly(steady, r)
   assert.equal(rows.length, 12)
   assert.equal(MONTHS.reduce((s, [, w]) => s + w, 0).toFixed(2), '12.00')
   const yearRev = rows.reduce((s, m) => s + m.revenue, 0)
@@ -72,9 +129,25 @@ test('seasonality moves when the money arrives, not how much', () => {
   assert.ok(MONTHS.some(([name]) => name === trough.month))
   assert.equal(trough.cash, Math.min(...rows.map((m) => m.cash)))
   // A fixed base heavy enough to outrun the quiet months eats the buffer.
-  const squeezed = { ...DEFAULTS, rent: 40000, labour: 60000 }
+  const squeezed = { ...steady, rent: 40000, labour: 60000 }
   const hard = monthly(squeezed, compute(squeezed))
   assert.ok(hard.trough.cash < WORKING_CAPITAL)
+})
+
+test('year one: the ramp and the loan repayments both come out of the cash', () => {
+  const r = compute(DEFAULTS)
+  const { rows, trough, debt } = monthly(DEFAULTS, r)
+  assert.equal(rows[0].ramp, 0.7)
+  assert.equal(rows[6].ramp, 1)
+  assert.equal(rows[11].ramp, 1)
+  const yearRev = rows.reduce((s, m) => s + m.revenue, 0)
+  assert.ok(yearRev < r.totalRev)
+  assert.equal((debt * 12).toFixed(0), r.loanPayment.toFixed(0))
+  // The same plan with no loan and no ramp ends the year with more cash.
+  const easy = { ...DEFAULTS, loan: 0, rampStartPct: 100, rampMonths: 0 }
+  const e = monthly(easy, compute(easy))
+  assert.ok(e.rows[11].cash > rows[11].cash)
+  assert.ok(e.trough.cash >= trough.cash)
 })
 
 test('sensitivity ranks the assumptions by how much they move profit', () => {

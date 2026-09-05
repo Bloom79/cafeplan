@@ -11,14 +11,17 @@ layer that keeps the listings watchlist honest.
 
 | Tab | What it does |
 |-----|--------------|
-| **Model** | The live financial model: edit any assumption (covers, prices, COGS %, rent…) and revenue, costs, profit, margin, breakeven and payback recompute instantly. Conservative / Mid / Optimistic presets. A "trading day" ribbon maps the three revenue streams onto the café's actual day. |
-| **Listings** | Businesses-for-sale watchlist with live verification (below): per-listing status badges, **Verify now** / **Analyse** buttons, area filters, favourites. Data comes from `public/listings.json` fetched at runtime — refreshed by the agent without rebuilds. |
-| **Business case** | The nine sections of the written case — concept, market, operations, licensing, costs, risks — readable in-app. |
-| **Next steps** | The action tracker: status + notes per step, with progress. |
+| **Model** | The live financial model: edit any assumption (covers, prices, COGS %, rent…) and revenue, costs, profit, margin, breakeven and payback recompute instantly. Conservative / Mid / Optimistic presets, saved scenarios side by side, sensitivity tornado. **VAT** (on by default — takings are over the £90k threshold), **funding** (loan amount, rate, term → repayments, cash you put in, cover), and **the owner's line**: what you need to draw, indicative take-home after Scottish income tax and NI, and the first year month by month with the ramp-up and the loan in it. A "trading day" ribbon maps the three revenue streams onto the café's actual day. |
+| **Listings** | Businesses-for-sale watchlist with live verification (below): verdict ranking and "call these first", per-listing status badges, **Verify now** / **Analyse** buttons, type and area filters, favourites, compare table. "This week" lists what moved in the last seven days. Each card carries the fair-price check (SDE band, **where to open and where to walk away**), the deal sheet (stage, **next action and date**, call notes, **due-diligence checklist**) and the seller's turnover restated as covers a day at your spend. Data comes from `public/listings.json` fetched at runtime — refreshed by the agent without rebuilds. |
+| **Map** | Every listing on one map with the competitor cafés around it; pins open the advert. |
+| **Business case** | The nine sections of the written case — concept, market, operations, licensing, costs, risks — readable in-app, with live paragraphs that re-answer themselves from the model. **Export PDF** lays the whole thing out for A4. |
+| **Next steps** | **Ready to buy?** — six gates (target seen, accounts verified, licensing, rates, the model pays you, cash holds) read live from the steps and the model — then the action tracker and the licensing runway. |
 
-Everything you edit (model assumptions, favourites, step statuses and
+Everything you edit (model assumptions, favourites, deals, step statuses and
 notes) persists in your browser's localStorage — the site itself stays a
-fully static deploy.
+fully static deploy. **Sync** shares the workspace under a short code;
+**Backup to file / Restore from file** in the same popover keeps a copy you
+own. The app installs to a phone's home screen (web manifest).
 
 ## Listings verification — how it works
 
@@ -83,9 +86,27 @@ Defaults mirror the Aug 2026 business case:
 - Daytime café: 40 covers/day × £8.50 × 350 days = £119,000
 - Aperitivo (Thu–Sun 17:00–20:00): 4 × 52 × 15 covers × £15 = £46,800
 - Wine tasting evenings: 12 events × 18 covers ≈ £3,500
-- Cost base ~£126k → base case ≈ £169k revenue, ~£43k profit, ~2.5 yr payback
+- Cost base ~£126k → base case ≈ £169k takings, ~£43k profit before VAT,
+  ~2.5 yr payback
 - Startup budget (going-concern acquisition): £63,250 low / £106,483 mid /
   £149,815 high
+
+Added Sept 2026, on top of the case (all editable, all in `src/data/model.js`):
+
+- **VAT** — takings over £90k mean compulsory registration; eat-in, hot food
+  and hot drinks are standard-rated, so a sixth of that share of takings
+  (default 85%) goes to HMRC, less input VAT on the share of costs that
+  carry it (default 20%). With the defaults this takes ~£22k off the £43k.
+  Untick "VAT-registered" to see the original case.
+- **Funding** — £25k borrowed at 6% over 5 years (a Start Up Loan) is
+  £483/month; the model shows the annual repayment, how many times profit
+  covers it, and the cash you put in yourself.
+- **Owner's line** — what you need to draw (default £28k), indicative
+  take-home after Scottish income-tax bands and Class 4 NI (2025/26, sole
+  trader, no reliefs — confirm with an accountant), and the surplus after
+  the loan and the draw.
+- **Year one** — month one trades at 70% of the plan and reaches it by
+  month 6; the monthly cash view carries that ramp and the loan repayment.
 
 The app recomputes live and **supersedes the static documents** — change an
 assumption and the case re-answers itself.

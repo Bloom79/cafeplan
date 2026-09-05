@@ -8,7 +8,7 @@ import { DEFAULTS, STARTUP, STARTUP_TOTALS } from '../data/model.js'
 // The asking price replaces the purchase line of the startup budget; every
 // other acquisition cost stays at the mid case.
 const PURCHASE_MID = STARTUP[0][2] // [label, low, mid, high] — the purchase line
-const OTHER_COSTS = STARTUP_TOTALS[1] - PURCHASE_MID
+export const OTHER_COSTS = STARTUP_TOTALS[1] - PURCHASE_MID
 
 export const MODEL_KEY = 'cafeplan:model'
 export const SCENARIO_KEY = 'cafeplan:scenario'

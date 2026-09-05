@@ -1,9 +1,10 @@
 import React, { useMemo, useState } from 'react'
-import { DEFAULTS, compute, gbp } from '../data/model.js'
+import { DEFAULTS, compute, gbp, impliedCovers } from '../data/model.js'
 import { MODEL_KEY, startupFor } from '../lib/applyListing.js'
 import { listingHref } from '../lib/links.js'
 import { fitScore, scoreBand, sdeCheck, verdict as rankListing } from '../lib/score.js'
 import { CATEGORIES, categoryOf } from '../lib/category.js'
+import { dueState } from '../lib/deals.js'
 import { useLocalStorage } from '../hooks/useLocalStorage.js'
 import { useListings } from '../hooks/useListings.js'
 import { useAgentRequest } from '../hooks/useAgentRequest.js'
@@ -26,6 +27,7 @@ const COLUMNS = [
   ['startup', 'Budget if bought', (l) => l._startup ?? null],
   ['payback', 'Payback (your concept)', (l) => l._payback ?? null],
   ['coversBE', 'Covers/day to break even', (l) => l._coversBE ?? null],
+  ['implied', "Seller's covers/day", (l) => l._implied ?? null],
   ['days', 'Days listed', (l) => l._days ?? null],
   ['fit', 'Fit', (l) => l._fit ?? null],
   ['rank', 'Verdict', (l) => l._rank ?? null],
@@ -41,7 +43,7 @@ const cell = (key, v) => {
   if (key === 'multiple') return `${v.toFixed(1)}×`
   if (key === 'rentPct') return `${Math.round(v * 100)}%`
   if (key === 'payback') return `${v.toFixed(1)} yr`
-  if (key === 'coversBE') return v.toFixed(0)
+  if (key === 'coversBE' || key === 'implied') return v.toFixed(0)
   if (key === 'days') return `${v} d`
   if (key === 'fit') return <span className={`fit-chip ${scoreBand(v)}`}>{v}</span>
   if (key === 'rank') return <span className={`fit-chip ${v >= 75 ? 'good' : v >= 55 ? 'mid' : 'low'}`}>{v}</span>
@@ -106,10 +108,63 @@ function CompareTable({ rows, sort, setSort, essentials, setEssentials }) {
         plus the rest of the mid-case startup budget; <b>Payback</b> divides it by the profit YOUR
         model makes with that listing's rent plugged in — the seller's trade doesn't enter it.
         <b> Covers/day to break even</b> is the same idea as a daily target: your concept, their rent.
+        <b> Seller's covers/day</b> is their declared turnover at your average spend — how busy they claim to be, in your units.
         <b> Days listed</b> counts from when we first saw it — long-listed is leverage.
         <b> Verdict</b> folds fit, payback, the SDE band and market status into one 0–100 rank.
         Blanks are undisclosed: that is itself the first question for the agent.
       </p>
+    </div>
+  )
+}
+
+// What moved in the last seven days: new listings, price changes, status
+// changes — the same events the weekly push digest carries, in the app.
+const WEEK_DAYS = 7
+const within = (date, today) => {
+  if (!date) return false
+  const d = (today - new Date(date)) / 86400000
+  return Number.isFinite(d) && d >= -1 && d <= WEEK_DAYS
+}
+
+function ThisWeek({ rows }) {
+  const today = new Date()
+  const events = []
+  // A first-seen date shared by more than half the watchlist is the day the
+  // field was backfilled, not a discovery: nothing was new that day.
+  const seenOn = {}
+  for (const l of rows) if (l.firstSeen) seenOn[l.firstSeen] = (seenOn[l.firstSeen] || 0) + 1
+  const backfill = new Set(Object.entries(seenOn).filter(([, n]) => n > rows.length / 2).map(([d]) => d))
+  for (const l of rows) {
+    const price = l.price != null ? gbp(l.price) : 'POA'
+    if (within(l.firstSeen, today) && !backfill.has(l.firstSeen)) {
+      events.push({ date: l.firstSeen, id: l.id, kind: 'new', text: `New: ${l.name} · ${l.area} · ${price}` })
+      continue
+    }
+    const h = l.history?.[l.history.length - 1]
+    if (h && within(h.date, today) && h.price != null && l.price != null && h.price !== l.price) {
+      events.push({ date: h.date, id: l.id, kind: 'price', text: `Price: ${l.name} ${gbp(h.price)} → ${price}` })
+    } else if (within(l.lastChanged, today)) {
+      const note = l.verification?.note ? ` — ${l.verification.note.slice(0, 110)}${l.verification.note.length > 110 ? '…' : ''}` : ''
+      events.push({ date: l.lastChanged, id: l.id, kind: l.status === 'gone' ? 'gone' : 'changed', text: `${l.name}: ${l.status}${note}` })
+    }
+  }
+  if (!events.length) return null
+  events.sort((a, b) => String(b.date).localeCompare(String(a.date)))
+  return (
+    <div className="panel thisweek">
+      <h2 className="panel-title">
+        This week
+        <span className="side">{events.length} change{events.length === 1 ? '' : 's'} in the last {WEEK_DAYS} days</span>
+      </h2>
+      <ul>
+        {events.slice(0, 8).map((e) => (
+          <li key={`${e.id}-${e.kind}`} className={e.kind}>
+            <span className="mono when">{e.date}</span>
+            <span>{e.text}</span>
+          </li>
+        ))}
+        {events.length > 8 && <li className="more"><span className="mono when" /><span>and {events.length - 8} more</span></li>}
+      </ul>
     </div>
   )
 }
@@ -149,6 +204,7 @@ export default function ListingsPanel() {
   const [deals, setDeals] = useLocalStorage('cafeplan:deals', {})
   const [showDismissed, setShowDismissed] = useState(false)
   const [inProgress, setInProgress] = useState(false)
+  const [dueOnly, setDueOnly] = useState(false)
   const [notes, setNotes] = useLocalStorage('cafeplan:listingNotes', {})
   const [sdeInputs, setSdeInputs] = useLocalStorage('cafeplan:sdeInputs', {})
   const [view, setView] = useLocalStorage('cafeplan:listingsView', 'cards')
@@ -182,7 +238,12 @@ export default function ListingsPanel() {
       const v = rankListing(l, { payback, sde, stage: deals[l.id]?.stage })
       const from = l.firstSeen || l.history?.[0]?.date || l.lastVerified
       const days = from ? Math.max(0, Math.round((today - new Date(from)) / 86400000)) : null
-      return { ...l, _startup: startup, _payback: payback, _coversBE: coversBE, _days: days, _fit: fitScore(l).score, _rank: v.rank, _verdict: v }
+      return {
+        ...l,
+        _startup: startup, _payback: payback, _coversBE: coversBE, _days: days,
+        _profit: r.profit, _implied: impliedCovers(l.turnover, base), _due: dueState(deals[l.id], today),
+        _fit: fitScore(l).score, _rank: v.rank, _verdict: v,
+      }
     })
   }, [data, sdeInputs, deals])
 
@@ -191,6 +252,9 @@ export default function ListingsPanel() {
 
   const active = (id) => deals[id]?.stage && !['watching', 'passed'].includes(deals[id].stage)
   const inProgressCount = Object.keys(deals).filter(active).length
+  const isDue = (l) => l._due === 'overdue' || l._due === 'soon'
+  const dueCount = enriched.filter((l) => isDue(l) && !dismissed.includes(l.id)).length
+  const overdueCount = enriched.filter((l) => l._due === 'overdue' && !dismissed.includes(l.id)).length
 
   const shown = enriched.filter(
     (l) =>
@@ -198,9 +262,11 @@ export default function ListingsPanel() {
       && (cat === 'all' || categoryOf(l) === cat)
       && (!favsOnly || favs.includes(l.id))
       && (!inProgress || active(l.id))
+      && (!dueOnly || isDue(l))
       && (showDismissed ? dismissed.includes(l.id) : !dismissed.includes(l.id)),
   )
   const ranked = [...shown].sort((a, b) => b._rank - a._rank)
+  const unfiltered = !showDismissed && !favsOnly && !inProgress && !dueOnly && area === 'All' && cat === 'all'
 
   return (
     <>
@@ -238,6 +304,16 @@ export default function ListingsPanel() {
             ☎ In progress ({inProgressCount})
           </button>
         )}
+        {dueCount > 0 && (
+          <button
+            className={`filter-chip ${overdueCount > 0 ? 'overdue' : ''}`}
+            aria-pressed={dueOnly}
+            onClick={() => setDueOnly(!dueOnly)}
+            title="Deals with a follow-up due within three days, or overdue"
+          >
+            ⏰ Follow-ups ({dueCount})
+          </button>
+        )}
         {dismissed.length > 0 && (
           <button
             className="filter-chip"
@@ -260,7 +336,8 @@ export default function ListingsPanel() {
         <span className="updated-line mono">data updated {data.updated}</span>
       </div>
 
-      {!showDismissed && !favsOnly && area === 'All' && cat === 'all' && <Shortlist rows={ranked} />}
+      {unfiltered && <ThisWeek rows={enriched.filter((l) => !dismissed.includes(l.id))} />}
+      {unfiltered && <Shortlist rows={ranked} />}
 
       {view === 'table' && shown.length > 0 && (
         <CompareTable rows={shown} sort={sort} setSort={setSort} essentials={essentials} setEssentials={setEssentials} />
@@ -268,7 +345,7 @@ export default function ListingsPanel() {
 
       {shown.length === 0 ? (
         <div className="empty panel">
-          {showDismissed ? 'Nothing dismissed yet.' : 'No listings match. Clear the area filter or turn off “♥ Saved”.'}
+          {showDismissed ? 'Nothing dismissed yet.' : dueOnly ? 'No follow-ups due in the next three days.' : 'No listings match. Clear the area filter or turn off “♥ Saved”.'}
         </div>
       ) : view === 'table' ? null : (
         <div className="listing-grid">

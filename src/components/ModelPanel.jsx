@@ -1,7 +1,7 @@
 import React, { useMemo, useState } from 'react'
 import {
-  DEFAULTS, GROUPS, SCENARIOS, STARTUP, STARTUP_TOTALS, WORKING_CAPITAL,
-  compute, gbp, monthly, pct, sensitivity,
+  DEFAULTS, GROUPS, SCENARIOS, STARTUP, STARTUP_TOTALS, TAX_YEAR, VAT_THRESHOLD, WORKING_CAPITAL,
+  compute, gbp, impliedCovers, monthly, pct, sensitivity,
 } from '../data/model.js'
 import { APPLIED_KEY } from '../lib/applyListing.js'
 import { useLocalStorage } from '../hooks/useLocalStorage.js'
@@ -39,6 +39,10 @@ export default function ModelPanel() {
     setScenario('custom')
     setA({ ...a, [k]: ok ? v : 0 })
   }
+  const setBool = (k, on) => {
+    setScenario('custom')
+    setA({ ...a, [k]: on ? 1 : 0 })
+  }
 
   // scenario comparison — presets over the current structure
   const scenarioResults = useMemo(
@@ -58,8 +62,10 @@ export default function ModelPanel() {
     ['Rent', a.rent],
     ...(a.rates > 0 ? [['Business rates', a.rates]] : []),
     ['Overheads', a.overheads],
+    ...(r.vat > 0 ? [['VAT to HMRC (net)', r.vat]] : []),
   ]
   const maxCost = Math.max(...costRows.map(([, v]) => v), 1)
+  const implied = applied?.turnover != null ? impliedCovers(applied.turnover, a) : null
 
   const sens = useMemo(() => sensitivity(a), [a])
   const maxSwing = Math.max(...sens.map((s) => Math.max(Math.abs(s.down), Math.abs(s.up))), 1)
@@ -99,6 +105,10 @@ export default function ModelPanel() {
               Seller declares {gbp(applied.turnover)} turnover
               {applied.profit != null && <> · {gbp(applied.profit)} profit</>} — this model makes{' '}
               {gbp(r.totalRev)} and {gbp(r.profit)} on your concept.
+              {implied != null && (
+                <> Their turnover is <b className="mono">{implied.toFixed(0)}</b> covers a day at your {gbp(a.spendDay)} spend,
+                against the {a.coversDay} you plan on.</>
+              )}
             </div>
           )}
           <button
@@ -213,21 +223,40 @@ export default function ModelPanel() {
                 {g.name}
               </div>
               {g.fields.map(([k, label, kind]) => (
-                <div className="field-row" key={k}>
+                <div className={`field-row ${kind === 'bool' ? 'bool' : ''}`} key={k}>
                   <label htmlFor={`f-${k}`}>{label}</label>
-                  <input
-                    id={`f-${k}`}
-                    className={a[k] !== DEFAULTS[k] ? 'changed' : ''}
-                    type="number"
-                    inputMode="decimal"
-                    step={stepFor[kind]}
-                    min={0}
-                    value={draft && draft.k === k ? draft.text : a[k]}
-                    onChange={(e) => set(k, e.target.value)}
-                    onBlur={() => setDraft(null)}
-                  />
+                  {kind === 'bool' ? (
+                    <input
+                      id={`f-${k}`}
+                      className={a[k] !== DEFAULTS[k] ? 'changed' : ''}
+                      type="checkbox"
+                      checked={!!a[k]}
+                      onChange={(e) => setBool(k, e.target.checked)}
+                    />
+                  ) : (
+                    <input
+                      id={`f-${k}`}
+                      className={a[k] !== DEFAULTS[k] ? 'changed' : ''}
+                      type="number"
+                      inputMode="decimal"
+                      step={stepFor[kind]}
+                      min={0}
+                      value={draft && draft.k === k ? draft.text : a[k]}
+                      onChange={(e) => set(k, e.target.value)}
+                      onBlur={() => setDraft(null)}
+                    />
+                  )}
                 </div>
               ))}
+              {g.id === 'vat' && (
+                <p className="group-note">
+                  {r.overThreshold
+                    ? r.vatRegistered
+                      ? <>Takings of {gbp(r.totalRev)} are over the {gbp(VAT_THRESHOLD)} threshold, so registration is not optional. A sixth of standard-rated takings goes to HMRC; input VAT on vatable costs comes back.</>
+                      : <><b>Takings of {gbp(r.totalRev)} are over the {gbp(VAT_THRESHOLD)} threshold</b> — this plan must register. Unticked, the figures above overstate the profit by about {gbp(compute({ ...a, vatRegistered: 1 }).vat)}.</>
+                    : <>Takings of {gbp(r.totalRev)} are under the {gbp(VAT_THRESHOLD)} threshold: registration is voluntary at this size.</>}
+                </p>
+              )}
             </div>
           ))}
           <p className="footnote">
@@ -262,6 +291,42 @@ export default function ModelPanel() {
               <div className="s">on {gbp(a.startupTotal)} startup budget</div>
             </div>
           </div>
+
+          {/* the owner's question: what actually lands in your account */}
+          <div className="stat-row secondary">
+            <div className="stat">
+              <div className="k">Take-home (indicative)</div>
+              <div className={`v ${r.takeHome >= a.ownerDraw ? 'pos' : 'neg'}`}>{gbp(r.takeHome)}</div>
+              <div className="s">≈ {gbp(r.takeHome / 12)} a month after tax, NI and the loan</div>
+            </div>
+            <div className="stat">
+              <div className="k">Loan repayments</div>
+              <div className="v">{r.loanPayment > 0 ? gbp(r.loanPayment) : '—'}</div>
+              <div className="s">
+                {r.loanPayment > 0
+                  ? `${gbp(a.loan)} at ${a.loanRate}% over ${a.loanYears} yr · covered ${Number.isFinite(r.dscr) ? r.dscr.toFixed(1) : '—'}× by profit`
+                  : 'no borrowing in this plan'}
+              </div>
+            </div>
+            <div className="stat">
+              <div className="k">Cash you put in</div>
+              <div className="v">{gbp(r.equity)}</div>
+              <div className="s">of the {gbp(a.startupTotal)} budget, the rest borrowed</div>
+            </div>
+            <div className="stat">
+              <div className="k">After your draw</div>
+              <div className={`v ${r.surplus >= 0 ? 'pos' : 'neg'}`}>{r.surplus >= 0 ? '+' : ''}{gbp(r.surplus)}</div>
+              <div className="s">profit − loan − {gbp(a.ownerDraw)} you need to live on</div>
+            </div>
+          </div>
+          <p className="footnote">
+            {r.surplus >= 0
+              ? <>The café pays the loan, pays you {gbp(a.ownerDraw)} and leaves {gbp(r.surplus)} on top.</>
+              : <>The café does not cover the loan and the {gbp(a.ownerDraw)} you need: it is {gbp(-r.surplus)} short a year, before any bad month.</>}
+            {' '}Tax is indicative — Scottish income-tax bands and Class 4 NI for {TAX_YEAR} on the pre-tax profit ({gbp(r.tax)} a year),
+            as a sole trader; a limited company, loan interest relief and capital allowances all change it. Ask an accountant before you rely on it.
+            {r.rentShare > 0 && <> Rent is <b className="mono">{pct(r.rentShare)}</b> of takings{r.rentShare > 0.12 ? ' — above the 12% that quietly eats a café' : r.rentShare > 0.08 ? ' — inside the usual 8–12%' : ' — comfortably under the usual 8–12%'}.</>}
+          </p>
 
           {/* revenue composition */}
           <div className="chart-block">
@@ -405,6 +470,8 @@ export default function ModelPanel() {
           The first year, month by month
           <span className="side">
             cash starts at {gbp(WORKING_CAPITAL)} working capital
+            {a.rampMonths > 0 && a.rampStartPct < 100 && <> · trade starts at {a.rampStartPct}% and reaches the plan by month {a.rampMonths}</>}
+            {cash.debt > 0 && <> · {gbp(cash.debt)} a month to the loan</>}
           </span>
         </h2>
 
@@ -431,9 +498,12 @@ export default function ModelPanel() {
         </p>
 
         <p className="footnote">
-          Same annual totals as above, spread over an Edinburgh year: the Festival fills August,
-          January and February empty out. Rent, labour and overheads do not follow the season —
-          that gap is the whole reason the budget carries three months of working capital.
+          The plan's year spread over an Edinburgh calendar: the Festival fills August, January and
+          February empty out. Year one also starts below the plan and climbs (the ramp in "You, and
+          year one"), and the loan takes its slice every month regardless. Rent, labour and overheads
+          do not follow the season — that gap is the whole reason the budget carries three months of
+          working capital. Bars are each month's trading profit; the cash line underneath also carries
+          the loan repayment.
         </p>
       </section>
     </>

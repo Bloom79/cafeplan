@@ -38,9 +38,18 @@ test('model tab renders the live figures and the trading-day ribbon', async () =
   await page.goto(BASE + '#model', { waitUntil: 'domcontentloaded' })
   await page.waitForSelector('.stat .v')
   const stats = await page.locator('.stat .v').allTextContents()
-  assert.equal(stats.length, 4)
+  assert.ok(stats.length >= 8, `stats=${stats.length}`)
   assert.match(stats[0], /^£[\d,]+$/)
   assert.ok(await page.locator('.ribbon-svg').count())
+  // VAT is on by default and shows up as a cost line.
+  assert.ok((await page.locator('.bar-row .bl', { hasText: 'VAT' }).count()) >= 1)
+  assert.equal(await page.locator('#f-vatRegistered').isChecked(), true)
+})
+
+test('steps tab opens with the six readiness gates', async () => {
+  await page.goto(BASE + '#steps', { waitUntil: 'domcontentloaded' })
+  await page.waitForSelector('.gates li')
+  assert.equal(await page.locator('.gates li').count(), 6)
 })
 
 test('listings tab shows cards with verdicts and the compare view toggles', async () => {
@@ -53,6 +62,11 @@ test('listings tab shows cards with verdicts and the compare view toggles', asyn
   const heads = await page.locator('.compare th').allTextContents()
   assert.ok(heads.some((h) => /Verdict/.test(h)))
   await page.getByRole('button', { name: /Compare/ }).click()
+  // The deal sheet carries the due-diligence checklist and a follow-up date.
+  await page.locator('.callsheet summary').first().click()
+  await page.waitForSelector('.cs-next input[type="date"]')
+  await page.locator('.dd summary').first().click()
+  assert.ok((await page.locator('.dd-list li').count()) >= 10)
 })
 
 test('saving a scenario adds a chip; steps checkbox persists', async () => {

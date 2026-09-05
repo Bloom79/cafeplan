@@ -1,14 +1,15 @@
 import React, { useState } from 'react'
 import { gbp } from '../data/model.js'
-import { applyListingToModel } from '../lib/applyListing.js'
+import { OTHER_COSTS, applyListingToModel } from '../lib/applyListing.js'
 import { gmapsHref, isWalled, listingHref, listingLabel, searchHref } from '../lib/links.js'
 import { fitScore, scoreBand } from '../lib/score.js'
 import { categoryLabel, categoryOf } from '../lib/category.js'
+import { dueState } from '../lib/deals.js'
 import { useInView } from '../hooks/useInView.js'
 import Markdown from './Markdown.jsx'
 import FairPrice from './FairPrice.jsx'
 import Sparkline from './Sparkline.jsx'
-import CallSheet, { STAGES } from './CallSheet.jsx'
+import CallSheet, { DUE_LABEL, STAGES } from './CallSheet.jsx'
 
 const OUTCOME_LABEL = {
   live: { text: '✓ verified for sale', cls: 'live' },
@@ -63,6 +64,7 @@ export default function ListingCard({
   sdeInputs, onSdeInputs, action, onRequest, verdict, deal, onDeal,
 }) {
   const stage = deal?.stage && deal.stage !== 'watching' ? STAGES.find(([k]) => k === deal.stage) : null
+  const due = dueState(deal)
   const v = l.verification
   const vLabel = v ? OUTCOME_LABEL[v.outcome] || OUTCOME_LABEL.unclear : null
   const fit = fitScore(l)
@@ -122,6 +124,11 @@ export default function ListingCard({
       <div className="badge-row">
         <span className={`status-badge ${STATUS_CLS[l.status] || 'active'}`}>{l.status}</span>
         {stage && <span className={`stage-badge ${deal.stage}`}>{stage[1]}</span>}
+        {due && due !== 'later' && (
+          <span className={`due-badge ${due}`} title={deal.nextAction || 'follow-up'}>
+            {DUE_LABEL[due]} · {deal.nextAction ? deal.nextAction.slice(0, 40) : deal.nextOn}
+          </span>
+        )}
         {vLabel && (
           <span className={`vbadge ${vLabel.cls}`} title={v.note || ''}>
             {vLabel.text}
@@ -141,11 +148,16 @@ export default function ListingCard({
           {freshness(l)}{l._days != null ? ` · listed ${l._days} d` : ''}
         </div>
       )}
-      {(l._coversBE != null || l.place) && (
+      {(l._coversBE != null || l._implied != null || l.place) && (
         <div className="facts">
           {l._coversBE != null && (
             <span title="Daytime covers a day your concept needs to break even at this rent">
               <b className="mono">{l._coversBE.toFixed(0)}</b> covers/day to break even
+            </span>
+          )}
+          {l._implied != null && (
+            <span title="The seller's declared turnover, converted at your average spend and trading days — how busy they say they are, in your units">
+              seller's turnover = <b className="mono">{l._implied.toFixed(0)}</b> covers/day
             </span>
           )}
           {l.place && l.place.canalM != null && <span><b className="mono">{l.place.canalM} m</b> to the canal</span>}
@@ -235,7 +247,7 @@ export default function ListingCard({
 
       <CallSheet deal={deal} setDeal={onDeal} />
 
-      <FairPrice listing={l} inputs={sdeInputs} setInputs={onSdeInputs} />
+      <FairPrice listing={l} inputs={sdeInputs} setInputs={onSdeInputs} profit={l._profit} otherCosts={OTHER_COSTS} />
 
       <label className="own-note">
         <span>Your notes</span>

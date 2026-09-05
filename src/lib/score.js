@@ -116,6 +116,25 @@ export function sdeCheck({ profit, ownerWage = 0, oneOffs = 0 } = {}, ask) {
   return { sde, low, high, verdict, ask }
 }
 
+// ————— the offer ————————————————————————————————
+//
+// Where to open and where to stop. Open at the bottom of the SDE band;
+// stop at the top of it, or lower if your own concept would not pay the
+// price back within `paybackYears` — whichever bites first. `profit` is
+// what YOUR model makes in their premises; `otherCosts` is the rest of the
+// startup budget that comes on top of the price.
+
+export function offerPlan(check, { profit = null, otherCosts = 0, paybackYears = 3 } = {}) {
+  if (!check || !(check.sde > 0)) return null
+  const open = check.low
+  let cap = null
+  if (profit > 0) cap = Math.max(0, Math.round(profit * paybackYears - otherCosts))
+  const ceiling = cap != null ? Math.min(check.high, cap) : check.high
+  const askMultiple = check.ask != null ? check.ask / check.sde : null
+  const limitedBy = cap != null && cap < check.high ? 'payback' : 'band'
+  return { open, ceiling, cap, askMultiple, limitedBy }
+}
+
 // ————— the verdict ————————————————————————————————
 //
 // One number and a sentence per listing: fit (does the site suit the

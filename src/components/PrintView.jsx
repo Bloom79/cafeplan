@@ -4,6 +4,7 @@ import { DEFAULTS, STARTUP, STARTUP_TOTALS, compute, gbp, pct } from '../data/mo
 import { APPLIED_KEY, MODEL_KEY, startupFor } from '../lib/applyListing.js'
 import { fitScore, sdeCheck, verdict as rankListing } from '../lib/score.js'
 import { categoryLabel, categoryOf } from '../lib/category.js'
+import { DD_ITEMS, ddProgress } from '../lib/deals.js'
 import { useListings } from '../hooks/useListings.js'
 
 // The document: the whole business case with the live numbers, your
@@ -71,6 +72,11 @@ export default function PrintView({ onClose }) {
         <div><span>Payback</span><b>{Number.isFinite(live.r.paybackYears) ? `${live.r.paybackYears.toFixed(1)} yr` : '—'}</b></div>
         <div><span>Startup budget</span><b>{gbp(live.a.startupTotal)}</b></div>
       </section>
+      <p className="print-note">
+        {live.r.vat > 0 ? <>VAT {gbp(live.r.vat)} net a year · </> : <>VAT not modelled · </>}
+        {live.r.loanPayment > 0 ? <>loan {gbp(live.a.loan)} at {live.a.loanRate}% over {live.a.loanYears} yr = {gbp(live.r.loanPayment)} a year · </> : <>no borrowing · </>}
+        take-home ≈ <b>{gbp(live.r.takeHome)}</b> a year after tax, NI and the loan (indicative), against {gbp(live.a.ownerDraw)} needed.
+      </p>
       {live.applied && (
         <p className="print-note">Modelled on <b>{live.applied.name}</b> ({live.applied.area}) — rent {live.applied.rent != null ? gbp(live.applied.rent) : '—'}, asking {live.applied.price != null ? gbp(live.applied.price) : 'POA'}.</p>
       )}
@@ -104,12 +110,16 @@ export default function PrintView({ onClose }) {
           <h2>Deals in progress</h2>
           {inProgress.map((l) => {
             const d = deals[l.id]
+            const dd = ddProgress(d)
+            const missing = DD_ITEMS.filter(([id]) => !d.dd?.[id]).map(([, label]) => label.split(/[:—(]/)[0].trim())
             return (
               <div key={l.id} className="print-deal">
                 <h3>{l.name} <span className="muted">· {l.area} · {d.stage}</span></h3>
                 <dl>
-                  {[['Agent', d.agent], ['Called', d.calledOn], ['Viewed', d.viewedOn], ['Lease left', d.leaseLeft], ['Rent review', d.rentReview],
-                    ['Rates / RV', d.ratesRV], ['Staff', d.staff], ['Hours', d.hours], ['Reason for sale', d.reason], ['Included', d.included], ['Offer', d.offer]]
+                  {[['Next', d.nextAction ? `${d.nextAction}${d.nextOn ? ` — by ${d.nextOn}` : ''}` : d.nextOn ? `by ${d.nextOn}` : null],
+                    ['Agent', d.agent], ['Called', d.calledOn], ['Viewed', d.viewedOn], ['Lease left', d.leaseLeft], ['Rent review', d.rentReview],
+                    ['Rates / RV', d.ratesRV], ['Staff', d.staff], ['Hours', d.hours], ['Reason for sale', d.reason], ['Included', d.included], ['Offer', d.offer],
+                    ['Due diligence', `${dd.done}/${dd.total} seen${missing.length && missing.length <= 6 ? ` — still to see: ${missing.join(', ')}` : ''}`]]
                     .filter(([, v]) => v).map(([k, v]) => <React.Fragment key={k}><dt>{k}</dt><dd>{v}</dd></React.Fragment>)}
                 </dl>
                 {notes[l.id] && <p className="print-notes">{notes[l.id]}</p>}
