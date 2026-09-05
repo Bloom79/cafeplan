@@ -151,6 +151,37 @@ export const okUrl = (u) => {
   }
 }
 
+// Listing anchors on a portal's category page, per portal. Each pattern is
+// the path shape of ONE listing (never a search, a contact form, a
+// franchise pitch or a saved-search alert), so the model gets handed the
+// real listing URL instead of inventing one.
+export const LISTING_PATHS = [
+  /\/listing\//, // Daltons
+  /\/properties\/property\//, // The Restaurant Agency
+  /\/commercial-property-for-sale\/property-\d+/, // Rightmove Commercial
+  /^https?:\/\/uk\.businessesforsale\.com\/uk\/[^/?#]+\.aspx$/, // BusinessesForSale
+  /\/p\/business-for-sale\/[^/]+\/\d+/, // Gumtree
+  /^https?:\/\/altiusgroup\.co\.uk\/business\/[^/]+\/?$/, // Altius Group (Bruce & Co)
+  /^https?:\/\/scottishbusinessagency\.co\.uk\/[^/]+-for-sale\/?$/, // Scottish Business Agency
+  /^https?:\/\/www\.cornerstoneba\.co\.uk\/business-search\/[^/]+\/?$/, // Cornerstone Business Agents
+]
+const NOT_LISTING = /\/contact|\/franchises\/|[?&](save|alert)=|\/search\//i
+
+export function listingLinks(html, origin, max = 40) {
+  const links = []
+  const seen = new Set()
+  for (const m of html.matchAll(/<a[^>]+href="([^"]+)"[^>]*>([\s\S]*?)<\/a>/gi)) {
+    const href = m[1].startsWith('http') ? m[1] : origin + (m[1].startsWith('/') ? '' : '/') + m[1]
+    if (NOT_LISTING.test(href) || !LISTING_PATHS.some((re) => re.test(href))) continue
+    const text = m[2].replace(/<[^>]+>/g, ' ').replace(/&amp;/g, '&').replace(/&#?\w+;/g, ' ').replace(/\s+/g, ' ').trim()
+    if (!text || seen.has(href) || text.length < 6) continue
+    seen.add(href)
+    links.push({ text: text.slice(0, 80), href })
+    if (links.length >= max) break
+  }
+  return links
+}
+
 // A failed verdict (no model, quota, transient auth) — never lets it
 // overwrite a real verification.
 export const isFailedVerdict = (res) =>

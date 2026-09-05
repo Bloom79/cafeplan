@@ -1,9 +1,38 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import {
-  STALE_AFTER, categoryOf, daysListed, districtOf, extractJson, isFailedVerdict, mergeDiscovery, mergeVerification,
+  STALE_AFTER, categoryOf, daysListed, districtOf, extractJson, isFailedVerdict, listingLinks, mergeDiscovery, mergeVerification,
   metres, needsCheck, normaliseArea, okUrl, slug,
 } from '../scripts/lib.mjs'
+
+test('listingLinks: one anchor per listing, per portal; never contact forms, franchises or alerts', () => {
+  const html = `
+    <a href="/uk/search/cafes-for-sale-in-edinburgh?save=1&alert=1">Create alert</a>
+    <a href="https://uk.businessesforsale.com/uk/fully-fitted-morningside-cafe-low-rent-in-edinburgh.aspx"><h2>Fully Fitted Morningside Cafe, Low Rent</h2></a>
+    <a href="https://uk.businessesforsale.com/uk/fully-fitted-morningside-cafe-low-rent-in-edinburgh/contact">Contact seller</a>
+    <a href="https://uk.businessesforsale.com/uk/franchises/opportunities/jamaica-blue-franchise-uk?location=Edinburgh">Jamaica Blue Franchise</a>
+    <a href="/p/business-for-sale/nice-cafe-and-restaurant-for-sale-got-class-3-hot-food-/1462105894">nice cafe and restaurant for sale</a>
+    <a href="/listing/very-busy-cafe-DB2541715/">Very busy café &amp; deli</a>
+    <a href="https://altiusgroup.co.uk/business/dessert-lunch-cafe/">Dessert &amp; Lunch Café</a>
+    <a href="https://scottishbusinessagency.co.uk/volunteer-arms-broxburn-for-sale/">Turn-Key Bar &amp; Bistro</a>
+    <a href="https://www.cornerstoneba.co.uk/business-search/">Business Search</a>
+    <a href="https://www.cornerstoneba.co.uk/business-search/45-morningside-road/">45 Morningside Road</a>
+    <a href="/for-sale/kitchen-appliances/uk/edinburgh">Appliances</a>
+    <a href="https://uk.businessesforsale.com/uk/fully-fitted-morningside-cafe-low-rent-in-edinburgh.aspx">duplicate</a>
+  `
+  const links = listingLinks(html, 'https://www.gumtree.com')
+  assert.deepEqual(links.map((l) => l.href), [
+    'https://uk.businessesforsale.com/uk/fully-fitted-morningside-cafe-low-rent-in-edinburgh.aspx',
+    'https://www.gumtree.com/p/business-for-sale/nice-cafe-and-restaurant-for-sale-got-class-3-hot-food-/1462105894',
+    'https://www.gumtree.com/listing/very-busy-cafe-DB2541715/',
+    'https://altiusgroup.co.uk/business/dessert-lunch-cafe/',
+    'https://scottishbusinessagency.co.uk/volunteer-arms-broxburn-for-sale/',
+    'https://www.cornerstoneba.co.uk/business-search/45-morningside-road/',
+  ])
+  assert.equal(links[0].text, 'Fully Fitted Morningside Cafe, Low Rent')
+  assert.equal(links[2].text, 'Very busy café & deli')
+  assert.equal(listingLinks(html, 'https://x.test', 2).length, 2)
+})
 
 test('places: metres, districtOf, normaliseArea, daysListed', () => {
   assert.ok(Math.abs(metres(55.9429, -3.2861, 55.9429, -3.2861)) < 1)

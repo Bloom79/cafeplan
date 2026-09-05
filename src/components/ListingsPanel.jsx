@@ -210,6 +210,7 @@ export default function ListingsPanel() {
   const [view, setView] = useLocalStorage('cafeplan:listingsView', 'cards')
   const [essentials, setEssentials] = useLocalStorage('cafeplan:compareEssentials', true)
   const [sort, setSort] = useState({ key: 'rank', dir: 'desc' })
+  const [cardSort, setCardSort] = useLocalStorage('cafeplan:cardSort', 'rank')
   const [actions, request] = useAgentRequest(refetch)
 
   const toggleIn = (list, setList, id) =>
@@ -265,7 +266,17 @@ export default function ListingsPanel() {
       && (!dueOnly || isDue(l))
       && (showDismissed ? dismissed.includes(l.id) : !dismissed.includes(l.id)),
   )
-  const ranked = [...shown].sort((a, b) => b._rank - a._rank)
+  // Cards: by verdict unless you ask otherwise; blanks always sink.
+  const nz = (v) => (v == null ? Infinity : v)
+  const ORDER = {
+    rank: (a, b) => b._rank - a._rank,
+    price: (a, b) => nz(a.price) - nz(b.price),
+    rent: (a, b) => nz(a.rent) - nz(b.rent),
+    payback: (a, b) => nz(a._payback) - nz(b._payback),
+    newest: (a, b) => nz(a._days) - nz(b._days),
+    longest: (a, b) => nz(b._days === null ? null : -b._days) - nz(a._days === null ? null : -a._days),
+  }
+  const ranked = [...shown].sort(ORDER[cardSort] || ORDER.rank)
   const unfiltered = !showDismissed && !favsOnly && !inProgress && !dueOnly && area === 'All' && cat === 'all'
 
   return (
@@ -333,6 +344,19 @@ export default function ListingsPanel() {
           ▤ Compare
         </button>
         <AlertsBell />
+        {view !== 'table' && (
+          <label className="card-sort">
+            <span className="mono">sort</span>
+            <select className="status-select" value={cardSort} onChange={(e) => setCardSort(e.target.value)} aria-label="Sort listings">
+              <option value="rank">verdict</option>
+              <option value="price">asking price</option>
+              <option value="rent">rent</option>
+              <option value="payback">payback</option>
+              <option value="newest">newest</option>
+              <option value="longest">longest listed</option>
+            </select>
+          </label>
+        )}
         <span className="updated-line mono">data updated {data.updated}</span>
       </div>
 

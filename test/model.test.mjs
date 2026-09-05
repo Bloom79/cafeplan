@@ -2,7 +2,7 @@ import { strict as assert } from 'node:assert'
 import { test } from 'node:test'
 import {
   DEFAULTS, MONTHS, SCENARIOS, STARTUP_TOTALS, VAT_THRESHOLD, WORKING_CAPITAL,
-  compute, impliedCovers, loanPayment, monthly, sensitivity, takeHome,
+  compute, impliedCovers, loanPayment, monthly, paidHoursPerWeek, sensitivity, takeHome,
 } from '../src/data/model.js'
 
 // Every figure in the business case comes out of compute(). These pin the
@@ -79,6 +79,32 @@ test('take-home: Scottish bands and Class 4 NI, indicative', () => {
   const r = compute(DEFAULTS)
   assert.equal(Math.round(r.takeHome), Math.round(takeHome(r.profit).net - r.loanPayment))
   assert.equal(Math.round(r.surplus), Math.round(r.afterDebt - DEFAULTS.ownerDraw))
+})
+
+test('working capital is an assumption; the staffing note counts paid hours', () => {
+  const r = compute(DEFAULTS)
+  assert.equal(monthly(DEFAULTS, r).rows[0].cash < DEFAULTS.workingCapital + 1, true)
+  const richer = monthly({ ...DEFAULTS, workingCapital: 50000 }, r)
+  assert.equal(Math.round(richer.trough.cash - monthly(DEFAULTS, r).trough.cash), 30000)
+  // £49,600 of staff at £12.71 with 25% on-costs is about 60 paid hours a week.
+  assert.equal(Math.round(paidHoursPerWeek(49600)), 60)
+  assert.equal(paidHoursPerWeek(0), 0)
+})
+
+test('readiness: four gates from the steps, two from the model', async () => {
+  const { readiness } = await import('../src/lib/gates.js')
+  const none = readiness({ deals: {}, steps: {}, a: DEFAULTS })
+  assert.equal(none.total, 6)
+  // Defaults: cash holds (trough above zero) but the plan does not pay the draw.
+  assert.equal(none.gates.find((g) => g.id === 'cash').ok, true)
+  assert.equal(none.gates.find((g) => g.id === 'pays').ok, false)
+  assert.equal(none.open, 1)
+  const some = readiness({
+    deals: { x: { stage: 'viewed' } },
+    steps: { 'verify-sde': { status: 'done' }, licensing: { status: 'done' }, 'rates-check': { status: 'done' } },
+    a: { ...DEFAULTS, ownerDraw: 0, loan: 0 },
+  })
+  assert.equal(some.open, 6)
 })
 
 test('implied covers turn a seller turnover into your units', () => {

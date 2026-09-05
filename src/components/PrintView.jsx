@@ -5,6 +5,7 @@ import { APPLIED_KEY, MODEL_KEY, startupFor } from '../lib/applyListing.js'
 import { fitScore, sdeCheck, verdict as rankListing } from '../lib/score.js'
 import { categoryLabel, categoryOf } from '../lib/category.js'
 import { DD_ITEMS, ddProgress } from '../lib/deals.js'
+import { readiness } from '../lib/gates.js'
 import { useListings } from '../hooks/useListings.js'
 
 // The document: the whole business case with the live numbers, your
@@ -30,10 +31,11 @@ export default function PrintView({ onClose }) {
   const deals = read('cafeplan:deals', {})
   const sdeInputs = read('cafeplan:sdeInputs', {})
   const notes = read('cafeplan:listingNotes', {})
+  const steps = read('cafeplan:steps', {})
 
-  const ranked = useMemo(() => {
+  const { ranked, ready } = useMemo(() => {
     const base = live.a
-    return data.listings
+    const rows = data.listings
       .filter((l) => !dismissed.includes(l.id))
       .map((l) => {
         const startup = startupFor(l)
@@ -44,7 +46,8 @@ export default function PrintView({ onClose }) {
       })
       .filter((l) => l._verdict.band !== 'out')
       .sort((a, b) => b._rank - a._rank)
-  }, [data, live, dismissed, sdeInputs, deals])
+    return { ranked: rows, ready: readiness({ deals, steps, a: base }) }
+  }, [data, live, dismissed, sdeInputs, deals, steps])
 
   useEffect(() => { document.title = 'Canalside — business case' }, [])
 
@@ -80,6 +83,15 @@ export default function PrintView({ onClose }) {
       {live.applied && (
         <p className="print-note">Modelled on <b>{live.applied.name}</b> ({live.applied.area}) — rent {live.applied.rent != null ? gbp(live.applied.rent) : '—'}, asking {live.applied.price != null ? gbp(live.applied.price) : 'POA'}.</p>
       )}
+
+      <section className="print-section">
+        <h2>Ready to buy? — {ready.open} of {ready.total} gates open</h2>
+        <ul className="print-gates">
+          {ready.gates.map((g) => (
+            <li key={g.id} className={g.ok ? 'ok' : ''}>{g.ok ? '✓' : '○'} {g.title} <span className="muted">— {g.why}</span></li>
+          ))}
+        </ul>
+      </section>
 
       {ranked.length > 0 && (
         <section className="print-section">

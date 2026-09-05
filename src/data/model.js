@@ -90,6 +90,7 @@ export const DEFAULTS = {
   ownerDraw: 28000,
   rampStartPct: 70, // trade in month one, as a share of the plan
   rampMonths: 6, // months to reach the plan's volume
+  workingCapital: 20000, // cash in the till on day one (the budget's mid case)
 }
 
 export const STARTUP = [
@@ -249,7 +250,7 @@ export const WORKING_CAPITAL = 20000
 // climb the ramp (month one trades at `rampStartPct` of the plan, reaching
 // it after `rampMonths`); rent, labour, overheads and the loan repayment
 // do not move — which is exactly why a quiet February bites.
-export function monthly(a, r, workingCapital = WORKING_CAPITAL) {
+export function monthly(a, r, workingCapital = a.workingCapital ?? WORKING_CAPITAL) {
   const fixed = (a.labour + a.apStaff + a.rent + a.rates + a.overheads) / 12
   const debt = (r.loanPayment || 0) / 12
   const start = Math.min(1, Math.max(0, (a.rampStartPct ?? 100) / 100))
@@ -370,6 +371,15 @@ export const GROUPS = [
       ['ownerDraw', 'What you need to draw to live on', 'gbp'],
       ['rampStartPct', 'Month-one trade, share of plan', 'pct'],
       ['rampMonths', 'Months to reach the plan', 'count'],
+      ['workingCapital', 'Cash in the till on day one', 'gbp'],
     ],
   },
 ]
+
+// ————— staffing sanity check ————————————————————
+// What a labour budget buys at the National Living Wage, once employer NI,
+// holiday pay and pension are on top — the check that "£40k of staff" is
+// really about one and a bit paid people, not a team.
+export const NLW = 12.71 // £/hour, 21+, from April 2026
+export const ON_COSTS = 0.25 // employer NI, 12.07% holiday accrual, auto-enrolment pension — rough
+export const paidHoursPerWeek = (labour) => (labour > 0 ? labour / (NLW * (1 + ON_COSTS)) / 52 : 0)

@@ -45,6 +45,24 @@ app button → Cloudflare Worker → "Verifica:" / "Analizza:" issue
 - **Daily run** (`daily-verify.yml`, 06:17 UTC) — verifies every listing;
   discovery of new Edinburgh going-concerns runs **Mondays**.
 
+Discovery reads two kinds of source. **Open portals** are fetched directly
+and handed to the model as page text plus the real listing links
+(`OPEN_SOURCES` in `scripts/verifica.mjs`, link shapes in `LISTING_PATHS`
+in `scripts/lib.mjs`): Daltons (cafés, coffee shops, restaurants, bistros),
+**BusinessesForSale** (cafés, coffee shops, restaurants — the category pages
+answer a plain fetch even though the listing pages return 403),
+**Cornerstone Business Agents** (Scotland's main business-transfer agent,
+one page for the whole country), Scottish Business Agency, The Restaurant
+Agency, Rightmove Commercial (mostly fitted premises), **Gumtree** (private
+sellers — the cheapest cafés, among the dishwashers and kebab shops) and
+Altius Group / Bruce & Co. **Walled portals** — Rightbiz, Zoopla and
+PrimeLocation (Cloudflare), Christie & Co and Central Business Sales
+(JavaScript-rendered), the Scotsman titles — are covered by the model's own
+web search in the second set of passes, together with the commercial agents
+(Shepherd, DM Hall, Graham + Sibbald, Ryden, Allied, EYCO) for fitted
+premises to let. Probed 5 Sept 2026; a portal that starts blocking simply
+logs "no page text" and drops to the search pass.
+
 Costs: the subscription's default model spends ~6 Copilot "premium request"
 credits per verification (about 9 listings + 1 discovery ≈ 60 credits per
 Monday, ~54 other days). Set `VERIFY_MODEL=claude-opus-5` on the workflow

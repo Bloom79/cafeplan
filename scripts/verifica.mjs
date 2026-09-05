@@ -31,7 +31,7 @@ import { appendFileSync, readFileSync, writeFileSync } from 'fs'
 import { spawnSync as run } from 'child_process'
 import { fileURLToPath } from 'url'
 import { dirname, join } from 'path'
-import { districtOf, extractJson, mergeDiscovery, mergeVerification, metres, nameKey, needsCheck, normaliseArea } from './lib.mjs'
+import { districtOf, extractJson, listingLinks, mergeDiscovery, mergeVerification, metres, nameKey, needsCheck, normaliseArea } from './lib.mjs'
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..')
 const DATA = join(ROOT, 'public', 'listings.json')
@@ -284,40 +284,57 @@ Reply with ONLY a JSON array (empty if nothing new), max 8 items:
 [{"id":"kebab-case-id","name":"","category":"cafe|restaurant|dessert|bar|premises","area":"<district or street, Edinburgh>","price":<number|null>,"tenure":"","rent":<number|null>,"turnover":<number|null>,"profit":<number|null>,"url":<the specific listing page url from the LINKS list or your sources, else null>,"image":<direct photo url|null>,"address":<street address|null>,"notes":"<=140 chars English — FACTS from the advert only (size, covers, lease length, why selling, what's included); no speculation about our concept"}]`
 
 // Portals that answer a plain fetch: their category pages become evidence
-// text the model reads instead of having to find them itself.
+// text the model reads instead of having to find them itself. Probed
+// 2026-09-05 with a desktop UA: these return the listing cards; Rightbiz,
+// Zoopla and the Scotsman titles sit behind Cloudflare and stay in the
+// search passes below. The optional third field is a hint for that page.
 const OPEN_SOURCES = [
   ['Daltons — Edinburgh cafés', 'https://www.daltonsbusiness.com/cafes-businesses-for-sale-in-edinburgh/'],
   ['Daltons — Edinburgh coffee shops', 'https://www.daltonsbusiness.com/coffee-shops-businesses-for-sale-in-edinburgh/'],
   ['Daltons — Edinburgh restaurants', 'https://www.daltonsbusiness.com/restaurants-businesses-for-sale-in-edinburgh/'],
   ['Daltons — Edinburgh bistros', 'https://www.daltonsbusiness.com/bistros-businesses-for-sale-in-edinburgh/'],
+  // BusinessesForSale: the category pages answer, the listing pages do not
+  // (403) — the cards carry name, area, asking price and a summary, which
+  // is enough to add a listing; verification fills in the rest via search.
+  ['BusinessesForSale — Edinburgh cafés', 'https://uk.businessesforsale.com/uk/search/cafes-for-sale-in-edinburgh', 'Skip the franchise pitches (Jamaica Blue, Muffin Break, ZenDöner…) and hot-food takeaways; the .aspx links are the listings.'],
+  ['BusinessesForSale — Edinburgh coffee shops', 'https://uk.businessesforsale.com/uk/search/coffee-shops-for-sale-in-edinburgh', 'Skip the franchise pitches and hot-food takeaways; the .aspx links are the listings.'],
+  ['BusinessesForSale — Edinburgh restaurants', 'https://uk.businessesforsale.com/uk/search/restaurants-for-sale-in-edinburgh', 'Skip the franchise pitches and hot-food takeaways; the .aspx links are the listings.'],
   ['The Restaurant Agency — Edinburgh', 'https://therestaurantagency.com/properties/?location=edinburgh'],
+  // Cornerstone: Scotland's main business-transfer agent, Edinburgh office.
+  // One page, all of Scotland, each row "<town> <price> <tenure> <blurb>".
+  ['Cornerstone Business Agents — business search', 'https://www.cornerstoneba.co.uk/business-search/', 'Rows read "<town> <price> <Leasehold|Freehold> <description>"; keep only Edinburgh leaseholds. The /business-search/<slug>/ links are the listings (the slug is usually the street address — use it as the address).'],
+  // Scottish Business Agency: small Scottish agent, listing pages end in -for-sale.
+  ['Scottish Business Agency', 'https://scottishbusinessagency.co.uk/', 'Keep only Edinburgh; the …-for-sale/ links are the listings.'],
   // Rightmove Commercial: mostly premises with a lease premium, some going
   // concerns — the "premises" category is what this pair mainly feeds.
   ['Rightmove Commercial — Edinburgh & Lothian cafés', 'https://www.rightmove.co.uk/commercial-property-for-sale/Edinburgh-and-Lothian/cafes.html'],
   ['Rightmove Commercial — Edinburgh & Lothian restaurants', 'https://www.rightmove.co.uk/commercial-property-for-sale/Edinburgh-and-Lothian/restaurants.html'],
+  // Gumtree: private sellers, so the cheapest cafés surface here first —
+  // buried among dishwashers, domain names and kebab shops.
+  ['Gumtree — business for sale, Edinburgh', 'https://www.gumtree.com/for-sale/office-furniture-equipment/business-for-sale/uk/edinburgh', 'This is a classifieds page: ignore equipment, domain names, "wanted" ads, vans and takeaways; only cafés, coffee shops, dessert shops and small restaurants actually in Edinburgh. The /p/business-for-sale/ links are the ads.'],
+  // Altius Group carries Bruce & Co (Scottish business agents); national
+  // list, so the Edinburgh filter is the model's job.
+  ['Altius Group / Bruce & Co — find a business', 'https://altiusgroup.co.uk/find-a-business/', 'A UK-wide list: keep only businesses in Edinburgh; the /business/ links are the listings.'],
 ]
 
 // Page → plain text plus a LINKS list (listing anchors with their text), so
 // the model can hand back the real listing URL rather than none at all.
 async function fetchText(url) {
   try {
-    const res = await fetch(url, { headers: { 'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 Chrome/120 Safari/537.36' }, signal: AbortSignal.timeout(20000) })
+    const res = await fetch(url, {
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 14_0) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0 Safari/537.36',
+        Accept: 'text/html,*/*;q=0.8',
+        'Accept-Language': 'en-GB,en;q=0.9',
+      },
+      signal: AbortSignal.timeout(20000),
+    })
     if (!res.ok) return null
     const html = await res.text()
-    const origin = new URL(url).origin
-    const links = []
-    const seen = new Set()
-    for (const m of html.matchAll(/<a[^>]+href="([^"]*(?:\/listing\/|\/properties\/property\/|\/commercial-property-for-sale\/property-\d+)[^"]*)"[^>]*>([\s\S]*?)<\/a>/gi)) {
-      const href = m[1].startsWith('http') ? m[1] : origin + m[1]
-      const text = m[2].replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim()
-      if (!text || seen.has(href) || text.length < 6) continue
-      seen.add(href)
-      links.push(`- ${text.slice(0, 80)} → ${href}`)
-      if (links.length >= 40) break
-    }
+    const links = listingLinks(html, new URL(url).origin).map((l) => `- ${l.text} → ${l.href}`)
     const text = html.replace(/<script[\s\S]*?<\/script>|<style[\s\S]*?<\/style>/gi, ' ')
       .replace(/<[^>]+>/g, ' ').replace(/&amp;/g, '&').replace(/&#?\w+;/g, ' ')
-      .replace(/\s+/g, ' ').trim().slice(0, 12000)
+      .replace(/\s+/g, ' ').trim().slice(0, 24000)
     return `${text}\n\nLINKS:\n${links.join('\n')}`
   } catch {
     return null
@@ -341,10 +358,10 @@ async function discoverListings(known) {
   }
 
   // Pass 1: the open portals, fetched directly and handed over as text.
-  for (const [label, url] of OPEN_SOURCES) {
+  for (const [label, url, hint] of OPEN_SOURCES) {
     const text = await fetchText(url)
     if (!text || text.length < 300) { console.log(`  discovery: ${label} — no page text`); continue }
-    const prompt = `Today is ${TODAY}. Below is the text of a businesses-for-sale category page (${label}). Extract every café / coffee shop / dessert / small restaurant / deli in EDINBURGH that is currently for sale (skip franchises, skip anything outside Edinburgh, skip "sold"/"under offer").
+    const prompt = `Today is ${TODAY}. Below is the text of a businesses-for-sale category page (${label}). Extract every café / coffee shop / dessert / small restaurant / deli in EDINBURGH that is currently for sale (skip franchises, skip anything outside Edinburgh, skip "sold"/"under offer").${hint ? ` ${hint}` : ''}
 Already on our watchlist (do NOT repeat): ${knownList}
 
 PAGE TEXT:
@@ -358,8 +375,8 @@ ${FIND_SHAPE}`
   const passes = [
     ['Rightbiz + BusinessesForSale via search', `Search the web for café / coffee shop / dessert businesses for sale in Edinburgh listed on rightbiz.co.uk or uk.businessesforsale.com (use site: searches; these portals block direct fetches — snippets and indexed pages are fine). Areas that matter most: ${TARGET_AREAS}.`],
     ['Restaurants via search', `Search the web for small RESTAURANTS, bistros and brasseries for sale in Edinburgh as leasehold going concerns (rightbiz.co.uk, uk.businessesforsale.com, daltonsbusiness.com, zoopla commercial, Cornerstone, Christie & Co, The Restaurant Agency). Independent, 20–60 covers, asking up to £150,000. Areas that matter most: ${TARGET_AREAS}.`],
-    ['Zoopla Commercial + agents', `Search zoopla.co.uk/for-sale/commercial hospitality listings in Edinburgh, and the Edinburgh café/restaurant stock of Christie & Co, Cornerstone Business Agents, Central Business Sales, DJK Group and Scottish Business Agency. Going concerns only; respect the per-category price caps.`],
-    ['Fitted premises to lease', `Search NovaLoca, Rightmove Commercial (cafés / restaurants, Edinburgh & Lothian), Shepherd Chartered Surveyors, DM Hall and Ryden for FITTED café or restaurant premises in Edinburgh offered to let or with a lease premium (no goodwill). Report them with category "premises", the premium as price (or null) and the annual rent.`],
+    ['Zoopla, PrimeLocation + agents', `Search zoopla.co.uk/for-sale/commercial and primelocation.com commercial listings in Edinburgh (restaurant / café), and the Edinburgh café/restaurant stock of Christie & Co (christie.com/cafe-for-sale/edinburgh/ and /restaurants-for-sale/edinburgh/), Central Business Sales (centralbusinesssales.co.uk/location/edinburgh/), Smith & Clough, Hilton Smythe and Intelligent Business Transfer. Going concerns only; respect the per-category price caps.`],
+    ['Fitted premises to lease', `Search NovaLoca, Rightmove Commercial (cafés / restaurants, Edinburgh & Lothian), Shepherd Chartered Surveyors, DM Hall, Graham + Sibbald, Ryden, Allied Surveyors and EYCO for FITTED café or restaurant premises in Edinburgh offered to let or with a lease premium (no goodwill). Report them with category "premises", the premium as price (or null) and the annual rent.`],
     ['Local news', `Search Edinburgh Evening News, The Scotsman and Edinburgh Live for cafés, coffee shops and restaurants put up for sale in the last 60 days (they run "for sale" pieces). Extract the business, area and asking price when stated.`],
   ]
   for (const [label, brief] of passes) {

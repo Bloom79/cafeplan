@@ -1,7 +1,7 @@
 import React, { useMemo, useState } from 'react'
 import {
-  DEFAULTS, GROUPS, SCENARIOS, STARTUP, STARTUP_TOTALS, TAX_YEAR, VAT_THRESHOLD, WORKING_CAPITAL,
-  compute, gbp, impliedCovers, monthly, pct, sensitivity,
+  DEFAULTS, GROUPS, NLW, SCENARIOS, STARTUP, STARTUP_TOTALS, TAX_YEAR, VAT_THRESHOLD,
+  compute, gbp, impliedCovers, monthly, paidHoursPerWeek, pct, sensitivity,
 } from '../data/model.js'
 import { APPLIED_KEY } from '../lib/applyListing.js'
 import { useLocalStorage } from '../hooks/useLocalStorage.js'
@@ -248,6 +248,13 @@ export default function ModelPanel() {
                   )}
                 </div>
               ))}
+              {g.id === 'costs' && (
+                <p className="group-note">
+                  {gbp(a.labour + a.apStaff)} of staff buys about <b className="mono">{Math.round(paidHoursPerWeek(a.labour + a.apStaff))}</b> paid
+                  hours a week at the £{NLW.toFixed(2)} National Living Wage with ~25% on-costs — roughly {(paidHoursPerWeek(a.labour + a.apStaff) / 40).toFixed(1)} full-time
+                  people. The rest of every shift is you.
+                </p>
+              )}
               {g.id === 'vat' && (
                 <p className="group-note">
                   {r.overThreshold
@@ -469,7 +476,7 @@ export default function ModelPanel() {
         <h2 className="panel-title">
           The first year, month by month
           <span className="side">
-            cash starts at {gbp(WORKING_CAPITAL)} working capital
+            cash starts at {gbp(a.workingCapital)} working capital
             {a.rampMonths > 0 && a.rampStartPct < 100 && <> · trade starts at {a.rampStartPct}% and reaches the plan by month {a.rampMonths}</>}
             {cash.debt > 0 && <> · {gbp(cash.debt)} a month to the loan</>}
           </span>
