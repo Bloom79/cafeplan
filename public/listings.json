@@ -32,7 +32,15 @@
       "unclearStreak": 0,
       "category": "cafe",
       "firstSeen": "2026-09-02",
-      "image": "https://cdn.daltonsbusiness.com/wp-content/uploads/2026/05/1778590333-sweet-paradise-6-scaled.webp"
+      "image": "https://cdn.daltonsbusiness.com/wp-content/uploads/2026/05/1778590333-sweet-paradise-6-scaled.webp",
+      "images": [
+        "https://cdn.daltonsbusiness.com/wp-content/uploads/2026/05/1778590333-sweet-paradise-6-scaled.webp",
+        "https://cdn.daltonsbusiness.com/wp-content/uploads/2026/05/1778590367-sweet-paradise-1-1170x785.webp",
+        "https://cdn.daltonsbusiness.com/wp-content/uploads/2026/05/1778590379-sweet-paradise-2-1170x785.webp",
+        "https://cdn.daltonsbusiness.com/wp-content/uploads/2026/05/1778590391-sweet-paradise-3-1170x785.webp",
+        "https://cdn.daltonsbusiness.com/wp-content/uploads/2026/05/1778590402-sweet-paradise-4-1170x785.webp",
+        "https://cdn.daltonsbusiness.com/wp-content/uploads/2026/05/1778590414-sweet-paradise-5-1170x785.webp"
+      ]
     },
     {
       "id": "bruntsfield-coffee",
@@ -307,7 +315,17 @@
         "canalM": 2348,
         "stopM": 42,
         "at": "2026-09-02"
-      }
+      },
+      "images": [
+        "https://media.onthemarket.com/properties/17268474/1574070243/image-0-1024x1024.jpg",
+        "https://media.onthemarket.com/properties/17268474/1574070243/image-1-1024x1024.webp",
+        "https://media.onthemarket.com/properties/17268474/1574070243/image-2-1024x1024.webp",
+        "https://media.onthemarket.com/properties/17268474/1574070243/image-3-1024x1024.webp",
+        "https://media.onthemarket.com/properties/17268474/1574070243/image-4-1024x1024.webp",
+        "https://media.onthemarket.com/properties/17268474/1574070243/image-5-1024x1024.webp",
+        "https://media.onthemarket.com/properties/17268474/1574070243/image-6-1024x1024.webp",
+        "https://media.onthemarket.com/properties/17268474/1574070243/image-7-1024x1024.webp"
+      ]
     },
     {
       "id": "mirth-zest",
@@ -408,7 +426,14 @@
         "canalM": 1065,
         "stopM": 48,
         "at": "2026-09-02"
-      }
+      },
+      "image": "https://www.therestaurantagency.com/uploads/images/cms/property_large/1765985677image002.jpg",
+      "images": [
+        "https://www.therestaurantagency.com/uploads/images/cms/property_large/1765985677image002.jpg",
+        "https://www.therestaurantagency.com/uploads/images/cms/property_large/1765970538IMG_8642.jpg",
+        "https://www.therestaurantagency.com/uploads/images/cms/property_large/1765970256image011.jpg",
+        "https://www.therestaurantagency.com/uploads/images/cms/property_large/1765970257image004.jpg"
+      ]
     },
     {
       "id": "dessert-parlour-morningside",
@@ -440,7 +465,15 @@
       "address": "45 Comiston Road, Morningside, Edinburgh, EH10 6AB",
       "unclearStreak": 0,
       "category": "dessert",
-      "firstSeen": "2026-09-02"
+      "firstSeen": "2026-09-02",
+      "images": [
+        "https://cdn.daltonsbusiness.com/wp-content/uploads/2026/05/1778590333-sweet-paradise-6-scaled.webp",
+        "https://cdn.daltonsbusiness.com/wp-content/uploads/2026/05/1778590367-sweet-paradise-1-1170x785.webp",
+        "https://cdn.daltonsbusiness.com/wp-content/uploads/2026/05/1778590379-sweet-paradise-2-1170x785.webp",
+        "https://cdn.daltonsbusiness.com/wp-content/uploads/2026/05/1778590391-sweet-paradise-3-1170x785.webp",
+        "https://cdn.daltonsbusiness.com/wp-content/uploads/2026/05/1778590402-sweet-paradise-4-1170x785.webp",
+        "https://cdn.daltonsbusiness.com/wp-content/uploads/2026/05/1778590414-sweet-paradise-5-1170x785.webp"
+      ]
     },
     {
       "id": "charming-dessert-bruntsfield",
@@ -621,7 +654,17 @@
         "canalM": 2017,
         "stopM": 13,
         "at": "2026-09-02"
-      }
+      },
+      "images": [
+        "https://cdn.daltonsbusiness.com/wp-content/uploads/2026/09/1788263302-Bon-AppeTea_SMALL-FILE-SIZE-1-copy.webp",
+        "https://cdn.daltonsbusiness.com/wp-content/uploads/2026/09/1788263319-20260624_103923_resized-1170x785.webp",
+        "https://cdn.daltonsbusiness.com/wp-content/uploads/2026/09/1788263344-Bon-AppeTea_SMALL-FILE-SIZE-8-copy-1170x785.webp",
+        "https://cdn.daltonsbusiness.com/wp-content/uploads/2026/09/1788263398-20260624_104240_resized-1170x785.webp",
+        "https://cdn.daltonsbusiness.com/wp-content/uploads/2026/09/1788263418-20260624_104047_resized-1170x785.webp",
+        "https://cdn.daltonsbusiness.com/wp-content/uploads/2026/09/1788263450-20260624_104201_resized-1170x785.webp",
+        "https://cdn.daltonsbusiness.com/wp-content/uploads/2026/09/1788263495-Bon-AppeTea_SMALL-FILE-SIZE-19-copy-1170x785.webp",
+        "https://cdn.daltonsbusiness.com/wp-content/uploads/2026/09/1788263529-Bon-AppeTea_SMALL-FILE-SIZE-16-copy-1170x785.webp"
+      ]
     },
     {
       "id": "bubble-tea-shandwick-place",
@@ -653,7 +696,16 @@
       },
       "unclearStreak": 0,
       "category": "dessert",
-      "firstSeen": "2026-09-02"
+      "firstSeen": "2026-09-02",
+      "images": [
+        "https://cdn.daltonsbusiness.com/wp-content/uploads/2026/05/1778236849-shandwick-place-outside-scaled.webp",
+        "https://cdn.daltonsbusiness.com/wp-content/uploads/2026/05/1778236875-shandwick-2-1170x785.webp",
+        "https://cdn.daltonsbusiness.com/wp-content/uploads/2026/05/1778236911-shandwick-3-1170x785.webp",
+        "https://cdn.daltonsbusiness.com/wp-content/uploads/2026/05/1778236959-shandwick-4-1170x785.webp",
+        "https://cdn.daltonsbusiness.com/wp-content/uploads/2026/05/1778236984-shandwick-5-1170x785.webp",
+        "https://cdn.daltonsbusiness.com/wp-content/uploads/2026/05/1778237014-shandwick-6-1170x785.webp",
+        "https://cdn.daltonsbusiness.com/wp-content/uploads/2026/05/1778237061-shandwick-7-1170x785.webp"
+      ]
     },
     {
       "id": "gorgie-road-coffee-shop-sandwich-bar",
@@ -684,7 +736,12 @@
         "date": "2026-09-02"
       },
       "category": "cafe",
-      "firstSeen": "2026-09-02"
+      "firstSeen": "2026-09-02",
+      "images": [
+        "https://cdn.daltonsbusiness.com/wp-content/uploads/2025/05/1746718920-gorgie-new-2.webp",
+        "https://cdn.daltonsbusiness.com/wp-content/uploads/2025/05/1746718930-gorgie-new-3.webp",
+        "https://cdn.daltonsbusiness.com/wp-content/uploads/2025/05/1746718940-gorgie-new.webp"
+      ]
     },
     {
       "id": "class-1-cafe-central-edinburgh-ref-1690",
@@ -817,7 +874,16 @@
       },
       "unclearStreak": 0,
       "category": "cafe",
-      "firstSeen": "2026-09-02"
+      "firstSeen": "2026-09-02",
+      "images": [
+        "https://cdn.daltonsbusiness.com/wp-content/uploads/2026/05/1778236849-shandwick-place-outside-scaled.webp",
+        "https://cdn.daltonsbusiness.com/wp-content/uploads/2026/05/1778236875-shandwick-2-1170x785.webp",
+        "https://cdn.daltonsbusiness.com/wp-content/uploads/2026/05/1778236911-shandwick-3-1170x785.webp",
+        "https://cdn.daltonsbusiness.com/wp-content/uploads/2026/05/1778236959-shandwick-4-1170x785.webp",
+        "https://cdn.daltonsbusiness.com/wp-content/uploads/2026/05/1778236984-shandwick-5-1170x785.webp",
+        "https://cdn.daltonsbusiness.com/wp-content/uploads/2026/05/1778237014-shandwick-6-1170x785.webp",
+        "https://cdn.daltonsbusiness.com/wp-content/uploads/2026/05/1778237061-shandwick-7-1170x785.webp"
+      ]
     },
     {
       "id": "beautifully-presented-gift-and-coffee-shop-70k",
@@ -873,7 +939,17 @@
         "canalM": null,
         "stopM": 68,
         "at": "2026-09-02"
-      }
+      },
+      "images": [
+        "https://cdn.daltonsbusiness.com/wp-content/uploads/2026/02/1771337329-Cloud1.webp",
+        "https://cdn.daltonsbusiness.com/wp-content/uploads/2026/02/1771337380-Cloud2-1170x785.webp",
+        "https://cdn.daltonsbusiness.com/wp-content/uploads/2026/02/1771337502-Cloud3-1170x785.webp",
+        "https://cdn.daltonsbusiness.com/wp-content/uploads/2026/02/1771337538-Cloud4-1170x785.webp",
+        "https://cdn.daltonsbusiness.com/wp-content/uploads/2026/02/1771337559-Cloud5-1170x785.webp",
+        "https://cdn.daltonsbusiness.com/wp-content/uploads/2026/02/1771337581-Cloud6-1125x785.webp",
+        "https://cdn.daltonsbusiness.com/wp-content/uploads/2026/02/1771337636-Cloud7-1020x785.webp",
+        "https://cdn.daltonsbusiness.com/wp-content/uploads/2026/02/1771337706-Cloud8-1170x785.webp"
+      ]
     },
     {
       "id": "unique-bike-cafe-palmerston-place",
@@ -904,7 +980,17 @@
         "note": "found by discovery scan",
         "date": "2026-09-02"
       },
-      "firstSeen": "2026-09-02"
+      "firstSeen": "2026-09-02",
+      "images": [
+        "https://cdn.daltonsbusiness.com/wp-content/uploads/2025/04/1745920354-Coffee-Bike1.webp",
+        "https://cdn.daltonsbusiness.com/wp-content/uploads/2025/04/1745920399-Coffee-Bike2-1170x785.webp",
+        "https://cdn.daltonsbusiness.com/wp-content/uploads/2025/04/1745920507-Coffee-Bike3-1019x785.webp",
+        "https://cdn.daltonsbusiness.com/wp-content/uploads/2025/04/1745920572-Coffee-Bike4-1170x785.webp",
+        "https://cdn.daltonsbusiness.com/wp-content/uploads/2025/04/1745920668-Coffee-Bike5-1170x785.webp",
+        "https://cdn.daltonsbusiness.com/wp-content/uploads/2025/04/1745920750-Coffee-Bike6-1170x785.webp",
+        "https://cdn.daltonsbusiness.com/wp-content/uploads/2025/04/1745920814-Coffee-Bike7-1170x785.webp",
+        "https://cdn.daltonsbusiness.com/wp-content/uploads/2025/04/1745921252-Coffee-bike8-1170x785.webp"
+      ]
     },
     {
       "id": "very-busy-cafe-elm-row",
@@ -935,7 +1021,13 @@
         "note": "found by discovery scan",
         "date": "2026-09-02"
       },
-      "firstSeen": "2026-09-02"
+      "firstSeen": "2026-09-02",
+      "images": [
+        "https://cdn.daltonsbusiness.com/wp-content/uploads/2026/02/1772021343-elm-row-1-scaled.webp",
+        "https://cdn.daltonsbusiness.com/wp-content/uploads/2026/02/1772021367-elm-row-2-1170x785.webp",
+        "https://cdn.daltonsbusiness.com/wp-content/uploads/2026/02/1772021391-elm-row-3-1170x785.webp",
+        "https://cdn.daltonsbusiness.com/wp-content/uploads/2026/02/1772021419-elm-row-4-1170x785.webp"
+      ]
     },
     {
       "id": "prominent-corner-restaurant-morningside-bruntsfiel",
@@ -966,7 +1058,17 @@
         "note": "found by discovery scan",
         "date": "2026-09-02"
       },
-      "firstSeen": "2026-09-02"
+      "firstSeen": "2026-09-02",
+      "images": [
+        "https://cdn.daltonsbusiness.com/wp-content/uploads/2026/09/1788258574-Gratitude-0.webp",
+        "https://cdn.daltonsbusiness.com/wp-content/uploads/2026/09/1788258622-Gratitude-2-1170x785.webp",
+        "https://cdn.daltonsbusiness.com/wp-content/uploads/2026/09/1788258650-Gratitude-3-1170x785.webp",
+        "https://cdn.daltonsbusiness.com/wp-content/uploads/2026/09/1788258680-Gratitude-4-1170x785.jpg",
+        "https://cdn.daltonsbusiness.com/wp-content/uploads/2026/09/1788258709-Gratitude-5-1170x785.webp",
+        "https://cdn.daltonsbusiness.com/wp-content/uploads/2026/09/1788258741-Gratitude-6-1170x785.webp",
+        "https://cdn.daltonsbusiness.com/wp-content/uploads/2026/09/1788258780-Gratitude-7-1170x785.webp",
+        "https://cdn.daltonsbusiness.com/wp-content/uploads/2026/09/1788258860-Gratitude-8-1170x785.webp"
+      ]
     },
     {
       "id": "immaculate-outstanding-restaurant-ref-1836",
@@ -997,7 +1099,17 @@
         "note": "found by discovery scan",
         "date": "2026-09-02"
       },
-      "firstSeen": "2026-09-02"
+      "firstSeen": "2026-09-02",
+      "images": [
+        "https://cdn.daltonsbusiness.com/wp-content/uploads/2026/08/1787136998-Celestia1.webp",
+        "https://cdn.daltonsbusiness.com/wp-content/uploads/2026/08/1787145844-Celestia3-1170x785.webp",
+        "https://cdn.daltonsbusiness.com/wp-content/uploads/2026/08/1787137257-Celestia2-1170x785.webp",
+        "https://cdn.daltonsbusiness.com/wp-content/uploads/2026/08/1787143259-Celestia4-1170x785.webp",
+        "https://cdn.daltonsbusiness.com/wp-content/uploads/2026/08/1787143647-Celestia5-1170x785.webp",
+        "https://cdn.daltonsbusiness.com/wp-content/uploads/2026/08/1787146994-Celestia6-1170x785.webp",
+        "https://cdn.daltonsbusiness.com/wp-content/uploads/2026/08/1787147310-Celestia7-1170x785.webp",
+        "https://cdn.daltonsbusiness.com/wp-content/uploads/2026/08/1787147456-Celestia9-1170x785.webp"
+      ]
     },
     {
       "id": "outstanding-events-business-restaurant-bar",
@@ -1028,23 +1140,28 @@
         "note": "found by discovery scan",
         "date": "2026-09-02"
       },
-      "firstSeen": "2026-09-02"
+      "firstSeen": "2026-09-02",
+      "images": [
+        "https://cdn.daltonsbusiness.com/wp-content/uploads/2026/08/1786454264-restaurant-fine-dining.webp",
+        "https://cdn.daltonsbusiness.com/wp-content/uploads/2026/08/MBM28-87295-9731-01.webp"
+      ]
     },
     {
       "id": "tapa-restaurant-and-bar-leith",
-      "name": "Long Established Leith Restaurant + Bar",
+      "name": "Tapa Restaurant + Bar (Leith)",
       "area": "Leith",
       "category": "restaurant",
       "price": 125000,
       "tenure": "Leasehold",
-      "rent": null,
+      "rent": 46800,
       "turnover": null,
       "profit": null,
       "status": "active",
       "tags": [
-        "agent find"
+        "agent find",
+        "cross-listed"
       ],
-      "notes": "Multi-award winning tapas restaurant; on market for first time in over 16 years.",
+      "notes": "Multi-award winning tapas restaurant; on market for first time in over 16 years. Also listed by The Restaurant Agency: Up to 80 covers; external seating 20+; residue of lease to 2034; rent £46,800 p.a.; Full Premises Licence; trading 7 days to 1am.",
       "source": "agent discovery (2026-09-02)",
       "url": "https://www.daltonsbusiness.com/listing/long-established-leith-restaurant-bar-for-sale-DB2526737/",
       "image": "https://cdn.daltonsbusiness.com/wp-content/uploads/2026/09/1788260796-Tapa_2.IMG_9352.webp",
@@ -1059,7 +1176,19 @@
         "note": "found by discovery scan",
         "date": "2026-09-02"
       },
-      "firstSeen": "2026-09-02"
+      "firstSeen": "2026-09-02",
+      "leaseYears": 8,
+      "altUrl": "https://www.therestaurantagency.com/properties/property/130/tapa-restaurant-bar-leith-edinburgh",
+      "images": [
+        "https://cdn.daltonsbusiness.com/wp-content/uploads/2026/09/1788260796-Tapa_2.IMG_9352.webp",
+        "https://cdn.daltonsbusiness.com/wp-content/uploads/2026/09/1788259984-IMG_4584-2-1170x785.webp",
+        "https://cdn.daltonsbusiness.com/wp-content/uploads/2026/09/1788260007-20260320_105610_resized-1170x785.webp",
+        "https://cdn.daltonsbusiness.com/wp-content/uploads/2026/09/1788260820-Tapa_5.IMG_9347-1170x785.webp",
+        "https://cdn.daltonsbusiness.com/wp-content/uploads/2026/09/1788260844-Tapa_3.IMG_9362-1170x785.webp",
+        "https://cdn.daltonsbusiness.com/wp-content/uploads/2026/09/1788260867-Tapa_8.IMG_9386-1170x785.webp",
+        "https://cdn.daltonsbusiness.com/wp-content/uploads/2026/09/1788260896-Tapa_6.IMG_9370-1170x785.webp",
+        "https://cdn.daltonsbusiness.com/wp-content/uploads/2026/09/1788260917-Tapa_7.IMG_9371-1170x785.webp"
+      ]
     },
     {
       "id": "chef-bako-seafood-restaurant-royal-mile",
@@ -1090,7 +1219,14 @@
         "note": "found by discovery scan",
         "date": "2026-09-02"
       },
-      "firstSeen": "2026-09-02"
+      "firstSeen": "2026-09-02",
+      "images": [
+        "https://cdn.daltonsbusiness.com/wp-content/uploads/2025/10/1761035751QoJsv78VPk.webp",
+        "https://cdn.daltonsbusiness.com/wp-content/uploads/2025/10/1761035751wCZehcvuiB.webp",
+        "https://cdn.daltonsbusiness.com/wp-content/uploads/2025/10/1761035754IR851GE0y2.webp",
+        "https://cdn.daltonsbusiness.com/wp-content/uploads/2025/10/1761035753CxHBwNtftD.webp",
+        "https://cdn.daltonsbusiness.com/wp-content/uploads/2025/10/17611348772Z845EA0gg.webp"
+      ]
     },
     {
       "id": "deceptively-spacious-bar-high-footfall",
@@ -1121,7 +1257,17 @@
         "note": "found by discovery scan",
         "date": "2026-09-02"
       },
-      "firstSeen": "2026-09-02"
+      "firstSeen": "2026-09-02",
+      "images": [
+        "https://cdn.daltonsbusiness.com/wp-content/uploads/2024/11/1731408915-1Home-Bar.jpg",
+        "https://cdn.daltonsbusiness.com/wp-content/uploads/2024/11/1731408946-2024-Main-Bar-2.jpg",
+        "https://cdn.daltonsbusiness.com/wp-content/uploads/2024/11/1731408968-2024-Main-Bar-3.jpg",
+        "https://cdn.daltonsbusiness.com/wp-content/uploads/2024/11/1731409638-2024-Main-Bar-4.jpg",
+        "https://cdn.daltonsbusiness.com/wp-content/uploads/2024/11/1731409792-2024-Main-Bar-5.jpg",
+        "https://cdn.daltonsbusiness.com/wp-content/uploads/2024/11/1731409806-2024-Main-Bar-6.jpg",
+        "https://cdn.daltonsbusiness.com/wp-content/uploads/2024/11/1731409825-2024-Downstairs-Bar.jpg",
+        "https://cdn.daltonsbusiness.com/wp-content/uploads/2024/11/1731409836-2024-Downstairs-Shot-3.jpg"
+      ]
     },
     {
       "id": "highly-regarded-mediterranean-restaurant-leith",
@@ -1142,37 +1288,6 @@
       "url": "https://uk.businessesforsale.com/uk/highly-regarded-traditional-mediterranean-restaurant-in-leith-edinburgh.aspx",
       "image": null,
       "address": "The Shore, Leith",
-      "lat": null,
-      "lng": null,
-      "firstSeen": "2026-09-05",
-      "lastChecked": "2026-09-05",
-      "lastVerified": "2026-09-05",
-      "lastChanged": "2026-09-05",
-      "verification": {
-        "outcome": "live",
-        "note": "found by discovery scan",
-        "date": "2026-09-05"
-      }
-    },
-    {
-      "id": "tapa-restaurant-bar-leith-edinburgh",
-      "name": "Tapa Restaurant + Bar, Leith, Edinburgh",
-      "area": "Leith",
-      "category": "restaurant",
-      "price": 125000,
-      "tenure": "Leasehold",
-      "rent": 46800,
-      "turnover": null,
-      "profit": null,
-      "status": "active",
-      "tags": [
-        "agent find"
-      ],
-      "notes": "Up to 80 covers; external seating 20+; residue of lease to 2034; rent £46,800 p.a.; Full Premises Licence; trading 7 days to 1am.",
-      "source": "agent discovery (2026-09-05)",
-      "url": "https://www.therestaurantagency.com/properties/property/130/tapa-restaurant-bar-leith-edinburgh",
-      "image": null,
-      "address": null,
       "lat": null,
       "lng": null,
       "firstSeen": "2026-09-05",

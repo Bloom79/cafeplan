@@ -1,9 +1,52 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import {
-  STALE_AFTER, categoryOf, daysListed, districtOf, extractJson, isFailedVerdict, listingLinks, mergeDiscovery, mergeVerification,
-  metres, needsCheck, normaliseArea, okUrl, slug,
+  STALE_AFTER, categoryOf, daysListed, districtOf, extractJson, extractPhotos, isFailedVerdict, listingLinks, mergeDiscovery,
+  mergePhotos, mergeVerification, metres, needsCheck, normaliseArea, okUrl, slug,
 } from '../scripts/lib.mjs'
+
+test('extractPhotos: the gallery, not the logos, thumbnails of other listings or floor plans', () => {
+  const daltons = `
+    <meta property="og:image" content="https://cdn.daltonsbusiness.com/wp-content/uploads/2026/05/1778590333-sweet-paradise-6-scaled.webp" />
+    <img class="logo logo-desktop" src="https://cdn.daltonsbusiness.com/wp-content/uploads/2021/07/logo-daltons.png">
+    <img class="houzez-trigger-popup-slider-js swipebox" src="https://cdn.daltonsbusiness.com/wp-content/uploads/2026/05/1778590333-sweet-paradise-6-1170x785.webp">
+    <img class="houzez-trigger-popup-slider-js swipebox" src="https://cdn.daltonsbusiness.com/wp-content/uploads/2026/05/1778590367-sweet-paradise-1-1170x785.webp">
+    <img class="houzez-trigger-popup-slider-js swipebox" data-src="https://cdn.daltonsbusiness.com/wp-content/uploads/2026/05/1778590379-sweet-paradise-2-1170x785.webp">
+    <img class="img-fluid" src="https://cdn.daltonsbusiness.com/wp-content/uploads/2026/02/1771337329-other-cafe-300x200.webp">
+    <img class="slider-item" src="https://cdn.daltonsbusiness.com/wp-content/uploads/2026/09/1788357315-Taste-of-Vietnamese-Food1.webp">
+    <img src="https://cdn.daltonsbusiness.com/wp-content/uploads/2011/04/717005_logo.jpg">
+    <img src="https://cdn.daltonsbusiness.com/wp-content/uploads/2024/02/facebook.gif">
+  `
+  const p = extractPhotos(daltons, 'https://www.daltonsbusiness.com/listing/x-DB2541715/')
+  assert.deepEqual(p, [
+    'https://cdn.daltonsbusiness.com/wp-content/uploads/2026/05/1778590333-sweet-paradise-6-scaled.webp',
+    'https://cdn.daltonsbusiness.com/wp-content/uploads/2026/05/1778590367-sweet-paradise-1-1170x785.webp',
+    'https://cdn.daltonsbusiness.com/wp-content/uploads/2026/05/1778590379-sweet-paradise-2-1170x785.webp',
+  ])
+  const otm = `
+    <img srcSet="https://media.onthemarket.com/properties/17268474/1574070243/image-0-480x320.webp 480w, https://media.onthemarket.com/properties/17268474/1574070243/image-0-1024x1024.webp 1024w" sizes="x">
+    <img srcSet="https://media.onthemarket.com/properties/17268474/1574070243/image-1-480x320.webp 480w, https://media.onthemarket.com/properties/17268474/1574070243/image-1-1024x1024.webp 1024w">
+    <img src="https://media.onthemarket.com/properties/17268474/1574070243/image-1-1024x1024.jpg">
+    <img src="https://media.onthemarket.com/properties/17268474/1574070243/floor-plan-0-1024x1024.jpg">
+    <img src="https://media.onthemarket.com/properties/99999999/1/image-0-1024x1024.webp">
+  `
+  const q = extractPhotos(otm, 'https://www.onthemarket.com/details/17268474/')
+  assert.deepEqual(q, [
+    'https://media.onthemarket.com/properties/17268474/1574070243/image-0-1024x1024.webp',
+    'https://media.onthemarket.com/properties/17268474/1574070243/image-1-1024x1024.webp',
+  ])
+  // A page with no marked gallery: the large unmarked images, thumbnails dropped.
+  const plain = `<img src="/uploads/images/cms/property_large/a.jpg"><img src="/uploads/images/cms/property_small/b.jpg"><img src="/uploads/t-150x100.jpg">`
+  assert.deepEqual(extractPhotos(plain, 'https://www.therestaurantagency.com/properties/property/130/x'), [
+    'https://www.therestaurantagency.com/uploads/images/cms/property_large/a.jpg',
+    'https://www.therestaurantagency.com/uploads/images/cms/property_large/b.jpg',
+  ])
+  assert.deepEqual(extractPhotos('<p>nothing</p>', 'https://x.test/y'), [])
+  // mergePhotos keeps what we hold first and never repeats a photo at another size.
+  const l = { image: 'https://cdn.x/uploads/a-scaled.webp' }
+  assert.equal(mergePhotos(l, ['https://cdn.x/uploads/a-1170x785.webp', 'https://cdn.x/uploads/b.webp']), 2)
+  assert.deepEqual(l.images, ['https://cdn.x/uploads/a-scaled.webp', 'https://cdn.x/uploads/b.webp'])
+})
 
 test('mergeVerification: stated deal facts fill blanks, never overwrite, and absurd values are dropped', () => {
   const db = { listings: [{ id: 'x', name: 'X', price: 40000, rent: 14000, status: 'active', tags: [] }] }

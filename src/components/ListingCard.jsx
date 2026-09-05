@@ -8,6 +8,7 @@ import { dueState } from '../lib/deals.js'
 import { useInView } from '../hooks/useInView.js'
 import Markdown from './Markdown.jsx'
 import FairPrice from './FairPrice.jsx'
+import Gallery from './Gallery.jsx'
 import Sparkline from './Sparkline.jsx'
 import CallSheet, { DUE_LABEL, STAGES } from './CallSheet.jsx'
 
@@ -73,14 +74,15 @@ export default function ListingCard({
   const vLabel = v ? OUTCOME_LABEL[v.outcome] || OUTCOME_LABEL.unclear : null
   const fit = fitScore(l)
   const [showFit, setShowFit] = useState(false)
-  const [imgBroken, setImgBroken] = useState(false)
   const [mapRef, mapSeen] = useInView()
+  // The gallery: every photo we hold, the headline one first.
+  const pics = l.images && l.images.length ? l.images : l.image ? [l.image] : []
 
-  // The phone card: the photo at full width when there is one (a café is
+  // The phone card: the photos at full width when there are any (a café is
   // a place; a thumbnail says nothing), then what decides whether to tap.
   if (compact) {
     const open = (e) => { e.preventDefault(); onExpand && onExpand() }
-    const hasPhoto = !!l.image && !imgBroken
+    const hasPhoto = pics.length > 0
     return (
       <article
         className={`listing compact ${hasPhoto ? 'photo-card' : 'row'} ${fav ? 'fav' : ''} ${dismissed ? 'dismissed' : ''}`}
@@ -90,7 +92,7 @@ export default function ListingCard({
         onClick={open}
         onKeyDown={(e) => (e.key === 'Enter' || e.key === ' ') && open(e)}
       >
-        {hasPhoto && <img className="hero" src={l.image} alt="" loading="lazy" onError={() => setImgBroken(true)} />}
+        {hasPhoto && <Gallery images={pics} alt={l.name} height={220} className="hero" />}
         <div className="c-body">
           <div className="c-top">
             <h3>{fav ? '★ ' : ''}{l.name}</h3>
@@ -118,10 +120,10 @@ export default function ListingCard({
       {onCollapse && (
         <button className="c-collapse filter-chip" onClick={onCollapse} aria-label="Back to the list">▴ Back to the list</button>
       )}
-      {l.image && !imgBroken ? (
-        <a className="photo" href={l.url || l.image} target="_blank" rel="noreferrer" tabIndex={-1} aria-hidden="true">
-          <img src={l.image} alt="" loading="lazy" onError={() => setImgBroken(true)} />
-        </a>
+      {pics.length > 0 ? (
+        <div className="photo">
+          <Gallery images={pics} alt={l.name} height={onCollapse ? 220 : 150} onOpen={() => l.url && window.open(l.url, '_blank', 'noopener')} />
+        </div>
       ) : (
         <div className="photo tile" aria-hidden="true">
           <span className="tile-name">{l.name}</span>

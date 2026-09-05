@@ -31,7 +31,7 @@ import { appendFileSync, readFileSync, writeFileSync } from 'fs'
 import { spawnSync as run } from 'child_process'
 import { fileURLToPath } from 'url'
 import { dirname, join } from 'path'
-import { districtOf, extractJson, listingLinks, mergeDiscovery, mergeVerification, metres, nameKey, needsCheck, normaliseArea } from './lib.mjs'
+import { districtOf, extractJson, extractPhotos, listingLinks, mergeDiscovery, mergePhotos, mergeVerification, metres, nameKey, needsCheck, normaliseArea } from './lib.mjs'
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..')
 const DATA = join(ROOT, 'public', 'listings.json')
@@ -204,6 +204,45 @@ out geom;`
   }
 }
 
+// The listing's gallery from its page (Daltons, OnTheMarket, The Restaurant
+// Agency, Rightmove Commercial answer a plain fetch; Rightbiz, Zoopla and
+// BusinessesForSale listing pages do not — those keep the one photo the
+// verifier finds via search).
+const WALLED = /rightbiz\.co\.uk|zoopla\.co\.uk|businessesforsale\.com|primelocation\.com/
+async function listingPhotos(url) {
+  if (!url || WALLED.test(url)) return []
+  try {
+    const res = await fetch(url, {
+      headers: { 'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 14_0) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0 Safari/537.36', Accept: 'text/html' },
+      redirect: 'follow',
+      signal: AbortSignal.timeout(20000),
+    })
+    if (!res.ok) return []
+    return extractPhotos(await res.text(), res.url)
+  } catch {
+    return []
+  }
+}
+
+// Fill the galleries of listings that have fewer than two photos. No model
+// calls; a page fetch per listing, so it runs in the daily job as well.
+async function fillPhotos(db, limit = 40) {
+  let done = 0, added = 0
+  for (const l of db.listings) {
+    if (done >= limit) break
+    if (l.images && l.images.length >= 2) continue
+    if (l.status === 'gone' || l.status === 'stale') continue
+    if (!l.url && !l.altUrl) continue
+    done++
+    const photos = [...(await listingPhotos(l.url)), ...(l.altUrl ? await listingPhotos(l.altUrl) : [])]
+    const before = (l.images || []).length
+    if (photos.length && mergePhotos(l, photos) > before) added++
+    console.log(`  photos: ${l.name.slice(0, 44).padEnd(44)} ${(l.images || []).length} 📷`)
+    await sleep(400)
+  }
+  return added
+}
+
 // og:image from a listing page that answers a plain fetch (Rightmove
 // Commercial, Daltons, agents). Rightbiz never does; nothing lost there.
 async function ogImage(url) {
@@ -238,10 +277,10 @@ Search angles that work: the business name + area + "for sale"; site:rightbiz.co
 
 Judgement rules: still listed / clearly for sale = live; listed but price or terms differ from our snapshot = changed; sold / under offer / withdrawn / business closed = gone; evidence insufficient = unclear. Prefer the freshest asking price you actually saw.
 
-Also capture, if any source shows them: the street address of the premises (street + number, or at least the street/parade name), and a photo URL of the business — from the listing OR from news coverage / the business's own pages (og:image is fine). And the deal facts, ONLY where the advert states them explicitly (never estimate): annual rent, annual turnover, annual net profit, years left on the lease, rateable value, number of covers/seats, floor area in sq ft.
+Also capture, if any source shows them: the street address of the premises (street + number, or at least the street/parade name), and photo URLs of the business — up to 6 direct image URLs from the listing's gallery, or from news coverage / the business's own pages (og:image is fine; no logos, no maps). And the deal facts, ONLY where the advert states them explicitly (never estimate): annual rent, annual turnover, annual net profit, years left on the lease, rateable value, number of covers/seats, floor area in sq ft.
 
 Reply with ONLY this JSON object:
-{"outcome":"live|changed|gone|unclear","price":<current asking price as number, or null>,"url":<best canonical listing url you saw, or null>,"image":<direct photo url, or null>,"address":<street address string, or null>,"lat":<latitude number if a source states coordinates, else null>,"lng":<longitude number, else null>,"rent":<annual rent number if stated, else null>,"turnover":<annual turnover number if stated, else null>,"profit":<annual net profit number if stated, else null>,"leaseYears":<years left on the lease if stated, else null>,"rateableValue":<rateable value number if stated, else null>,"covers":<number of covers/seats if stated, else null>,"sqft":<floor area in sq ft if stated, else null>,"note":"<=160 chars English","sources":[<=3 urls you actually used]}`
+{"outcome":"live|changed|gone|unclear","price":<current asking price as number, or null>,"url":<best canonical listing url you saw, or null>,"image":<direct photo url, or null>,"images":[<up to 6 direct photo urls>],"address":<street address string, or null>,"lat":<latitude number if a source states coordinates, else null>,"lng":<longitude number, else null>,"rent":<annual rent number if stated, else null>,"turnover":<annual turnover number if stated, else null>,"profit":<annual net profit number if stated, else null>,"leaseYears":<years left on the lease if stated, else null>,"rateableValue":<rateable value number if stated, else null>,"covers":<number of covers/seats if stated, else null>,"sqft":<floor area in sq ft if stated, else null>,"note":"<=160 chars English","sources":[<=3 urls you actually used]}`
   try {
     const res = extractJson(await judge(prompt), 'outcome')
     if (!['live', 'changed', 'gone', 'unclear'].includes(res.outcome)) res.outcome = 'unclear'
@@ -537,9 +576,21 @@ async function main() {
       }
       console.log(`${l.name.slice(0, 40).padEnd(40)} ${l.area.padEnd(14)} ${l.place ? `cafés300=${l.place.cafes300} canal=${l.place.canalM ?? '—'}m stop=${l.place.stopM ?? '—'}m` : '(no exact coords)'}${l.image ? ' 📷' : ''}`)
     }
+    const galleries = await fillPhotos(db)
     writeDb(db)
     out('status', 'ok')
-    out('summary', `${placed} luoghi misurati · ${photos} foto`)
+    out('summary', `${placed} luoghi misurati · ${photos} foto · ${galleries} gallerie`)
+    return
+  }
+
+  // --photos: galleries only. A page fetch per listing, no model.
+  if (process.argv.includes('--photos')) {
+    const db = readDb()
+    const galleries = await fillPhotos(db, 100)
+    db.updated = TODAY
+    writeDb(db)
+    out('status', 'ok')
+    out('summary', `${galleries} gallerie aggiornate`)
     return
   }
 
@@ -588,6 +639,9 @@ async function main() {
         console.log('discovery failed — ' + e.message)
       }
     }
+    // Galleries for anything still short of photos (new finds above all):
+    // page fetches only, no credits.
+    try { await fillPhotos(db, 15) } catch (e) { console.log('photos failed — ' + e.message) }
     if (quotaExhausted) {
       // Leave db.updated alone: the data was NOT refreshed today, and the
       // app's "data updated" line should not claim it was.

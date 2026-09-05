@@ -582,6 +582,7 @@ details.startup summary:hover { color: var(--chalk); }
   border-radius: var(--radius) var(--radius) 0 0;
   overflow: hidden;
   height: 150px;
+  cursor: pointer;
   background: linear-gradient(120deg, rgba(76, 169, 126, 0.18), rgba(191, 138, 44, 0.14));
 }
 .listing .photo img { width: 100%; height: 100%; object-fit: cover; display: block; }
@@ -1802,8 +1803,27 @@ button.fit-chip { cursor: pointer; }
 .listing.compact { position: relative; cursor: pointer; padding: 0; overflow: hidden; }
 .listing.compact.row { display: grid; grid-template-columns: 1fr 18px; gap: 10px; align-items: center; padding: 12px 12px; }
 .listing.compact.photo-card { display: block; }
-.listing.compact.photo-card .hero { display: block; width: 100%; height: 200px; object-fit: cover; background: var(--ink); }
 .listing.compact.photo-card .c-body { padding: 10px 40px 12px 12px; }
+
+/* the photo strip: swipe on a phone, arrows on a desk */
+.gallery { position: relative; --gallery-h: 200px; background: var(--ink); }
+.gallery-strip { display: flex; overflow-x: auto; scroll-snap-type: x mandatory; scrollbar-width: none; -webkit-overflow-scrolling: touch; overscroll-behavior-x: contain; }
+.gallery-strip::-webkit-scrollbar { display: none; }
+.gallery-strip img { flex: 0 0 100%; width: 100%; height: var(--gallery-h); object-fit: cover; scroll-snap-align: start; display: block; background: var(--ink); }
+.gallery-dots { position: absolute; bottom: 8px; left: 0; right: 0; display: flex; justify-content: center; gap: 5px; pointer-events: none; }
+.gallery-dots span { width: 6px; height: 6px; border-radius: 50%; background: rgba(255, 255, 255, 0.45); box-shadow: 0 0 2px rgba(0, 0, 0, 0.6); }
+.gallery-dots span.on { background: #fff; }
+.gallery-count { position: absolute; top: 8px; right: 8px; font-size: 10.5px; color: #fff; background: rgba(0, 0, 0, 0.5); padding: 2px 7px; border-radius: 999px; pointer-events: none; }
+.gallery-nav {
+  position: absolute; top: 50%; transform: translateY(-50%); width: 30px; height: 30px; border-radius: 50%; border: 0;
+  background: rgba(0, 0, 0, 0.45); color: #fff; font-size: 22px; line-height: 1; cursor: pointer; display: none; padding: 0;
+}
+.gallery-nav.prev { left: 6px; }
+.gallery-nav.next { right: 6px; }
+.gallery:hover .gallery-nav, .gallery:focus-within .gallery-nav { display: block; }
+@media (hover: none) { .gallery-nav { display: none !important; } }
+.listing .photo .gallery { height: 100%; }
+.listing .photo .gallery-strip img { height: 100%; }
 .listing.compact.photo-card .c-open { position: absolute; right: 14px; bottom: 12px; }
 .listing.compact:hover, .listing.compact:focus-visible { border-color: var(--brass); outline: none; }
 .listing.compact .c-top { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }

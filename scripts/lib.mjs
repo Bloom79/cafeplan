@@ -182,6 +182,97 @@ export function listingLinks(html, origin, max = 40) {
   return links
 }
 
+// ————— photos ——————————————————————————————————
+//
+// The listing's own gallery from its page. Portals mark the gallery one
+// way or another — a swipebox/slider class on the <img>, a property id in
+// the media path — and pad the page with thumbnails of other listings,
+// logos, floor plans and agent portraits, which is what the filters are for.
+const PHOTO_BAD = /logo|icon|sprite|avatar|placeholder|badge|flag|pixel|spacer|blank|loading|arrow|button|banner|advert|\/ads?\/|favicon|\.svg|\.gif|floor-?plan|epc|agent|profile|staff|team/i
+const GALLERY_CLASS = /swipebox|gallery|slider|carousel|swiper|lightbox|property-image|listing-image|photo/i
+const IMAGE_EXT = /\.(jpe?g|png|webp)(\?|#|$)/i
+// WordPress-style size suffix: -300x200. Under 800 wide it is a thumbnail.
+const SIZE_SUFFIX = /-(\d{2,4})x(\d{2,4})(?=\.(?:jpe?g|png|webp)(?:\?|#|$))/i
+
+// The same photo at another size, in another format, or "-scaled": one key.
+const photoKey = (u) => u.replace(/[?#].*$/, '').replace(SIZE_SUFFIX, '').replace(/-(scaled|original)(?=\.\w+$)/, '').replace(/\.(jpe?g|png|webp)$/i, '')
+const dirOf = (u) => u.replace(/[?#].*$/, '').replace(/\/[^/]*$/, '/')
+
+export function extractPhotos(html, pageUrl, max = 8) {
+  const found = []
+  const seen = new Set()
+  const add = (raw, rank) => {
+    let u
+    try { u = new URL(String(raw).trim().replace(/\\\//g, '/'), pageUrl).href } catch { return }
+    // The Restaurant Agency serves the gallery as small tiles; the large
+    // file sits at the same path under property_large.
+    u = u.replace('/property_small/', '/property_large/')
+    if (!/^https:\/\//.test(u) || !IMAGE_EXT.test(u) || PHOTO_BAD.test(u)) return
+    const size = SIZE_SUFFIX.exec(u)
+    if (size && +size[1] < 800) return // a thumbnail of something
+    const k = photoKey(u)
+    if (seen.has(k)) return
+    seen.add(k)
+    found.push({ u, rank })
+  }
+  const largest = (srcset) => {
+    const cands = srcset.split(',').map((p) => p.trim().split(/\s+/)).filter((p) => p[0])
+    cands.sort((a, b) => (parseInt(b[1]) || 0) - (parseInt(a[1]) || 0))
+    return cands[0] && cands[0][0]
+  }
+
+  // 1. The page's own headline photo.
+  for (const m of html.matchAll(/<meta[^>]+property="og:image(?::secure_url)?"[^>]+content="([^"]+)"/gi)) add(m[1], 0)
+  for (const m of html.matchAll(/<meta[^>]+content="([^"]+)"[^>]+property="og:image"/gi)) add(m[1], 0)
+
+  // 2. Images the page itself marks as the gallery, or that live under the
+  //    listing's own media id (OnTheMarket: /properties/<id>/…/image-N).
+  const idMatch = /\/(\d{6,})\/?/.exec(new URL(pageUrl).pathname)
+  const ownId = idMatch && idMatch[1]
+  for (const m of html.matchAll(/<img\b([^>]*)>/gi)) {
+    const attrs = m[1]
+    const cls = /class="([^"]*)"/i.exec(attrs)?.[1] || ''
+    const src = /(?:data-src|data-lazy-src|data-original|src)="([^"]+)"/i.exec(attrs)?.[1]
+    const set = /(?:data-srcset|srcset)="([^"]+)"/i.exec(attrs)?.[1]
+    const best = (set && largest(set)) || src
+    if (!best) continue
+    const own = ownId && best.includes(`/${ownId}/`)
+    if (GALLERY_CLASS.test(cls) || own) add(best, 1)
+    else add(best, 2)
+  }
+
+  // Which of the candidates are THIS listing's: the ones under its own media
+  // id; else the ones in the headline photo's folder (a portal uploads one
+  // listing's photos together, and its "similar listings" carousel lives
+  // elsewhere); else whatever the page marks as gallery; else the large
+  // unmarked images.
+  const own = ownId ? found.filter((f) => f.u.includes(`/${ownId}/`)) : []
+  const head = found.find((f) => f.rank === 0)
+  const sameDir = head ? found.filter((f) => dirOf(f.u) === dirOf(head.u)) : []
+  const marked = found.filter((f) => f.rank <= 1)
+  const large = found.filter((f) => f.rank <= 1 || !SIZE_SUFFIX.test(f.u) || +SIZE_SUFFIX.exec(f.u)[1] >= 1000)
+  const pick = own.length >= 2 ? own : sameDir.length >= 2 ? sameDir : marked.length >= 2 ? marked : large
+  return pick.sort((a, b) => a.rank - b.rank).map((f) => f.u).slice(0, max)
+}
+
+// The listing's gallery after a fetch: what we hold first, the new photos
+// after, no repeats, never more than eight.
+export function mergePhotos(l, photos) {
+  const all = [...(l.images || []), ...(l.image ? [l.image] : []), ...(photos || [])]
+  const seen = new Set()
+  const out = []
+  for (const u of all) {
+    if (!u || !/^https:\/\//.test(u)) continue
+    const k = photoKey(u)
+    if (seen.has(k)) continue
+    seen.add(k)
+    out.push(u)
+    if (out.length >= 8) break
+  }
+  if (out.length) { l.images = out; if (!l.image) l.image = out[0] }
+  return out.length
+}
+
 // A failed verdict (no model, quota, transient auth) — never lets it
 // overwrite a real verification.
 export const isFailedVerdict = (res) =>
@@ -223,6 +314,7 @@ export function mergeVerification(db, id, res, today) {
   if (okUrl(res.url) && (!l.url || res.outcome === 'live' || res.outcome === 'changed'))
     l.url = res.url
   if (res.image && /^https:\/\//.test(res.image) && !l.image) l.image = res.image
+  if (Array.isArray(res.images) && res.images.length && (!l.images || l.images.length < 2)) mergePhotos(l, res.images.slice(0, 6))
   if (res.address && !l.address) l.address = String(res.address).slice(0, 120)
   // Coordinates: geocoded-from-address ones are exact and win; the model's
   // own guesses only fill in when we hold nothing exact.
