@@ -8,8 +8,21 @@ import { dueState } from '../lib/deals.js'
 import { useLocalStorage } from '../hooks/useLocalStorage.js'
 import { useListings } from '../hooks/useListings.js'
 import { useAgentRequest } from '../hooks/useAgentRequest.js'
+import { usePhone } from '../hooks/useMediaQuery.js'
 import ListingCard from './ListingCard.jsx'
 import AlertsBell from './AlertsBell.jsx'
+
+// A panel that folds to its title on a phone and stands open on a desk.
+function Fold({ title, side, phone, className = '', children }) {
+  return (
+    <details className={`panel fold ${className}`} open={!phone}>
+      <summary>
+        <span className="panel-title">{title}<span className="side">{side}</span></span>
+      </summary>
+      {children}
+    </details>
+  )
+}
 
 // Side-by-side comparison. The columns are the ones that decide whether a
 // listing is worth a phone call: what it costs, what it costs to run, and
@@ -151,7 +164,7 @@ const within = (date, today) => {
   return Number.isFinite(d) && d >= -1 && d <= WEEK_DAYS
 }
 
-function ThisWeek({ rows }) {
+function ThisWeek({ rows, phone }) {
   const today = new Date()
   const events = []
   // A first-seen date shared by more than half the watchlist is the day the
@@ -176,11 +189,7 @@ function ThisWeek({ rows }) {
   if (!events.length) return null
   events.sort((a, b) => String(b.date).localeCompare(String(a.date)))
   return (
-    <div className="panel thisweek">
-      <h2 className="panel-title">
-        This week
-        <span className="side">{events.length} change{events.length === 1 ? '' : 's'} in the last {WEEK_DAYS} days</span>
-      </h2>
+    <Fold title="This week" side={`${events.length} change${events.length === 1 ? '' : 's'} in the last ${WEEK_DAYS} days`} phone={phone} className="thisweek">
       <ul>
         {events.slice(0, 8).map((e) => (
           <li key={`${e.id}-${e.kind}`} className={e.kind}>
@@ -190,16 +199,15 @@ function ThisWeek({ rows }) {
         ))}
         {events.length > 8 && <li className="more"><span className="mono when" /><span>and {events.length - 8} more</span></li>}
       </ul>
-    </div>
+    </Fold>
   )
 }
 
-function Shortlist({ rows }) {
+function Shortlist({ rows, phone }) {
   const top = rows.filter((l) => l._verdict && l._verdict.band !== 'out').slice(0, 3)
   if (!top.length) return null
   return (
-    <div className="panel shortlist">
-      <h2 className="panel-title">Call these first</h2>
+    <Fold title="Call these first" side={top.map((l) => l.name.split(/[,(]/)[0].trim()).join(' · ')} phone={phone} className="shortlist">
       <ol>
         {top.map((l) => (
           <li key={l.id}>
@@ -215,7 +223,7 @@ function Shortlist({ rows }) {
         the SDE band where you have seller figures, and whether it is actually still for sale. Save (★) the ones
         you call; dismiss (Not for me) the ones you rule out and they drop out of everything.
       </p>
-    </div>
+    </Fold>
   )
 }
 
@@ -237,6 +245,12 @@ export default function ListingsPanel() {
   const [sort, setSort] = useState({ key: 'rank', dir: 'desc' })
   const [cardSort, setCardSort] = useLocalStorage('cafeplan:cardSort', 'rank')
   const [actions, request] = useAgentRequest(refetch)
+  // Phone: the chip rows hide behind one "Filters" button, and cards open
+  // one at a time from a compact row — the first listing is on the first
+  // screen, not three scrolls down.
+  const phone = usePhone()
+  const [filtersOpen, setFiltersOpen] = useState(false)
+  const [expanded, setExpanded] = useState(null)
 
   const toggleIn = (list, setList, id) =>
     setList(list.includes(id) ? list.filter((x) => x !== id) : [...list, id])
@@ -306,9 +320,43 @@ export default function ListingsPanel() {
   const ranked = [...shown].sort(ORDER[cardSort] || ORDER.rank)
   const unfiltered = !showDismissed && !favsOnly && !inProgress && !dueOnly && area === 'All' && cat === 'all'
 
+  const activeFilters = [
+    cat !== 'all' && (CATEGORIES.find(([k]) => k === cat) || [])[1],
+    area !== 'All' && area,
+    favsOnly && 'saved',
+    inProgress && 'in progress',
+    dueOnly && 'follow-ups',
+    showDismissed && 'dismissed',
+  ].filter(Boolean)
+  const showChips = !phone || filtersOpen
+
+  const sortSelect = (
+    <label className="card-sort">
+      <span className="mono">sort</span>
+      <select className="status-select" value={cardSort} onChange={(e) => setCardSort(e.target.value)} aria-label="Sort listings">
+        <option value="rank">verdict</option>
+        <option value="price">asking price</option>
+        <option value="rent">rent</option>
+        <option value="payback">payback</option>
+        <option value="newest">newest</option>
+        <option value="longest">longest listed</option>
+      </select>
+    </label>
+  )
+
   return (
     <>
-      <div className="filters-row cat-row">
+      {phone && (
+        <div className="filters-row toolbar">
+          <button className="filter-chip" aria-expanded={filtersOpen} aria-pressed={activeFilters.length > 0} onClick={() => setFiltersOpen(!filtersOpen)}>
+            {filtersOpen ? '▾' : '▸'} Filters{activeFilters.length ? ` · ${activeFilters.join(' · ')}` : ''}
+          </button>
+          {view !== 'table' && sortSelect}
+          <span className="updated-line mono">{shown.length} of {data.listings.length}</span>
+        </div>
+      )}
+      {showChips && (
+      <div className={`filters-row cat-row ${phone ? 'scroll' : ''}`}>
         <button className="filter-chip" aria-pressed={cat === 'all'} onClick={() => setCat('all')}>
           All types
         </button>
@@ -318,12 +366,18 @@ export default function ListingsPanel() {
           </button>
         ))}
       </div>
-      <div className="filters-row">
+      )}
+      {showChips && (
+      <div className={`filters-row ${phone ? 'scroll' : ''}`}>
         {areas.map((ar) => (
           <button key={ar} className="filter-chip" aria-pressed={area === ar} onClick={() => setArea(ar)}>
             {ar}
           </button>
         ))}
+      </div>
+      )}
+      {showChips && (
+      <div className={`filters-row ${phone ? 'scroll' : ''}`}>
         <button
           className="filter-chip"
           aria-pressed={favsOnly}
@@ -371,24 +425,13 @@ export default function ListingsPanel() {
           ▤ Compare
         </button>
         <AlertsBell />
-        {view !== 'table' && (
-          <label className="card-sort">
-            <span className="mono">sort</span>
-            <select className="status-select" value={cardSort} onChange={(e) => setCardSort(e.target.value)} aria-label="Sort listings">
-              <option value="rank">verdict</option>
-              <option value="price">asking price</option>
-              <option value="rent">rent</option>
-              <option value="payback">payback</option>
-              <option value="newest">newest</option>
-              <option value="longest">longest listed</option>
-            </select>
-          </label>
-        )}
-        <span className="updated-line mono">data updated {data.updated}</span>
+        {!phone && view !== 'table' && sortSelect}
+        {!phone && <span className="updated-line mono">data updated {data.updated}</span>}
       </div>
+      )}
 
-      {unfiltered && <ThisWeek rows={enriched.filter((l) => !dismissed.includes(l.id))} />}
-      {unfiltered && <Shortlist rows={ranked} />}
+      {unfiltered && <ThisWeek rows={enriched.filter((l) => !dismissed.includes(l.id))} phone={phone} />}
+      {unfiltered && <Shortlist rows={ranked} phone={phone} />}
 
       {view === 'table' && shown.length > 0 && (
         <CompareTable rows={shown} sort={sort} setSort={setSort} essentials={essentials} setEssentials={setEssentials} />
@@ -399,12 +442,15 @@ export default function ListingsPanel() {
           {showDismissed ? 'Nothing dismissed yet.' : dueOnly ? 'No follow-ups due in the next three days.' : 'No listings match. Clear the area filter or turn off “♥ Saved”.'}
         </div>
       ) : view === 'table' ? null : (
-        <div className="listing-grid">
+        <div className={`listing-grid ${phone ? 'phone' : ''}`}>
           {ranked.map((l) => (
             <ListingCard
               key={l.id}
               listing={l}
               verdict={l._verdict}
+              compact={phone && expanded !== l.id}
+              onExpand={() => setExpanded(l.id)}
+              onCollapse={phone ? () => setExpanded(null) : null}
               fav={favs.includes(l.id)}
               onFav={() => toggleIn(favs, setFavs, l.id)}
               dismissed={dismissed.includes(l.id)}
@@ -422,6 +468,7 @@ export default function ListingsPanel() {
         </div>
       )}
 
+      {phone && <p className="updated-line mono" style={{ marginTop: 12 }}>data updated {data.updated}</p>}
       <p className="footnote" style={{ marginTop: 18 }}>
         Verify re-checks a listing against the live web (Copilot agent) and updates the badge; Analyse runs a full
         due-diligence report against our valuation anchors. Active listings are re-checked every two days

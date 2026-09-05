@@ -1779,9 +1779,63 @@ button.fit-chip { cursor: pointer; }
 .print-gates li .muted { color: var(--faint); }
 .print-gates li.ok { color: var(--muted); }
 
+/* ————— the phone layout of Listings ————— */
+
+/* chip rows become one scrolling line each */
+.filters-row.scroll { flex-wrap: nowrap; overflow-x: auto; -webkit-overflow-scrolling: touch; scrollbar-width: none; padding-bottom: 2px; }
+.filters-row.scroll::-webkit-scrollbar { display: none; }
+.filters-row.scroll .filter-chip { flex: 0 0 auto; }
+.filters-row.toolbar { flex-wrap: nowrap; align-items: center; gap: 8px; }
+.filters-row.toolbar .filter-chip { flex: 0 1 auto; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.filters-row.toolbar .updated-line { margin-left: auto; white-space: nowrap; }
+
+/* panels that fold to their title on a phone */
+.fold summary { list-style: none; cursor: pointer; }
+.fold summary::-webkit-details-marker { display: none; }
+.fold summary .panel-title { margin: 0; }
+.fold[open] summary .panel-title { margin-bottom: 10px; }
+.fold:not([open]) summary .panel-title::after { content: ' ▸'; color: var(--faint); font-size: 12px; }
+.fold summary .side { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 60%; }
+
+/* the compact card: a row you tap */
+.listing-grid.phone { grid-template-columns: 1fr; gap: 8px; }
+.listing.compact {
+  display: grid; grid-template-columns: 60px 1fr 18px; gap: 10px; align-items: center;
+  padding: 10px 10px 10px 10px; cursor: pointer;
+}
+.listing.compact:hover, .listing.compact:focus-visible { border-color: var(--brass); outline: none; }
+.listing.compact .thumb { width: 60px; height: 60px; object-fit: cover; border-radius: 8px; background: var(--ink); display: block; }
+.listing.compact .thumb.tile { background: linear-gradient(135deg, var(--panel-2), var(--ink)); }
+.listing.compact .c-top { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+.listing.compact h3 { font-size: 14.5px; margin: 0; line-height: 1.25; }
+.listing.compact .c-meta { font-size: 11px; color: var(--muted); margin-top: 3px; }
+.listing.compact .c-facts { display: flex; flex-wrap: wrap; gap: 3px 10px; font-size: 11px; color: var(--faint); margin-top: 4px; align-items: center; }
+.listing.compact .c-facts b { color: var(--chalk); font-family: var(--font-mono); }
+.listing.compact .c-open { color: var(--faint); font-size: 22px; line-height: 1; }
+.listing.compact.dismissed { opacity: 0.55; }
+.c-collapse { align-self: flex-start; margin-bottom: 8px; }
+
+/* the phone header: one line, no decoration — the tabs are what matter */
+@media (max-width: 640px) {
+  .site-header { flex-wrap: nowrap; gap: 8px; padding-top: 12px; }
+  .wordmark .name { font-size: 22px; }
+  .wordmark .eyebrow, .header-meta { display: none; }
+  .site-header .filter-chip { padding: 4px 10px; font-size: 12px; white-space: nowrap; }
+  .tabs { margin-top: 10px; }
+  .fold:not([open]) { padding: 9px 12px; }
+  .fold summary .panel-title { flex-wrap: nowrap; white-space: nowrap; min-width: 0; }
+  .fold summary .side { flex: 1 1 auto; min-width: 0; max-width: none; text-align: right; }
+  .start-here.folded { padding: 8px 12px; margin-bottom: 10px; }
+  .filters-row.toolbar { margin-bottom: 10px; }
+}
+
 /* first visit */
 .start-here { margin-bottom: 18px; display: flex; flex-wrap: wrap; align-items: center; gap: 8px 16px; font-size: 13.5px; color: var(--muted); border-left: 3px solid var(--brass); }
 .start-here > b { color: var(--chalk); font-family: var(--font-display); font-size: 17px; }
+.start-here .start-title { background: none; border: 0; padding: 0; cursor: pointer; color: var(--chalk); font-family: var(--font-display); font-size: 17px; text-align: left; }
+.start-here .start-title .muted { font-family: var(--font-ui); font-size: 12.5px; }
+.start-here.folded { padding: 10px 14px; gap: 8px; }
+.start-here.folded .filter-chip { margin-left: auto; }
 .start-here ol { margin: 0; padding-left: 20px; flex: 1 1 100%; display: flex; flex-direction: column; gap: 4px; }
 .start-here li b { color: var(--chalk); }
 .start-here .muted { color: var(--faint); font-size: 12px; flex: 1 1 auto; }

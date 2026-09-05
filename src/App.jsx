@@ -6,20 +6,25 @@ import CasePanel from './components/CasePanel.jsx'
 import StepsPanel from './components/StepsPanel.jsx'
 import { useListings } from './hooks/useListings.js'
 import { useLocalStorage } from './hooks/useLocalStorage.js'
+import { usePhone } from './hooks/useMediaQuery.js'
 
 // The first visit — yours, or the partner's from a sync code. Four lines
-// on what the tabs are for, gone for good once dismissed.
-function StartHere({ onDone }) {
+// on what the tabs are for, gone for good once dismissed. On a phone it is
+// one line until tapped: the listings are what the phone is for.
+function StartHere({ onDone, phone }) {
+  const [open, setOpen] = useState(!phone)
   return (
-    <div className="panel start-here" role="note">
-      <b>Start here.</b>
-      <ol>
+    <div className={`panel start-here ${open ? '' : 'folded'}`} role="note">
+      <button className="start-title" onClick={() => setOpen(!open)} aria-expanded={open}>
+        <b>Start here.</b>{!open && <span className="muted"> what the tabs are for ▸</span>}
+      </button>
+      {open && <ol>
         <li><b>Model</b> — your café, as numbers. Change any assumption; profit, take-home and the month-by-month cash follow.</li>
         <li><b>Listings</b> — what is actually for sale, ranked against your own model. Save the ones to call, dismiss the rest.</li>
         <li><b>On a card</b> — the deal sheet: what to ask, what to look for, what to see before an offer; the fair-price check says where to open.</li>
         <li><b>Next steps</b> — the six gates between interesting and signed. <b>Export PDF</b> prints all of it.</li>
-      </ol>
-      <span className="muted">Everything you type stays in this browser; <b>Sync</b> shares it with another device, <b>Backup</b> keeps a file.</span>
+      </ol>}
+      {open && <span className="muted">Everything you type stays in this browser; <b>Sync</b> shares it with another device, <b>Backup</b> keeps a file.</span>}
       <button className="filter-chip" onClick={onDone}>Got it</button>
     </div>
   )
@@ -30,9 +35,10 @@ function StartHere({ onDone }) {
 const MapPanel = lazy(() => import('./components/MapPanel.jsx'))
 const PrintView = lazy(() => import('./components/PrintView.jsx'))
 
+// Listings first: it is the page you open on the phone outside a café.
 const TABS = [
-  ['model', 'Model'],
   ['listings', 'Listings'],
+  ['model', 'Model'],
   ['map', 'Map'],
   ['case', 'Business case'],
   ['steps', 'Next steps'],
@@ -46,9 +52,10 @@ const readHash = () => {
 }
 
 export default function App() {
-  const [tab, setTabState] = useState(() => readHash() || 'model')
+  const [tab, setTabState] = useState(() => readHash() || 'listings')
   const [data] = useListings()
   const [started, setStarted] = useLocalStorage('cafeplan:started', false)
+  const phone = usePhone()
 
   const setTab = (t) => {
     window.history.replaceState(null, '', `#${t}`)
@@ -82,7 +89,7 @@ export default function App() {
     <>
       <Header tab={tab} setTab={setTab} tabs={tabs} onPrint={() => setTab('print')} />
       <main className="page" id={`panel-${tab}`} role="tabpanel" aria-labelledby={`tab-${tab}`}>
-        {!started && <StartHere onDone={() => setStarted(true)} />}
+        {!started && <StartHere onDone={() => setStarted(true)} phone={phone} />}
         {tab === 'model' && <ModelPanel />}
         {tab === 'listings' && <ListingsPanel />}
         {tab === 'map' && (

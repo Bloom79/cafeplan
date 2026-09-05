@@ -59,9 +59,13 @@ const freshness = (l) => {
   return `checked ${ago(checked) || checked}${changed ? ` · unchanged since ${changed}` : ''}`
 }
 
+const rankCls = (rank) => (rank >= 75 ? 'good' : rank >= 55 ? 'mid' : 'low')
+const cov = (v) => (Number.isFinite(v) ? v.toFixed(0) : '∞')
+
 export default function ListingCard({
   listing: l, fav, onFav, dismissed, onDismiss, note, onNote,
   sdeInputs, onSdeInputs, action, onRequest, verdict, deal, onDeal,
+  compact = false, onExpand, onCollapse,
 }) {
   const stage = deal?.stage && deal.stage !== 'watching' ? STAGES.find(([k]) => k === deal.stage) : null
   const due = dueState(deal)
@@ -72,8 +76,48 @@ export default function ListingCard({
   const [imgBroken, setImgBroken] = useState(false)
   const [mapRef, mapSeen] = useInView()
 
+  // The phone row: what decides whether to tap, in one glance.
+  if (compact) {
+    const open = (e) => { e.preventDefault(); onExpand && onExpand() }
+    return (
+      <article
+        className={`listing compact ${fav ? 'fav' : ''} ${dismissed ? 'dismissed' : ''}`}
+        role="button"
+        tabIndex={0}
+        aria-label={`Open ${l.name}`}
+        onClick={open}
+        onKeyDown={(e) => (e.key === 'Enter' || e.key === ' ') && open(e)}
+      >
+        {l.image && !imgBroken
+          ? <img className="thumb" src={l.image} alt="" loading="lazy" onError={() => setImgBroken(true)} />
+          : <div className="thumb tile" aria-hidden="true" />}
+        <div className="c-body">
+          <div className="c-top">
+            <h3>{fav ? '★ ' : ''}{l.name}</h3>
+            {verdict && verdict.band !== 'out' && <span className={`fit-chip ${rankCls(verdict.rank)}`}>{verdict.rank}</span>}
+          </div>
+          <div className="c-meta mono">
+            {l.price != null ? gbp(l.price) : 'POA'} · {l.area}{l.rent != null && <> · rent {gbp(l.rent)}</>}
+            {l.status !== 'active' && <> · {l.status}</>}
+          </div>
+          <div className="c-facts">
+            {l._coversBE != null && <span><b>{cov(l._coversBE)}</b> to break even</span>}
+            {l._coversPay != null && <span><b>{cov(l._coversPay)}</b> to pay you</span>}
+            {verdict && verdict.band !== 'out' && verdict.reasons[0] && <span>{verdict.reasons[0]}</span>}
+            {stage && <span className={`stage-badge ${deal.stage}`}>{stage[1]}</span>}
+            {due && due !== 'later' && <span className={`due-badge ${due}`}>{DUE_LABEL[due]}</span>}
+          </div>
+        </div>
+        <span className="c-open" aria-hidden="true">›</span>
+      </article>
+    )
+  }
+
   return (
     <article className={`listing ${fav ? 'fav' : ''} ${dismissed ? 'dismissed' : ''}`}>
+      {onCollapse && (
+        <button className="c-collapse filter-chip" onClick={onCollapse} aria-label="Back to the list">▴ Back to the list</button>
+      )}
       {l.image && !imgBroken ? (
         <a className="photo" href={l.url || l.image} target="_blank" rel="noreferrer" tabIndex={-1} aria-hidden="true">
           <img src={l.image} alt="" loading="lazy" onError={() => setImgBroken(true)} />

@@ -105,6 +105,23 @@ test('print view renders the document with KPIs and case sections', async () => 
   assert.ok(await page.locator('.print-gates li').count() === 6)
 })
 
+test('on a phone the app opens on Listings with the first listing on the first screen', async () => {
+  const mobile = await browser.newPage({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true })
+  mobile.on('pageerror', (e) => errors.push(String(e)))
+  await mobile.goto(BASE, { waitUntil: 'domcontentloaded' })
+  await mobile.waitForSelector('.listing.compact')
+  assert.equal(await mobile.locator('#tab-listings').getAttribute('aria-selected'), 'true')
+  const box = await mobile.locator('.listing.compact').first().boundingBox()
+  assert.ok(box && box.y < 700, `first listing at y=${box && box.y}`)
+  // Chip rows are folded behind the Filters button; tapping a row opens the card.
+  assert.equal(await mobile.locator('.cat-row').count(), 0)
+  await mobile.locator('.listing.compact').first().click()
+  await mobile.waitForSelector('.listing:not(.compact) .card-actions')
+  await mobile.locator('.c-collapse').click()
+  await mobile.waitForSelector('.listing.compact')
+  await mobile.close()
+})
+
 test('no page errors across the tabs', () => {
   assert.deepEqual(errors, [])
 })
