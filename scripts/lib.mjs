@@ -275,6 +275,24 @@ export function mergeVerification(db, id, res, today) {
   return l
 }
 
+// Words that say nothing about WHICH café an advert is for.
+const GENERIC = new Set(['cafe', 'café', 'coffee', 'shop', 'store', 'restaurant', 'bistro', 'edinburgh', 'business', 'opportunity',
+  'leasehold', 'sale', 'fitted', 'fully', 'central', 'centre', 'city', 'established', 'superb', 'immaculate', 'popular', 'busy',
+  'profitable', 'outstanding', 'beautifully', 'presented', 'prominent', 'unique', 'small', 'large', 'lease', 'rent', 'low', 'long'])
+const distinctive = (name) => new Set(String(name || '').toLowerCase().match(/[a-zà-ÿ]{5,}/g)?.filter((w) => !GENERIC.has(w)) || [])
+
+// The same business on two portals has the same asking price and either
+// shares a word that actually identifies it ("matcha", "class") or sits in
+// the same district in the same category — two £35k cafés in Morningside
+// on the same day are one café with two headlines.
+export const sameBusiness = (a, b) => {
+  if (a.url && b.url && a.url === b.url) return true
+  if (a.price == null || b.price == null || +a.price !== +b.price) return false
+  const wa = distinctive(a.name)
+  for (const w of distinctive(b.name)) if (wa.has(w)) return true
+  return normaliseArea(a.area) === normaliseArea(b.area) && categoryOf(a) === categoryOf(b)
+}
+
 export function mergeDiscovery(db, found, today) {
   const ids = new Set(db.listings.map((l) => l.id))
   const names = new Set(db.listings.map((l) => nameKey(l.name)))
@@ -282,12 +300,14 @@ export function mergeDiscovery(db, found, today) {
   for (const f of found) {
     if (!f || !f.name || !f.area) continue
     if (names.has(nameKey(f.name))) continue // same business, different portal/wording
+    if (db.listings.some((l) => sameBusiness(l, f))) continue // same business, different headline
     // Out of scope no matter what the model says: freeholds, takeaway
     // categories, and anything priced beyond a small going-concern.
     if (/freehold/i.test(String(f.tenure || '') + ' ' + String(f.name || ''))) continue
     if (OFF_CATEGORY.test(String(f.name || ''))) continue
     const category = categoryOf(f)
     if (f.price != null && Number.isFinite(+f.price) && +f.price > PRICE_CAP[category]) continue
+    if (f.rent != null && Number.isFinite(+f.rent) && +f.rent > RENT_CAP[category]) continue
     let id = slug(f.id || f.name)
     while (ids.has(id)) id = id + '-2'
     if (!/^[a-z0-9-]{2,60}$/.test(id)) continue
@@ -321,9 +341,21 @@ export function mergeDiscovery(db, found, today) {
     })
     added++
   }
-  while (db.listings.length > 24) {
+  // Keep the file bounded, but only ever by dropping listings that are
+  // already off the market: an active listing is never evicted to make
+  // room (the old cap of 24 threw out Bennitos and the Morningside café
+  // the first time discovery found more than a handful).
+  while (db.listings.length > MAX_LISTINGS) {
     const i = db.listings.findIndex((l) => l.status === 'gone' || l.status === 'stale')
-    db.listings.splice(i === -1 ? 0 : i, 1)
+    if (i === -1) break
+    db.listings.splice(i, 1)
   }
   return added
 }
+
+export const MAX_LISTINGS = 60
+
+// Annual rent beyond which a find is not this plan, whatever the price
+// says: the concept is anchored on £14k, and even a restaurant at three
+// times that is a different business.
+export const RENT_CAP = { cafe: 30000, dessert: 30000, bar: 60000, restaurant: 60000, premises: 45000 }

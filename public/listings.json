@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-03",
+  "updated": "2026-09-05",
   "source": "seed refreshed by live research 2026-08-29; the daily verify agent keeps this file current",
   "listings": [
     {
@@ -1122,6 +1122,68 @@
         "date": "2026-09-02"
       },
       "firstSeen": "2026-09-02"
+    },
+    {
+      "id": "highly-regarded-mediterranean-restaurant-leith",
+      "name": "Highly Regarded Traditional Mediterranean Restaurant",
+      "area": "Leith",
+      "category": "restaurant",
+      "price": null,
+      "tenure": "Leasehold",
+      "rent": null,
+      "turnover": null,
+      "profit": null,
+      "status": "active",
+      "tags": [
+        "agent find"
+      ],
+      "notes": "Comfortably c.90 covers; 184 sq m; top 5% rated on TripAdvisor; leasehold; asking price on request.",
+      "source": "agent discovery (2026-09-05)",
+      "url": "https://uk.businessesforsale.com/uk/highly-regarded-traditional-mediterranean-restaurant-in-leith-edinburgh.aspx",
+      "image": null,
+      "address": "The Shore, Leith",
+      "lat": null,
+      "lng": null,
+      "firstSeen": "2026-09-05",
+      "lastChecked": "2026-09-05",
+      "lastVerified": "2026-09-05",
+      "lastChanged": "2026-09-05",
+      "verification": {
+        "outcome": "live",
+        "note": "found by discovery scan",
+        "date": "2026-09-05"
+      }
+    },
+    {
+      "id": "tapa-restaurant-bar-leith-edinburgh",
+      "name": "Tapa Restaurant + Bar, Leith, Edinburgh",
+      "area": "Leith",
+      "category": "restaurant",
+      "price": 125000,
+      "tenure": "Leasehold",
+      "rent": 46800,
+      "turnover": null,
+      "profit": null,
+      "status": "active",
+      "tags": [
+        "agent find"
+      ],
+      "notes": "Up to 80 covers; external seating 20+; residue of lease to 2034; rent £46,800 p.a.; Full Premises Licence; trading 7 days to 1am.",
+      "source": "agent discovery (2026-09-05)",
+      "url": "https://www.therestaurantagency.com/properties/property/130/tapa-restaurant-bar-leith-edinburgh",
+      "image": null,
+      "address": null,
+      "lat": null,
+      "lng": null,
+      "firstSeen": "2026-09-05",
+      "lastChecked": "2026-09-05",
+      "lastVerified": "2026-09-05",
+      "lastChanged": "2026-09-05",
+      "verification": {
+        "outcome": "live",
+        "note": "found by discovery scan",
+        "date": "2026-09-05"
+      }
     }
   ]
 }

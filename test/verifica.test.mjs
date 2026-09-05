@@ -78,6 +78,42 @@ test('categoryOf: stored category wins; names classify sensibly', () => {
   assert.equal(categoryOf({ name: 'Fitted unit, Polwarth', tenure: 'To let' }), 'premises')
 })
 
+test('mergeDiscovery: a cross-post with a different headline but the same price and a distinctive word is the same business', () => {
+  const d = { listings: [
+    { id: 'morningside-icecream', name: 'Cafe and Ice Cream Shop', area: 'Morningside', price: 35000, status: 'active', tags: [], url: 'https://www.daltonsbusiness.com/listing/a/' },
+    { id: 'class-1', name: 'Class 1 Cafe and Coffee Shop Opportunity (Ref 1690)', area: 'New Town', price: 35500, status: 'active', tags: [] },
+    { id: 'matcha', name: 'Contemporary Matcha Tea Shop', area: 'Comely Bank', price: 49000, status: 'active', tags: [] },
+  ] }
+  const added = mergeDiscovery(d, [
+    { name: 'Superb Class 1 Cafe And Coffee Shop Opportunity', area: 'City Centre', price: 35500 }, // "class" + same price
+    { name: 'New Contemporary Matcha Tea House, Stockbridge', area: 'Stockbridge', price: 49000 }, // "matcha" + same price
+    { name: 'Very Busy Ice Cream Parlour', area: 'Morningside', price: 35000, url: 'https://www.daltonsbusiness.com/listing/a/' }, // same url
+    { name: 'Fully Fitted Morningside Cafe, Low Rent', area: 'Morningside', price: 35000 }, // same district, price, category
+    { name: 'Bruntsfield Corner Cafe', area: 'Bruntsfield', price: 35000 }, // same price, different district → new
+    { name: 'Morningside Wine Bar', area: 'Morningside', price: 35000, category: 'bar' }, // same district + price, other category → new
+  ], '2026-09-05')
+  assert.equal(added, 2)
+  assert.deepEqual(d.listings.slice(3).map((l) => l.name), ['Bruntsfield Corner Cafe', 'Morningside Wine Bar'])
+})
+
+test('mergeDiscovery: never evicts an active listing; rent caps per category', () => {
+  const active = (i) => ({ id: `a${i}`, name: `Active ${i}`, area: 'Polwarth', status: 'active', tags: [] })
+  const d = { listings: [...Array.from({ length: 70 }, (_, i) => active(i)), { id: 'g', name: 'Gone', area: 'Leith', status: 'gone', tags: [] }] }
+  const added = mergeDiscovery(d, [{ name: 'Brand New Cafe', area: 'Shandon', price: 30000 }], '2026-09-05')
+  assert.equal(added, 1)
+  // The one gone listing is dropped to make room; the seventy active ones all stay.
+  assert.equal(d.listings.find((l) => l.id === 'g'), undefined)
+  assert.equal(d.listings.filter((l) => l.status === 'active').length, 71)
+  // A café with a £100k rent is a different business, whatever the price.
+  const e = { listings: [] }
+  mergeDiscovery(e, [
+    { name: 'Dear Cafe', area: 'Polwarth', price: 30000, rent: 102500 },
+    { name: 'Fair Cafe', area: 'Polwarth', price: 30000, rent: 14000 },
+    { name: 'Big Restaurant', area: 'Leith', price: 125000, rent: 46800, category: 'restaurant' },
+  ], '2026-09-05')
+  assert.deepEqual(e.listings.map((l) => l.name), ['Fair Cafe', 'Big Restaurant'])
+})
+
 test('mergeDiscovery: per-category price caps (restaurants higher than cafés)', () => {
   const d = { listings: [] }
   const added = mergeDiscovery(d, [

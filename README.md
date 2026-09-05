@@ -125,6 +125,23 @@ Added Sept 2026, on top of the case (all editable, all in `src/data/model.js`):
   the loan and the draw.
 - **Year one** — month one trades at 70% of the plan and reaches it by
   month 6; the monthly cash view carries that ramp and the loan repayment.
+  Working capital on day one is an assumption too (default £20k).
+- **Covers a day to pay you** — `coversToPay()` solves for the daytime
+  covers at which take-home reaches the draw. Breakeven says when the café
+  stops losing; this says when it starts being worth it. It is on the Model
+  tab, on every card with a rent (your concept, their rent), in the compare
+  table, in the PDF and in the case's Decision section.
+- **Staffing note** — what the labour budget buys in paid hours a week at
+  the £12.71 National Living Wage with ~25% on-costs.
+
+On a listing card the deal sheet carries three checklists — ten questions
+for the first call, ten things to look for at the viewing, thirteen
+due-diligence items — plus the next action and its date. The verifier fills
+in rent, turnover, profit, lease years, rateable value, covers and floor
+area when an advert states them (blanks only, never overwriting). The
+compare table downloads as CSV. The business case ends on a live
+**Decision** section: which gates are open, whether the plan pays the draw
+and at how many covers it would, and what would change the answer.
 
 The app recomputes live and **supersedes the static documents** — change an
 assumption and the case re-answers itself.
