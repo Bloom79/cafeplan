@@ -1797,15 +1797,15 @@ button.fit-chip { cursor: pointer; }
 .fold:not([open]) summary .panel-title::after { content: ' ▸'; color: var(--faint); font-size: 12px; }
 .fold summary .side { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 60%; }
 
-/* the compact card: a row you tap */
-.listing-grid.phone { grid-template-columns: 1fr; gap: 8px; }
-.listing.compact {
-  display: grid; grid-template-columns: 60px 1fr 18px; gap: 10px; align-items: center;
-  padding: 10px 10px 10px 10px; cursor: pointer;
-}
+/* the compact card: a photo and a few lines you tap; a row when there is no photo */
+.listing-grid.phone { grid-template-columns: 1fr; gap: 10px; }
+.listing.compact { position: relative; cursor: pointer; padding: 0; overflow: hidden; }
+.listing.compact.row { display: grid; grid-template-columns: 1fr 18px; gap: 10px; align-items: center; padding: 12px 12px; }
+.listing.compact.photo-card { display: block; }
+.listing.compact.photo-card .hero { display: block; width: 100%; height: 200px; object-fit: cover; background: var(--ink); }
+.listing.compact.photo-card .c-body { padding: 10px 40px 12px 12px; }
+.listing.compact.photo-card .c-open { position: absolute; right: 14px; bottom: 12px; }
 .listing.compact:hover, .listing.compact:focus-visible { border-color: var(--brass); outline: none; }
-.listing.compact .thumb { width: 60px; height: 60px; object-fit: cover; border-radius: 8px; background: var(--ink); display: block; }
-.listing.compact .thumb.tile { background: linear-gradient(135deg, var(--panel-2), var(--ink)); }
 .listing.compact .c-top { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
 .listing.compact h3 { font-size: 14.5px; margin: 0; line-height: 1.25; }
 .listing.compact .c-meta { font-size: 11px; color: var(--muted); margin-top: 3px; }

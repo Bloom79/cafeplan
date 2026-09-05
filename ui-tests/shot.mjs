@@ -5,6 +5,8 @@ const browser = await chromium.launch()
 const page = await browser.newPage({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true, deviceScaleFactor: 2 })
 await page.goto(base, { waitUntil: 'domcontentloaded' })
 await page.waitForSelector('.listing.compact')
+// Photos come from the portals' CDNs; give them a moment so the shot shows what a phone shows.
+await page.waitForFunction(() => [...document.querySelectorAll('img.hero')].slice(0, 3).every((i) => i.complete), null, { timeout: 8000 }).catch(() => {})
 await page.screenshot({ path: `${out}/phone-listings.png` })
 await page.locator('.listing.compact').first().click()
 await page.waitForSelector('.card-actions')

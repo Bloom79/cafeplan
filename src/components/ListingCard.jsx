@@ -76,21 +76,21 @@ export default function ListingCard({
   const [imgBroken, setImgBroken] = useState(false)
   const [mapRef, mapSeen] = useInView()
 
-  // The phone row: what decides whether to tap, in one glance.
+  // The phone card: the photo at full width when there is one (a café is
+  // a place; a thumbnail says nothing), then what decides whether to tap.
   if (compact) {
     const open = (e) => { e.preventDefault(); onExpand && onExpand() }
+    const hasPhoto = !!l.image && !imgBroken
     return (
       <article
-        className={`listing compact ${fav ? 'fav' : ''} ${dismissed ? 'dismissed' : ''}`}
+        className={`listing compact ${hasPhoto ? 'photo-card' : 'row'} ${fav ? 'fav' : ''} ${dismissed ? 'dismissed' : ''}`}
         role="button"
         tabIndex={0}
         aria-label={`Open ${l.name}`}
         onClick={open}
         onKeyDown={(e) => (e.key === 'Enter' || e.key === ' ') && open(e)}
       >
-        {l.image && !imgBroken
-          ? <img className="thumb" src={l.image} alt="" loading="lazy" onError={() => setImgBroken(true)} />
-          : <div className="thumb tile" aria-hidden="true" />}
+        {hasPhoto && <img className="hero" src={l.image} alt="" loading="lazy" onError={() => setImgBroken(true)} />}
         <div className="c-body">
           <div className="c-top">
             <h3>{fav ? '★ ' : ''}{l.name}</h3>
