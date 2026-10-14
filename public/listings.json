@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-05",
+  "updated": "2026-10-14",
   "source": "seed refreshed by live research 2026-08-29; the daily verify agent keeps this file current",
   "listings": [
     {
@@ -20,15 +20,15 @@
       "notes": "Confidential sale, cross-listed as \"Fully Fitted Morningside Cafe, Long Lease, Low Rent\" on BusinessesForSale. Closest active listing to the Polwarth/Merchiston corridor.",
       "source": "Rightbiz (Aug 2026)",
       "url": "https://www.daltonsbusiness.com/listing/very-busy-and-profitable-dessert-and-ice-for-sale-DB2541715/",
-      "lastVerified": "2026-09-02",
+      "lastVerified": "2026-10-14",
       "verification": {
         "outcome": "live",
-        "note": "Active listings found on Daltons, Rightbiz and BusinessesForSale; asking £35,000 (leasehold). Address/photos withheld on public listings.",
-        "date": "2026-09-02"
+        "note": "Listing still actively advertised (Daltons/Rightbiz/PrimeLocation) at £35,000; premises on Comiston Road, 807 sq ft.",
+        "date": "2026-10-14"
       },
       "lat": 55.9269,
       "lng": -3.209,
-      "lastChecked": "2026-09-02",
+      "lastChecked": "2026-10-14",
       "unclearStreak": 0,
       "category": "cafe",
       "firstSeen": "2026-09-02",
@@ -40,13 +40,15 @@
         "https://cdn.daltonsbusiness.com/wp-content/uploads/2026/05/1778590391-sweet-paradise-3-1170x785.webp",
         "https://cdn.daltonsbusiness.com/wp-content/uploads/2026/05/1778590402-sweet-paradise-4-1170x785.webp",
         "https://cdn.daltonsbusiness.com/wp-content/uploads/2026/05/1778590414-sweet-paradise-5-1170x785.webp"
-      ]
+      ],
+      "address": "Comiston Road, Morningside, Edinburgh EH10, UK",
+      "sqft": 807
     },
     {
       "id": "bruntsfield-coffee",
       "name": "Immaculate Coffee Shop (The Bonnie Barista)",
       "area": "Bruntsfield",
-      "price": 40000,
+      "price": 30000,
       "tenure": "Leasehold",
       "rent": 22500,
       "turnover": null,
@@ -59,17 +61,17 @@
       ],
       "notes": "The Bonnie Barista, east end of Bruntsfield Place. Commercial kitchen plus large basement. Rent runs well above the £14k Ashley Terrace anchor — Bruntsfield commands a premium. Listing now carries a \"PRICE REDUCED – NOW FIXED PRICE\" banner.",
       "source": "Rightbiz / Daltons (Aug 2026)",
-      "url": "https://www.rightbiz.co.uk/buy_business/for_sale/630935_edinburgh.html",
-      "lastVerified": "2026-09-02",
+      "url": "https://www.daltonsbusiness.com/listing/an-immaculate-coffee-shop-in-prominent-edinburgh-for-sale-DB2364545/",
+      "lastVerified": "2026-10-14",
       "verification": {
-        "outcome": "live",
-        "note": "Listing appears active on Rightbiz/Daltons/PrimeLocation at £40,000; evidence shows address and representative images on listing pages.",
-        "date": "2026-09-02"
+        "outcome": "changed",
+        "note": "Listing appears active but asking price shown reduced to £30,000; rent £22,500 pa — price differs from snapshot.",
+        "date": "2026-10-14"
       },
       "lat": 55.9376478,
       "lng": -3.2063226,
       "image": "https://cdn.daltonsbusiness.com/wp-content/uploads/2025/11/1763472586-Bonnie-scaled.webp",
-      "lastChecked": "2026-09-02",
+      "lastChecked": "2026-10-14",
       "address": "80 Bruntsfield Place, Edinburgh, EH10 4HG",
       "coordsExact": true,
       "unclearStreak": 0,
@@ -142,7 +144,26 @@
         "canalM": 503,
         "stopM": 83,
         "at": "2026-09-02"
-      }
+      },
+      "leaseYears": 10,
+      "covers": 15,
+      "history": [
+        {
+          "date": "2026-10-14",
+          "price": 40000
+        }
+      ],
+      "lastChanged": "2026-10-14",
+      "images": [
+        "https://cdn.daltonsbusiness.com/wp-content/uploads/2025/11/1763472586-Bonnie-scaled.webp",
+        "https://cdn.daltonsbusiness.com/wp-content/uploads/2025/11/1763472615-Bonnie1-1170x785.webp",
+        "https://cdn.daltonsbusiness.com/wp-content/uploads/2025/11/1763472661-Bonnie2-1170x785.webp",
+        "https://cdn.daltonsbusiness.com/wp-content/uploads/2025/11/1763472686-Bonnie3-1170x785.webp",
+        "https://cdn.daltonsbusiness.com/wp-content/uploads/2025/11/1763472710-Bonnie4-1170x785.webp",
+        "https://cdn.daltonsbusiness.com/wp-content/uploads/2025/11/1763472738-Bonnie5-1170x785.webp",
+        "https://cdn.daltonsbusiness.com/wp-content/uploads/2025/11/1763472763-Bonnie6-1170x785.webp",
+        "https://cdn.daltonsbusiness.com/wp-content/uploads/2025/11/1763472801-Bonnie7-1170x785.webp"
+      ]
     },
     {
       "id": "marchmont-20seat",
@@ -191,16 +212,16 @@
       ],
       "notes": "199 St John's Rd, Corstorphine High Street — decked front seating + rear conservatory. £150k turnover, £25k profit (17%), ~12 years left on lease with option to extend. Agent: DJK Group. The closest real-world validation of the model.",
       "source": "Rightbiz / Daltons (Aug 2026)",
-      "url": "https://www.rightbiz.co.uk/Buy-a-Business-for-Sale/615407_Edinburgh.html",
-      "lastVerified": "2026-09-02",
+      "url": "https://www.rightbiz.co.uk/buy_business/for_sale/615407_edinburgh.html",
+      "lastVerified": "2026-10-14",
       "verification": {
         "outcome": "live",
-        "note": "Rightbiz listing and local press (Edinburgh Live/News) show Bennitos Cafe still for sale at £40,000; business reported open.",
-        "date": "2026-09-02"
+        "note": "Rightbiz and local press report Bennitos Café leasehold on sale at £40,000 with £18,000 pa rent — listing appears active.",
+        "date": "2026-10-14"
       },
       "lat": 55.9429196,
       "lng": -3.2860658,
-      "lastChecked": "2026-09-02",
+      "lastChecked": "2026-10-14",
       "address": "199 St John’s Road, Corstorphine, Edinburgh EH12 7UU",
       "coordsExact": true,
       "unclearStreak": 0,
